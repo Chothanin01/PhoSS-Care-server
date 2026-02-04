@@ -17,6 +17,7 @@ type User struct {
 
 type Admin struct {
 	gorm.Model
+	Title		   string `gorm:"size:50;not null" json:"title"`
 	FirstName      string `gorm:"size:255;not null" json:"first_name"`
 	LastName       string `gorm:"size:255;not null" json:"last_name"`
 	ProfilePicture string `json:"profile_picture"`
@@ -30,16 +31,17 @@ type Admin struct {
 
 type Patient struct {
 	gorm.Model
+	Title		   string 	 `gorm:"size:50;not null" json:"title"`
 	FirstName      string    `gorm:"size:255;not null" json:"first_name"`
 	LastName       string    `gorm:"size:255;not null" json:"last_name"`
 	DOB            time.Time `json:"dob"`
-	HnID           uint      `gorm:"uniqueIndex;not null" json:"hn_id"`
+	HnID           string    `gorm:"uniqueIndex;size:7;not null" json:"hn_id"`
 	IDCard         string    `gorm:"size:13;uniqueIndex;not null" json:"id_card"`
 	Rights         string    `gorm:"size:255;not null" json:"rights"`
 	Nationality    string    `gorm:"size:255;not null" json:"nationality"`
 	Ethnicity      string    `gorm:"size:255;not null" json:"ethnicity"`
 	PhoneNumber    string    `gorm:"size:10" json:"phone_number"`
-	Address        string    `json:"address"`
+	Address        Address   `gorm:"type:json" json:"address"`
 	Allergy        string    `json:"allergy"`
 	ProfilePicture string    `json:"profile_picture"`
 	UserID         uint      `json:"user_id"`
@@ -73,10 +75,11 @@ type Health struct {
 
 type Relative struct {
 	gorm.Model
+	Title		  string   `gorm:"size:50;not null" json:"title"`
 	FirstName     string   `gorm:"size:255;not null" json:"first_name"`
 	LastName      string   `gorm:"size:255;not null" json:"last_name"`
 	PhoneNumber   string   `gorm:"size:10" json:"phone_number"`
-	Address       string   `json:"address"`
+	Address       Address  `gorm:"type:json" json:"address"`
 	Role          string   `gorm:"size:255;not null" json:"role"`
 	PatientID     uint     `json:"patient_id"`
 	Patient       Patient  `gorm:"foreignKey:PatientID" json:"patient"`
@@ -179,4 +182,16 @@ type Notification struct {
 	UpdatedBy     uint
 	UpdatedByUser User   `gorm:"foreignKey:UpdatedBy" json:"updated_by_user"`
 }
+
+type Address struct {
+	HouseNumber 		  string `json:"house_number"`
+	VillageNumber         string `json:"village_number"`
+	Alley         		  string `json:"alley"`
+	Road        		  string `json:"road"`
+	SubDistrict 		  string `json:"subdistrict"`
+	District    		  string `json:"district"`
+	Province    		  string `json:"province"`
+	ZipCode     	      string `json:"zipcode"`
+}
+
 

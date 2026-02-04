@@ -1,38 +1,136 @@
 package entities
 
+import "github.com/chothanin01/PhoSS-Care-server/pkg/databases"
 
-type PatientUsecase interface {
-	Create(req *PatientCreateReq) (*PatientCreateRes, error)
+type AddressReq struct {
+	HouseNumber string `json:"house_number"`
+	VillageNumber         string `json:"village_number"`
+	Alley         string `json:"alley"`
+	Road        string `json:"road"`
+	SubDistrict string `json:"subdistrict"`
+	District    string `json:"district"`
+	Province    string `json:"province"`
+	ZipCode     string `json:"zipcode"`
 }
 
-type PatientRepository interface {
-	Create(req *PatientCreateReq) (*PatientCreateRes, error)
+type RelativeDetail struct {
+	Title       string     `json:"title"`
+	FirstName   string     `json:"firstname"`
+	LastName    string     `json:"lastname"`
+	PhoneNumber string     `json:"phonenumber"`
+	Address     AddressReq `json:"address"`
+	CreatedBy   uint       `json:"created_by"`
+	UpdatedBy   uint       `json:"updated_by"`
 }
+type DiseaseReq struct {
+	DiseaseID uint   `json:"disease_id"`
+	Name      string `json:"name"`
+}
+type PatientFullCreateReq struct {
+	User struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+		Role     string `json:"role"`
+	} `json:"user"`
 
+	Patient struct {
+		Title        string     `json:"title"`
+		FirstName    string     `json:"firstname"`
+		LastName     string     `json:"lastname"`
+		DOB          string     `json:"dob"`
+		IDCard       string     `json:"idcard"`
+		Rights       string     `json:"rights"`
+		Nationality  string     `json:"nationality"`
+		Ethnicity    string     `json:"ethnicity"`
+		PhoneNumber  string     `json:"phonenumber"`
+		Address      AddressReq `json:"address"`
+		Allergy      string     `json:"allergy"`
+		Diseases     []DiseaseReq `json:"diseases"`
+	} `json:"patient"`
+
+	Relative struct {
+		Kin       RelativeDetail `json:"kin"`
+		Caretaker RelativeDetail `json:"caretaker"`
+		Medicine  RelativeDetail `json:"medicine"`
+	} `json:"relative"`
+
+	Officer struct {
+		House RelativeDetail `json:"house"`
+		Nurse RelativeDetail `json:"nurse"`
+	} `json:"officer"`
+
+	CreatedBy uint `json:"created_by"`
+}
 type PatientCreateReq struct {
-	FirstName      string    `json:"firstName" db:"first_name"`
-	LastName       string    `json:"lastName" db:"last_name"`
-	Dob            string `json:"dob" db:"dob"`
-	HnID           uint      `json:"hnId" db:"hn_id"`
-	IDCard         string    `json:"idCard" db:"id_card"`
-	Rights         string    `json:"rights" db:"rights"`
-	Nationality    string    `json:"nationality" db:"nationality"`
-	Ethnicity      string    `json:"ethnicity" db:"ethnicity"`
-	PhoneNumber    string    `json:"phoneNumber" db:"phone_number"`
-	Address        string    `json:"address" db:"address"`
-	Allergy        string    `json:"allergy" db:"allergy"`
-	ProfilePicture string    `json:"profilePicture" db:"profile_picture"`
-	UserID         uint      `json:"userId" db:"user_id"`
+	Title        string     `json:"title"`
+	FirstName    string     `json:"first_name"`
+	LastName     string     `json:"last_name"`
+	Dob          string     `json:"dob"`
+	HnID         string     `json:"hn_id"`
+	IDCard       string     `json:"id_card"`
+	Rights       string     `json:"rights"`
+	Nationality  string     `json:"nationality"`
+	Ethnicity    string     `json:"ethnicity"`
+	PhoneNumber  string     `json:"phone_number"`
+	Address      AddressReq `json:"address"`
+	Allergy      string     `json:"allergy"`
+	UserID       uint       `json:"user_id"`
+	CreatedBy    uint       `json:"created_by"`
+	UpdatedBy    uint       `json:"updated_by"`
 }
 
 type PatientCreateRes struct {
-	Id          uint64 `json:"id" db:"id"`
-	FirstName   string `json:"firstName" db:"first_name"`
-	LastName    string `json:"lastName" db:"last_name"`
-	HnID        uint   `json:"hnId" db:"hn_id"`
-	IDCard      string `json:"idCard" db:"id_card"`
-	PhoneNumber string `json:"phoneNumber" db:"phone_number"`
-	Rights      string `json:"rights" db:"rights"`
-	Nationality string `json:"nationality" db:"nationality"`
-	Ethnicity   string `json:"ethnicity" db:"ethnicity"`
+	Id          uint64 `json:"id"`
+	FirstName   string `json:"first_name"`
+	LastName    string `json:"last_name"`
+	HnID        string   `json:"hn_id"`
+	IDCard      string `json:"id_card"`
+	PhoneNumber string `json:"phone_number"`
+	Rights      string `json:"rights"`
+	Nationality string `json:"nationality"`
+	Ethnicity   string `json:"ethnicity"`
+}
+type PatientUsecase interface {
+	CreateFull(req *PatientFullCreateReq) (*PatientCreateRes, error)
+}
+type Transaction interface {
+	Do(fn func(repos RepositorySet) error) error
+}
+type RepositorySet struct {
+	UserRepo     UserRepository
+	PatientRepo  PatientRepository
+	RelativeRepo RelativeRepository
+	DiseaseRepo  DiseaseRepository
+}
+type UserRepository interface {
+	Create(username, password, role string) (*databases.User, error)
+}
+type PatientRepository interface {
+	CreateWithUser(req *PatientCreateReq, userID uint) (*PatientCreateRes, error)
+	GenerateNextHnID() (string, error)
+}
+
+type PatientDiseaseEntity struct {
+	DiseaseID uint   `json:"disease_id"`
+	Name      string `json:"name"`
+}
+
+type RelativeEntity struct {
+	Title       string     `json:"title"`
+	FirstName   string     `json:"firstname"`
+	LastName    string     `json:"lastname"`
+	PhoneNumber string     `json:"phonenumber"`
+	Address     AddressReq `json:"address"`
+	Role        string     `json:"role"`
+	PatientID   uint       `json:"patient_id"`
+	CreatedBy   uint       `json:"created_by"`
+	UpdatedBy   uint       `json:"updated_by"`
+}
+
+type DiseaseRepository interface {
+	LinkPatientDiseases(patientID uint, diseases []PatientDiseaseEntity) error
+}
+
+type RelativeRepository interface {
+	Create(relatives []RelativeEntity) error
 }

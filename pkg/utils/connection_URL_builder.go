@@ -6,8 +6,6 @@ import (
 	"github.com/chothanin01/PhoSS-Care-server/configs"
 )
 
-// ConnectionUrlBuilder builds connection URLs for supported targets.
-// Supported: "fiber", "gorm"
 func ConnectionUrlBuilder(target string, cfg *configs.Config) (string, error) {
 	switch target {
 	case "fiber":

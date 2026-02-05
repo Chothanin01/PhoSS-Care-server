@@ -42,24 +42,3 @@ func (r *RelativeRepository) Create(relatives []entities.RelativeEntity) error {
 	return r.db.Create(&records).Error
 }
 
-type DiseaseRepository struct {
-	db *gorm.DB
-}
-
-func NewDiseaseRepository(db *gorm.DB) *DiseaseRepository {
-	return &DiseaseRepository{db: db}
-}
-
-func (r *DiseaseRepository) LinkPatientDiseases(patientID uint, diseases []entities.PatientDiseaseEntity) error {
-	var records []databases.PatientDisease
-	for _, d := range diseases {
-		records = append(records, databases.PatientDisease{
-			PatientID: patientID,
-			DiseaseID: d.DiseaseID,
-			Disease: databases.Disease{
-				Name: d.Name,
-			},
-		})
-	}
-	return r.db.Create(&records).Error
-}

@@ -52,7 +52,7 @@ type Patient struct {
 	UpdatedByUser  User `gorm:"foreignKey:UpdatedBy" json:"updated_by_user"`
 	Healths        []Health          `json:"healths"`
 	Relatives      []Relative        `json:"relatives"`
-	Appointments   []Appoint         `json:"appointments"`
+	Appointments   []Appoint         `gorm:"foreignKey:PatientID;references:ID" json:"appointments"`
 	Diseases       []PatientDisease  `json:"diseases"`
 }
 
@@ -102,7 +102,7 @@ type Appoint struct {
 	Letter       bool      `json:"letter"`
 	Delay        bool      `json:"delay"`
 	PatientID    uint      `json:"patient_id"`
-	Patient      Patient   `gorm:"foreignKey:PatientID" json:"patient"`
+	Patient      Patient   `gorm:"foreignKey:PatientID;references:ID" json:"patient"`
 	DiseaseID    uint      `json:"disease_id"`
 	Disease      Disease   `gorm:"foreignKey:DiseaseID" json:"disease"`
 	CreatedBy    uint

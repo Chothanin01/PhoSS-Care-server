@@ -10,17 +10,16 @@ import (
 )
 
 func (s *Server) MapHandlers() error {
-
 	v1 := s.App.Group("/v1")
-
-
 	patientsGroup := v1.Group("/patients")
+
 	passwordSvc := utils.NewPasswordService()
 	tx := _patientRepositories.NewTransactionGorm(s.Db)
 	patientUsecase := _patientUsecases.NewPatientUsecase(tx, passwordSvc)
-	_patientControllers.NewPatientController(patientsGroup, patientUsecase)
+	patientReadRepo := _patientRepositories.NewPatientReadRepository(s.Db)
+	patientGetUsecase := _patientUsecases.NewPatientGetUsecase(patientReadRepo)
 
-
+	_patientControllers.NewPatientController(patientsGroup, patientUsecase, patientGetUsecase)
 
 	s.App.Use(func(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -33,3 +32,4 @@ func (s *Server) MapHandlers() error {
 
 	return nil
 }
+

@@ -83,9 +83,36 @@ type RepositorySet struct {
 	RelativeRepo RelativeRepository
 	DiseaseRepo  DiseaseRepository
 }
+
+type PatientListRes struct {
+	Success     bool           `json:"success"`
+	Message     string         `json:"message"`
+	Page        int            `json:"page"`
+	PerPage     int            `json:"per_page"`
+	TotalPages  int            `json:"total_pages"`
+	Data        []PatientInfo  `json:"data"`
+}
+
+type PatientInfo struct {
+	ID        uint               `json:"id"`
+	FullName  string             `json:"fullname"`
+	IDCard    string             `json:"idcard"`
+	HnNumber  string             `json:"hnnumber"`
+	Diseases  []DiseaseWithStatus `json:"diseases"`
+}
+
+type PatientQueryParams struct {
+	Search   string   `query:"search"`
+	Diseases []string `query:"disease"`
+	Appoint  *bool    `query:"appoint"`
+	Page     int      `query:"page"`
+	Limit    int      `query:"limit"`
+}
+
 type PatientUsecase interface {
 	CreateFull(req *PatientFullCreateReq) (*PatientCreateRes, error)
 }
+
 type Transaction interface {
 	Do(fn func(repos RepositorySet) error) error
 }
@@ -97,3 +124,16 @@ type PatientRepository interface {
 	CreateWithUser(req *PatientCreateReq, userID uint) (*PatientCreateRes, error)
 	GenerateNextHnID() (string, error)
 }
+
+type PatientGetRepo interface {
+	GetPatients(page, limit int) ([]databases.Patient, error)
+	GetPatientsWithFilter(req PatientQueryParams) ([]databases.Patient, error)
+	CountPatients() (int64, error)
+	CountPatientsWithFilter(req PatientQueryParams) (int64, error)
+}
+
+type PatientGetUsecase interface {
+	GetPatientList(page, limit int) (*PatientListRes, error)
+	GetPatientListWithFilter(req PatientQueryParams) (*PatientListRes, error)
+}
+

@@ -3,8 +3,10 @@ package databases
 import (
 	"time"
 	"encoding/json"
-	"database/sql/driver"
+	"fmt"
 
+	"database/sql/driver"
+	"database/sql"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -213,3 +215,24 @@ type Address struct {
 func (a Address) Value() (driver.Value, error) {
 	return json.Marshal(a)
 }
+
+func (a *Address) Scan(value interface{}) error {
+	if value == nil {
+		*a = Address{}
+		return nil
+	}
+
+	switch v := value.(type) {
+	case []byte:
+		return json.Unmarshal(v, a)
+	case string:
+		return json.Unmarshal([]byte(v), a)
+	default:
+		return fmt.Errorf("unsupported type %T for Address", value)
+	}
+}
+
+var (
+	_ driver.Valuer = (*Address)(nil)
+	_ sql.Scanner   = (*Address)(nil)
+)

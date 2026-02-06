@@ -3,6 +3,7 @@ package usecases
 import (
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/modules/patients/entities"
 )
 
@@ -26,22 +27,23 @@ func NewPatientUsecase(tx entities.Transaction, passwordSvc PasswordService) *ne
 
 func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq) (*entities.PatientCreateRes, error) {
 	var res *entities.PatientCreateRes
-
+	fmt.Print(req.CreatedBy)
 	err := u.tx.Do(func(r entities.RepositorySet) error {
 		nextHnID, err := r.PatientRepo.GenerateNextHnID()
 		if err != nil {
-			return err
+			return fmt.Errorf("generate HN ID: %w", err)
 		}
 
-		hnidStr := fmt.Sprintf("%s", nextHnID)
-		hashedPass, err := u.passwordSvc.Hash(hnidStr)
+		hashedPass, err := u.passwordSvc.Hash(nextHnID)
 		if err != nil {
-			return fmt.Errorf("failed to hash hnid: %w", err)
+			return fmt.Errorf("hash HNID: %w", err)
 		}
-
+	
 		user, err := r.UserRepo.Create(req.Patient.IDCard, hashedPass, "patient")
+		
+		fmt.Print(req)
 		if err != nil {
-			return err
+			return fmt.Errorf("create user: %w", err)
 		}
 
 		patientReq := &entities.PatientCreateReq{
@@ -59,24 +61,23 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq) (*ent
 			Rights:      req.Patient.Rights,
 			UserID:      user.ID,
 			CreatedBy:   req.CreatedBy,
-			UpdatedBy:   req.CreatedBy,
 		}
 
 		res, err = r.PatientRepo.CreateWithUser(patientReq, user.ID)
 		if err != nil {
-			return err
+			return fmt.Errorf("create patient: %w", err)
 		}
 
 		if len(req.Patient.Diseases) > 0 {
-			var diseases []entities.PatientDiseaseEntity
+			diseases := make([]entities.PatientDiseaseEntity, 0, len(req.Patient.Diseases))
 			for _, d := range req.Patient.Diseases {
 				diseases = append(diseases, entities.PatientDiseaseEntity{
 					DiseaseID: d.DiseaseID,
 					Name:      d.Name,
 				})
 			}
-			if err := r.DiseaseRepo.LinkPatientDiseases(uint(res.Id), diseases); err != nil {
-				return err
+			if err := r.DiseaseRepo.LinkPatientDiseases(res.Id, diseases); err != nil {
+				return fmt.Errorf("link diseases: %w", err)
 			}
 		}
 
@@ -88,7 +89,11 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq) (*ent
 			makeRelative(req.Officer.Nurse, "nurse", res.Id, req.CreatedBy),
 		}
 
-		return r.RelativeRepo.Create(relatives)
+		if err := r.RelativeRepo.Create(relatives); err != nil {
+			return fmt.Errorf("create relatives: %w", err)
+		}
+
+		return nil
 	})
 
 	if err != nil {
@@ -97,14 +102,15 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq) (*ent
 	return res, nil
 }
 
-func makeRelative(d entities.RelativeDetail, role string, pid uint64, creator uint) entities.RelativeEntity {
+
+func makeRelative(d entities.RelativeDetail, role string, pid uuid.UUID, creator uuid.UUID) entities.RelativeEntity {
 	return entities.RelativeEntity{
 		Title:       d.Title,
 		FirstName:   d.FirstName,
 		LastName:    d.LastName,
 		PhoneNumber: d.PhoneNumber,
 		Role:        role,
-		PatientID:   uint(pid),
+		PatientID:   pid,
 		Address: entities.AddressReq{
 			HouseNumber:   d.Address.HouseNumber,
 			VillageNumber: d.Address.VillageNumber,

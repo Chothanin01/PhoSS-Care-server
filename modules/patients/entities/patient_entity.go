@@ -1,11 +1,15 @@
 package entities
 
-import "github.com/chothanin01/PhoSS-Care-server/pkg/databases"
+import (
+
+	"github.com/google/uuid"
+	"github.com/chothanin01/PhoSS-Care-server/pkg/databases" 
+)
 
 type AddressReq struct {
 	HouseNumber string `json:"house_number"`
 	VillageNumber         string `json:"village_number"`
-	Alley         string `json:"alley"`
+	Alley       string `json:"alley"`
 	Road        string `json:"road"`
 	SubDistrict string `json:"subdistrict"`
 	District    string `json:"district"`
@@ -45,7 +49,7 @@ type PatientFullCreateReq struct {
 		Nurse RelativeDetail `json:"nurse"`
 	} `json:"officer"`
 
-	CreatedBy uint `json:"created_by"`
+	CreatedBy  uuid.UUID  `json:"created_by"`
 }
 type PatientCreateReq struct {
 	Title        string     `json:"title"`
@@ -60,13 +64,12 @@ type PatientCreateReq struct {
 	PhoneNumber  string     `json:"phone_number"`
 	Address      AddressReq `json:"address"`
 	Allergy      string     `json:"allergy"`
-	UserID       uint       `json:"user_id"`
-	CreatedBy    uint       `json:"created_by"`
-	UpdatedBy    uint       `json:"updated_by"`
+	UserID       uuid.UUID  `json:"user_id"`
+	CreatedBy    uuid.UUID  `json:"created_by"`
 }
 
 type PatientCreateRes struct {
-	Id          uint64 `json:"id"`
+	Id          uuid.UUID `json:"id"`
 	FirstName   string `json:"first_name"`
 	LastName    string `json:"last_name"`
 	HnID        string   `json:"hn_id"`
@@ -92,15 +95,13 @@ type PatientListRes struct {
 	TotalPages  int            `json:"total_pages"`
 	Data        []PatientInfo  `json:"data"`
 }
-
 type PatientInfo struct {
-	ID        uint               `json:"id"`
+	ID        uuid.UUID          `json:"id"`
 	FullName  string             `json:"fullname"`
 	IDCard    string             `json:"idcard"`
 	HnNumber  string             `json:"hnnumber"`
 	Diseases  []DiseaseWithStatus `json:"diseases"`
 }
-
 type PatientQueryParams struct {
 	Search   string   `query:"search"`
 	Diseases []string `query:"disease"`
@@ -121,7 +122,7 @@ type UserRepository interface {
 }
 
 type PatientRepository interface {
-	CreateWithUser(req *PatientCreateReq, userID uint) (*PatientCreateRes, error)
+	CreateWithUser(req *PatientCreateReq, userID uuid.UUID) (*PatientCreateRes, error)
 	GenerateNextHnID() (string, error)
 }
 

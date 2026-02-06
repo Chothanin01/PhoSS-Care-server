@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+	"errors"
 
+	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/modules/patients/entities"
 	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
 	"gorm.io/gorm"
@@ -50,19 +52,21 @@ func NewPatientReadRepository(db *gorm.DB) *PatientReadRepository {
 	return &PatientReadRepository{db: db}
 }
 
+func NewUserRepository(db *gorm.DB) *UserRepository {
+	return &UserRepository{db: db}
+}
+
 func (r *PatientRepository) GenerateNextHnID() (string, error) {
 	var last databases.Patient
-	if err := r.db.Order("hn_id desc").First(&last).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return "0000001", nil
-		}
-		return "", err
+	err := r.db.Order("hn_id DESC").First(&last).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return "0000001", nil
 	}
 	lastInt, _ := strconv.Atoi(last.HnID)
 	return fmt.Sprintf("%07d", lastInt+1), nil
 }
 
-func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userID uint) (*entities.PatientCreateRes, error) {
+func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userID uuid.UUID) (*entities.PatientCreateRes, error) {
 	dob, err := time.Parse("2006-01-02", req.Dob)
 	if err != nil {
 		return nil, fmt.Errorf("invalid dob format: %v", err)
@@ -92,7 +96,7 @@ func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userI
 		Allergy:   req.Allergy,
 		UserID:    userID,
 		CreatedBy: req.CreatedBy,
-		UpdatedBy: req.UpdatedBy,
+		UpdatedBy: req.CreatedBy,
 	}
 
 	if err := r.db.Create(&patient).Error; err != nil {
@@ -100,7 +104,7 @@ func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userI
 	}
 
 	return &entities.PatientCreateRes{
-		Id:          uint64(patient.ID),
+		Id:          patient.ID,
 		FirstName:   patient.FirstName,
 		LastName:    patient.LastName,
 		HnID:        patient.HnID,
@@ -112,9 +116,6 @@ func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userI
 	}, nil
 }
 
-func NewUserRepository(db *gorm.DB) *UserRepository {
-	return &UserRepository{db: db}
-}
 
 func (r *UserRepository) Create(username, password, role string) (*databases.User, error) {
 	user := &databases.User{

@@ -20,7 +20,7 @@ type DiseaseGetRepository struct {
 	db *gorm.DB
 }
 
-func NewGetDiseaseRepository(db *gorm.DB) *DiseaseGetRepository {
+func NewDiseaseGetRepository(db *gorm.DB) *DiseaseGetRepository {
 	return &DiseaseGetRepository{db: db}
 }
 

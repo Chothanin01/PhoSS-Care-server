@@ -16,6 +16,29 @@ func NewDiseaseRepository(db *gorm.DB) *DiseaseRepository {
 	return &DiseaseRepository{db: db}
 }
 
+type DiseaseGetRepository struct {
+	db *gorm.DB
+}
+
+func NewGetDiseaseRepository(db *gorm.DB) *DiseaseGetRepository {
+	return &DiseaseGetRepository{db: db}
+}
+
+func (r *DiseaseGetRepository) GetAllDiseases() ([]entities.Disease, error) {
+	var diseases []databases.Disease
+	if err := r.db.Find(&diseases).Error; err != nil {
+		return nil, err
+	}
+	var result []entities.Disease
+	for _, d := range diseases {
+		result = append(result, entities.Disease{
+			DiseaseID: d.ID,
+			Name:      d.Name,
+		})
+	}
+	return result, nil
+}
+
 func (r *DiseaseRepository) LinkPatientDiseases(patientID uuid.UUID, diseases []entities.PatientDiseaseEntity) error {
 	var records []databases.PatientDisease
 	for _, d := range diseases {

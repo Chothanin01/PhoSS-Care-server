@@ -39,6 +39,7 @@ func (t *TransactionGorm) Do(fn func(entities.RepositorySet) error) error {
 			PatientRepo:  NewPatientRepository(tx),
 			RelativeRepo: NewRelativeRepository(tx),
 			DiseaseRepo:  NewDiseaseRepository(tx),
+			DiseaseGetRepo: NewDiseaseGetRepository(tx),
 		}
 		return fn(repos)
 	})

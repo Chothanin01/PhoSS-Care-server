@@ -85,6 +85,7 @@ type RepositorySet struct {
 	PatientRepo  PatientRepository
 	RelativeRepo RelativeRepository
 	DiseaseRepo  DiseaseRepository
+	DiseaseGetRepo DiseaseGetRepository
 }
 
 type PatientListRes struct {

@@ -5,17 +5,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/pkg/databases" 
 )
-
-type AddressReq struct {
-	HouseNumber string `json:"house_number"`
-	VillageNumber         string `json:"village_number"`
-	Alley       string `json:"alley"`
-	Road        string `json:"road"`
-	SubDistrict string `json:"subdistrict"`
-	District    string `json:"district"`
-	Province    string `json:"province"`
-	ZipCode     string `json:"zipcode"`
+type RepositorySet struct {
+	UserRepo     UserRepository
+	PatientRepo  PatientCreateRepo
+	RelativeRepo RelativeCreateRepo
+	DiseaseRepo  DiseaseRepo
+	DiseaseGetRepo DiseaseGetRepo
 }
+
 type PatientFullCreateReq struct {
 	User struct {
 		Username string `json:"username"`
@@ -27,13 +24,14 @@ type PatientFullCreateReq struct {
 		Title        string     `json:"title"`
 		FirstName    string     `json:"firstname"`
 		LastName     string     `json:"lastname"`
+		Sex		  	 string	    `json:"sex"`
 		DOB          string     `json:"dob"`
 		IDCard       string     `json:"idcard"`
 		Rights       string     `json:"rights"`
 		Nationality  string     `json:"nationality"`
 		Ethnicity    string     `json:"ethnicity"`
 		PhoneNumber  string     `json:"phonenumber"`
-		Address      AddressReq `json:"address"`
+		Address      Address `json:"address"`
 		Allergy      string     `json:"allergy"`
 		Diseases     []Disease  `json:"diseases"`
 	} `json:"patient"`
@@ -55,6 +53,7 @@ type PatientCreateReq struct {
 	Title        string     `json:"title"`
 	FirstName    string     `json:"first_name"`
 	LastName     string     `json:"last_name"`
+	Sex		  	 string     `json:"sex"`
 	Dob          string     `json:"dob"`
 	HnID         string     `json:"hn_id"`
 	IDCard       string     `json:"id_card"`
@@ -62,8 +61,9 @@ type PatientCreateReq struct {
 	Nationality  string     `json:"nationality"`
 	Ethnicity    string     `json:"ethnicity"`
 	PhoneNumber  string     `json:"phone_number"`
-	Address      AddressReq `json:"address"`
+	Address      Address `json:"address"`
 	Allergy      string     `json:"allergy"`
+	Diseases     []PatientDiseaseEntity `json:"diseases"`
 	UserID       uuid.UUID  `json:"user_id"`
 	CreatedBy    uuid.UUID  `json:"created_by"`
 }
@@ -72,20 +72,23 @@ type PatientCreateRes struct {
 	Id          uuid.UUID `json:"id"`
 	FirstName   string `json:"first_name"`
 	LastName    string `json:"last_name"`
-	HnID        string   `json:"hn_id"`
+	Sex		 	string `json:"sex"`
+	HnID        string `json:"hn_id"`
 	IDCard      string `json:"id_card"`
 	PhoneNumber string `json:"phone_number"`
 	Rights      string `json:"rights"`
 	Nationality string `json:"nationality"`
 	Ethnicity   string `json:"ethnicity"`
 }
-
-type RepositorySet struct {
-	UserRepo     UserRepository
-	PatientRepo  PatientRepository
-	RelativeRepo RelativeRepository
-	DiseaseRepo  DiseaseRepository
-	DiseaseGetRepo DiseaseGetRepository
+type Address struct {
+	HouseNumber string `json:"house_number"`
+	VillageNumber         string `json:"village_number"`
+	Alley       string `json:"alley"`
+	Road        string `json:"road"`
+	SubDistrict string `json:"subdistrict"`
+	District    string `json:"district"`
+	Province    string `json:"province"`
+	ZipCode     string `json:"zipcode"`
 }
 
 type PatientListRes struct {
@@ -122,7 +125,7 @@ type UserRepository interface {
 	Create(username, password, role string) (*databases.User, error)
 }
 
-type PatientRepository interface {
+type PatientCreateRepo interface {
 	CreateWithUser(req *PatientCreateReq, userID uuid.UUID) (*PatientCreateRes, error)
 	GenerateNextHnID() (string, error)
 }

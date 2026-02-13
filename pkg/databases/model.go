@@ -13,8 +13,8 @@ import (
 
 type BaseModel struct {
 	ID        uuid.UUID      `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
+	CreatedAt time.Time      `gorm:"autoCreateTime:false" json:"created_at"`
+	UpdatedAt time.Time      `gorm:"autoUpdateTime:false" json:"updated_at"`
 	CreatedBy *uuid.UUID     `gorm:"type:uuid" json:"created_by,omitempty"`
 	UpdatedBy *uuid.UUID     `gorm:"type:uuid" json:"updated_by,omitempty"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
@@ -52,6 +52,7 @@ type Patient struct {
 	Title           string    `gorm:"size:50;not null" json:"title"`
 	FirstName       string    `gorm:"size:255;not null" json:"first_name"`
 	LastName        string    `gorm:"size:255;not null" json:"last_name"`
+	Sex 		    string    `gorm:"size:10;not null" json:"sex"`
 	DOB             time.Time `json:"dob"`
 	HnID            string    `gorm:"uniqueIndex;size:7;not null" json:"hn_id"`
 	IDCard          string    `gorm:"size:13;uniqueIndex;not null" json:"id_card"`
@@ -140,15 +141,16 @@ type Disease struct {
 
 type PatientDisease struct {
 	BaseModel
-	PatientID     uuid.UUID `json:"patient_id"`
-	Patient       Patient   `gorm:"foreignKey:PatientID"`
-	DiseaseID     uuid.UUID `json:"disease_id"`
-	Disease       Disease   `gorm:"foreignKey:DiseaseID"`
-	CreatedBy     uuid.UUID
-	CreatedByUser User `gorm:"foreignKey:CreatedBy;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;references:ID;"`
-	UpdatedBy     uuid.UUID
-	UpdatedByUser User `gorm:"foreignKey:UpdatedBy;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;references:ID;"`
+	PatientID uuid.UUID `json:"patient_id"`
+	Patient   *Patient  `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"patient,omitempty"`
+	DiseaseID uuid.UUID `json:"disease_id"`
+	Disease   *Disease  `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;->" json:"disease,omitempty"`
+	CreatedBy uuid.UUID
+	UpdatedBy uuid.UUID
 }
+
+func (PatientDisease) TableName() string { return "patient_disease" }
+
 
 type Request struct {
 	BaseModel
@@ -236,3 +238,17 @@ var (
 	_ driver.Valuer = (*Address)(nil)
 	_ sql.Scanner   = (*Address)(nil)
 )
+
+func (b *BaseModel) BeforeCreate(tx *gorm.DB) (err error) {
+	loc, _ := time.LoadLocation("Asia/Bangkok")
+	now := time.Now().In(loc)
+	b.CreatedAt = now
+	b.UpdatedAt = now
+	return nil
+}
+
+func (b *BaseModel) BeforeUpdate(tx *gorm.DB) (err error) {
+	loc, _ := time.LoadLocation("Asia/Bangkok")
+	b.UpdatedAt = time.Now().In(loc)
+	return nil
+}

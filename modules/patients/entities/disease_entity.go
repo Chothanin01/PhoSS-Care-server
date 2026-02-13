@@ -20,11 +20,11 @@ type DiseaseWithStatus struct {
 	HasAppointment bool   `json:"has_appointment"`
 }
 
-type DiseaseRepository interface {
+type DiseaseRepo interface {
 	LinkPatientDiseases(patientID uuid.UUID, diseases []PatientDiseaseEntity) error
 }
 
-type DiseaseGetRepository interface {
+type DiseaseGetRepo interface {
 	GetAllDiseases() ([]Disease, error)
 }
 

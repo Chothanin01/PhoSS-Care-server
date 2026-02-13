@@ -50,6 +50,7 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq) (*ent
 			Title:       req.Patient.Title,
 			FirstName:   req.Patient.FirstName,
 			LastName:    req.Patient.LastName,
+			Sex:         req.Patient.Sex,
 			Dob:         req.Patient.DOB,
 			HnID:        nextHnID,
 			IDCard:      req.Patient.IDCard,
@@ -111,7 +112,7 @@ func makeRelative(d entities.RelativeDetail, role string, pid uuid.UUID, creator
 		PhoneNumber: d.PhoneNumber,
 		Role:        role,
 		PatientID:   pid,
-		Address: entities.AddressReq{
+		Address: entities.Address{
 			HouseNumber:   d.Address.HouseNumber,
 			VillageNumber: d.Address.VillageNumber,
 			Alley:         d.Address.Alley,

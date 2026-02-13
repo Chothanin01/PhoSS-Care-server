@@ -244,3 +244,17 @@ func (r *PatientReadRepository) CountPatientsWithFilter(req entities.PatientQuer
 	err := query.Count(&count).Error
 	return count, err
 }
+
+func (r *PatientReadRepository) GetPatientInfoByID(id uuid.UUID) (*databases.Patient, error) {
+	var patient databases.Patient
+	err := r.db.
+		Preload("Diseases.Disease").
+		Preload("Relatives").
+		First(&patient, "id = ?", id).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &patient, nil
+}

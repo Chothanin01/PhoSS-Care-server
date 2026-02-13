@@ -39,14 +39,14 @@ type PatientFullCreateReq struct {
 	} `json:"patient"`
 
 	Relative struct {
-		Kin       RelativeDetail `json:"kin"`
-		Caretaker RelativeDetail `json:"caretaker"`
-		Medicine  RelativeDetail `json:"medicine"`
+		Kin       RelativeCreate `json:"kin"`
+		Caretaker RelativeCreate `json:"caretaker"`
+		Medicine  RelativeCreate `json:"medicine"`
 	} `json:"relative"`
 
 	Officer struct {
-		House RelativeDetail `json:"house"`
-		Nurse RelativeDetail `json:"nurse"`
+		House RelativeCreate `json:"house"`
+		Nurse RelativeCreate `json:"nurse"`
 	} `json:"officer"`
 
 	CreatedBy  uuid.UUID  `json:"created_by"`
@@ -101,21 +101,49 @@ type PatientListRes struct {
 	Page        int            `json:"page"`
 	PerPage     int            `json:"per_page"`
 	TotalPages  int            `json:"total_pages"`
-	Data        []PatientInfo  `json:"data"`
+	Data        []PatientHomeInfo  `json:"data"`
 }
-type PatientInfo struct {
+type PatientHomeInfo struct {
 	ID        uuid.UUID          `json:"id"`
 	FullName  string             `json:"fullname"`
 	IDCard    string             `json:"idcard"`
 	HnNumber  string             `json:"hnnumber"`
 	Diseases  []DiseaseWithStatus `json:"diseases"`
 }
+
 type PatientQueryParams struct {
 	Search   string   `query:"search"`
 	Diseases []string `query:"disease"`
 	Appoint  *bool    `query:"appoint"`
 	Page     int      `query:"page"`
 	Limit    int      `query:"limit"`
+}
+
+type PatientInfoRes struct {
+	Success     bool           		`json:"success"`
+	Message     string         		`json:"message"`
+	Data        []PatientData   `json:"data"`
+}
+
+type PatientData struct {
+	Patient  PatientFullInfo      `json:"patient"`
+	Disease  []Disease        `json:"disease"`
+	Relative Relative     `json:"relative"`
+	Officer  Officer     `json:"officer"`
+}
+
+type PatientFullInfo struct {
+	Fullname    		string             `json:"fullname"`
+	Sex		 			string             `json:"sex"`
+	IDCard      		string             `json:"idcard"`
+	HnNumber    		string             `json:"hnnumber"`
+	Rights	    		string             `json:"rights"`
+	Age 	    		string             `json:"age"`
+	Allergy     		string             `json:"allergy"`
+	PhoneNumber 		string             `json:"phone_number"`
+	Address     		Address            `json:"address"`
+	Weight      		float32            `json:"weight"`
+	Height      		float32            `json:"height"`
 }
 
 type PatientUsecase interface {
@@ -139,10 +167,12 @@ type PatientGetRepo interface {
 	GetPatientsWithFilter(req PatientQueryParams) ([]databases.Patient, error)
 	CountPatients() (int64, error)
 	CountPatientsWithFilter(req PatientQueryParams) (int64, error)
+	GetPatientInfoByID(id uuid.UUID) (*databases.Patient, error)
 }
 
 type PatientGetUsecase interface {
 	GetPatientList(page, limit int) (*PatientListRes, error)
 	GetPatientListWithFilter(req PatientQueryParams) (*PatientListRes, error)
+	GetPatientInfoByID(id uuid.UUID) (*PatientInfoRes, error)
 }
 

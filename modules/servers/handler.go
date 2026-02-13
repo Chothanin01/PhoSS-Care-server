@@ -19,7 +19,6 @@ func (s *Server) MapHandlers() error {
 	patientUsecase := _patientUsecases.NewPatientUsecase(tx, passwordSvc)
 	patientReadRepo := _patientRepositories.NewPatientReadRepository(s.Db)
 	patientGetUsecase := _patientUsecases.NewPatientGetUsecase(patientReadRepo)
-
 	_patientControllers.NewPatientController(patientsGroup, patientUsecase, patientGetUsecase)
 
 	diseaseGroupUsecase := _patientUsecases.NewDiseaseUsecase(tx)

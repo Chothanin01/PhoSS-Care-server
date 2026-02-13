@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/modules/patients/entities"
 	"github.com/gofiber/fiber/v2"
 )
@@ -17,10 +18,11 @@ func NewPatientController(r fiber.Router, createUC entities.PatientUsecase, getU
 	controller := &PatientController{
 		PatientUsecase:    createUC,
 		PatientGetUsecase: getUC,
-	}
+	}	
 
 	r.Post("/", controller.CreatePatient)
 	r.Get("/", controller.GetPatients)
+	r.Get("/:id", controller.GetPatientByID)
 }
 
 func (c *PatientController) CreatePatient(ctx *fiber.Ctx) error {
@@ -90,3 +92,30 @@ func (c *PatientController) GetPatients(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(res)
 }
 
+func (c *PatientController) GetPatientByID(ctx *fiber.Ctx) error {
+	idParam := ctx.Params("id")
+	if idParam == "" {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"message": "Missing patient ID",
+		})
+	}
+
+	patientID, err := uuid.Parse(idParam)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"message": "Invalid patient ID format",
+		})
+	}
+
+	res, err := c.PatientGetUsecase.GetPatientInfoByID(patientID)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"message": err.Error(),
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(res)
+}

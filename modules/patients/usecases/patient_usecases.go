@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/modules/patients/entities"
@@ -106,7 +107,7 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq) (*ent
 }
 
 
-func makeRelative(d entities.RelativeDetail, role string, pid uuid.UUID, creator uuid.UUID) entities.RelativeEntity {
+func makeRelative(d entities.RelativeCreate, role string, pid uuid.UUID, creator uuid.UUID) entities.RelativeEntity {
 	return entities.RelativeEntity{
 		Title:       d.Title,
 		FirstName:   d.FirstName,
@@ -169,11 +170,11 @@ func (u *patientGetUsecase) GetPatientListWithFilter(req entities.PatientQueryPa
 		Page:       req.Page,
 		PerPage:    req.Limit,
 		TotalPages: int((total + int64(req.Limit) - 1) / int64(req.Limit)),
-		Data:       []entities.PatientInfo{},
+		Data:       []entities.PatientHomeInfo{},
 	}
 
 	for _, p := range dbPatients {
-		pInfo := entities.PatientInfo{
+		pInfo := entities.PatientHomeInfo{
 			ID:       p.ID,
 			FullName: p.Title + "" + p.FirstName + " " + p.LastName,
 			IDCard:   p.IDCard,
@@ -209,6 +210,144 @@ func (u *patientGetUsecase) GetPatientListWithFilter(req entities.PatientQueryPa
 	}
 }
 		res.Data = append(res.Data, pInfo)
+	}
+
+	return res, nil
+}
+
+func (u *patientGetUsecase) GetPatientInfoByID(id uuid.UUID) (*entities.PatientInfoRes, error) {
+
+	patient, err := u.readRepo.GetPatientInfoByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("get patient by id: %w", err)
+	}
+
+	addr := entities.Address{
+		HouseNumber:   patient.Address.HouseNumber,
+		VillageNumber: patient.Address.VillageNumber,
+		Alley:         patient.Address.Alley,
+		Road:          patient.Address.Road,
+		SubDistrict:   patient.Address.SubDistrict,
+		District:      patient.Address.District,
+		Province:      patient.Address.Province,
+		ZipCode:       patient.Address.ZipCode,
+	}
+
+	age := ""
+	if !patient.DOB.IsZero() {
+		years := int(time.Since(patient.DOB).Hours() / 24 / 365)
+		age = fmt.Sprintf("%d", years)
+	}
+
+	full := entities.PatientFullInfo{
+		Fullname:    fmt.Sprintf("%s%s %s", patient.Title, patient.FirstName, patient.LastName),
+		Sex:         patient.Sex,
+		IDCard:      patient.IDCard,
+		HnNumber:    patient.HnID,
+		Rights:      patient.Rights,
+		Age:         age,
+		Allergy:     patient.Allergy,
+		PhoneNumber: patient.PhoneNumber,
+		Address:     addr,
+		Weight:      patient.Weight,
+		Height:      patient.Height,
+	}
+
+	var diseases []entities.Disease
+	for _, pd := range patient.Diseases {
+		diseases = append(diseases, entities.Disease{
+			DiseaseID:   pd.DiseaseID,
+			Name: pd.Disease.Name,
+		})
+	}
+
+	var kin, caretaker, medicine entities.RelativeInfo
+	var house, nurse entities.OfficerInfo
+
+	for _, rel := range patient.Relatives {
+	fullName := fmt.Sprintf("%s%s %s", rel.Title, rel.FirstName, rel.LastName)
+
+	switch rel.Role {
+		case "kin":
+			kin = entities.RelativeInfo{
+				Fullname:    fullName,
+				PhoneNumber: rel.PhoneNumber,
+				Role:        rel.Role,
+				Address: entities.Address{
+					HouseNumber:   rel.Address.HouseNumber,
+					VillageNumber: rel.Address.VillageNumber,
+					Alley:         rel.Address.Alley,
+					Road:          rel.Address.Road,
+					SubDistrict:   rel.Address.SubDistrict,
+					District:      rel.Address.District,
+					Province:      rel.Address.Province,
+					ZipCode:       rel.Address.ZipCode,
+				},
+			}
+		case "caretaker":
+			caretaker = entities.RelativeInfo{
+				Fullname:    fullName,
+				PhoneNumber: rel.PhoneNumber,
+				Role:        rel.Role,
+				Address: entities.Address{
+					HouseNumber:   rel.Address.HouseNumber,
+					VillageNumber: rel.Address.VillageNumber,
+					Alley:         rel.Address.Alley,
+					Road:          rel.Address.Road,
+					SubDistrict:   rel.Address.SubDistrict,
+					District:      rel.Address.District,
+					Province:      rel.Address.Province,
+					ZipCode:       rel.Address.ZipCode,
+				},
+			}
+		case "medicine":
+			medicine = entities.RelativeInfo{
+				Fullname:    fullName,
+				PhoneNumber: rel.PhoneNumber,
+				Role:        rel.Role,
+				Address: entities.Address{
+					HouseNumber:   rel.Address.HouseNumber,
+					VillageNumber: rel.Address.VillageNumber,
+					Alley:         rel.Address.Alley,
+					Road:          rel.Address.Road,
+					SubDistrict:   rel.Address.SubDistrict,
+					District:      rel.Address.District,
+					Province:      rel.Address.Province,
+					ZipCode:       rel.Address.ZipCode,
+				},
+			}
+		case "house":
+			house = entities.OfficerInfo{
+				Fullname: fullName,
+				Role:     rel.Role,
+			}
+		case "nurse":
+			nurse = entities.OfficerInfo{
+				Fullname: fullName,
+				Role:     rel.Role,
+			}
+		}
+	}
+
+
+	res := &entities.PatientInfoRes{
+		Success: true,
+		Message: "Get patient info successfully.",
+		Data: []entities.PatientData{
+			{
+				Patient:  full,
+				Disease:  diseases,
+				Relative: entities.Relative{
+					Kin:       kin,
+					Caretaker: caretaker,
+					Medicine:  medicine,
+				},
+				Officer: entities.Officer{
+					House: house,
+					Nurse: nurse,
+				},
+			},
+		},
 	}
 
 	return res, nil

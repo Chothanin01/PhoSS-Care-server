@@ -23,6 +23,7 @@ func NewPatientController(r fiber.Router, createUC entities.PatientUsecase, getU
 	r.Post("/", controller.CreatePatient)
 	r.Get("/", controller.GetPatients)
 	r.Get("/:id", controller.GetPatientByID)
+	r.Get("/:id/:disease_id", controller.GetPatientDiseaseInfo)
 }
 
 func (c *PatientController) CreatePatient(ctx *fiber.Ctx) error {
@@ -118,4 +119,39 @@ func (c *PatientController) GetPatientByID(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(res)
+}
+
+func (c *PatientController) GetPatientDiseaseInfo(ctx *fiber.Ctx) error {
+	patientIDParam := ctx.Params("id")
+	diseaseIDParam := ctx.Params("disease_id")
+
+	patientID, err := uuid.Parse(patientIDParam)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"message": "invalid patient ID",
+		})
+	}
+
+	diseaseID, err := uuid.Parse(diseaseIDParam)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"message": "invalid disease ID",
+		})
+	}
+
+	data, err := c.PatientGetUsecase.GetPatientDiseasesInfo(patientID, diseaseID)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"message": err.Error(),
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": true,
+		"message": "Get patient disease info successfully.",
+		"data":    data,
+	})
 }

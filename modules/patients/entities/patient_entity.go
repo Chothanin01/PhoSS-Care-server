@@ -168,11 +168,12 @@ type PatientGetRepo interface {
 	CountPatients() (int64, error)
 	CountPatientsWithFilter(req PatientQueryParams) (int64, error)
 	GetPatientInfoByID(id uuid.UUID) (*databases.Patient, error)
+	GetPatientDiseasesInfoByID(id uuid.UUID, diseaseID uuid.UUID) (*databases.Patient, error)
 }
 
 type PatientGetUsecase interface {
 	GetPatientList(page, limit int) (*PatientListRes, error)
 	GetPatientListWithFilter(req PatientQueryParams) (*PatientListRes, error)
 	GetPatientInfoByID(id uuid.UUID) (*PatientInfoRes, error)
+	GetPatientDiseasesInfo(id uuid.UUID, diseaseID uuid.UUID) (*DiseaseInfoRes, error)
 }
-

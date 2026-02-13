@@ -52,3 +52,22 @@ func (r *DiseaseRepository) LinkPatientDiseases(patientID uuid.UUID, diseases []
 	}
 	return r.db.Create(&records).Error
 }
+
+func (r *PatientReadRepository) GetPatientDiseasesInfoByID(patientID, diseaseID uuid.UUID) (*databases.Patient, error) {
+	var patient databases.Patient
+
+	err := r.db.
+		Preload("Diseases.Disease", "id = ?", diseaseID).
+		Preload("Appointments", func(db *gorm.DB) *gorm.DB {
+			return db.Where("disease_id = ?", diseaseID).Order("no DESC")
+		}).
+		Preload("Healths").
+		First(&patient, "id = ?", patientID).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &patient, nil
+}
+

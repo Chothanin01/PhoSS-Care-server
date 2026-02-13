@@ -63,6 +63,8 @@ type Patient struct {
 	Address         Address   `gorm:"type:jsonb" json:"address"`
 	Allergy         string    `json:"allergy"`
 	ProfilePicture  string    `json:"profile_picture"`
+	Weight          float32   `gorm:"not null" json:"weight"`
+	Height          float32   `gorm:"not null" json:"height"`
 	UserID          uuid.UUID `json:"user_id"`
 	User            User      `gorm:"foreignKey:UserID"`
 	CreatedBy       uuid.UUID

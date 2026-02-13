@@ -31,6 +31,8 @@ type PatientFullCreateReq struct {
 		Nationality  string     `json:"nationality"`
 		Ethnicity    string     `json:"ethnicity"`
 		PhoneNumber  string     `json:"phonenumber"`
+		Weight	     float32    `json:"weight"`
+		Height	     float32    `json:"height"`
 		Address      Address `json:"address"`
 		Allergy      string     `json:"allergy"`
 		Diseases     []Disease  `json:"diseases"`
@@ -61,6 +63,8 @@ type PatientCreateReq struct {
 	Nationality  string     `json:"nationality"`
 	Ethnicity    string     `json:"ethnicity"`
 	PhoneNumber  string     `json:"phone_number"`
+	Weight	     float32    `json:"weight"`
+	Height	     float32    `json:"height"`
 	Address      Address `json:"address"`
 	Allergy      string     `json:"allergy"`
 	Diseases     []PatientDiseaseEntity `json:"diseases"`

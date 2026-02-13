@@ -85,6 +85,8 @@ func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userI
 		Nationality: req.Nationality,
 		Ethnicity:   req.Ethnicity,
 		PhoneNumber: req.PhoneNumber,
+		Weight: 	 req.Weight,
+		Height: 	 req.Height,
 		Address: databases.Address{
 			HouseNumber:   req.Address.HouseNumber,
 			VillageNumber: req.Address.VillageNumber,

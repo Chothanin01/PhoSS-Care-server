@@ -60,6 +60,8 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq) (*ent
 			Address:     req.Patient.Address,
 			Allergy:     req.Patient.Allergy,
 			Rights:      req.Patient.Rights,
+			Weight:      req.Patient.Weight,
+			Height:      req.Patient.Height,
 			UserID:      user.ID,
 			CreatedBy:   req.CreatedBy,
 		}

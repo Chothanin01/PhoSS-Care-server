@@ -138,13 +138,42 @@ type PatientFullInfo struct {
 	IDCard      		string             `json:"idcard"`
 	HnNumber    		string             `json:"hnnumber"`
 	Rights	    		string             `json:"rights"`
-	Age 	    		string             `json:"age"`
+	AgeYears    		int                `json:"age_years"`
+	AgeMonths   		int                `json:"age_months"`
+	AgeDays     		int                `json:"age_days"`
 	Allergy     		string             `json:"allergy"`
 	PhoneNumber 		string             `json:"phone_number"`
 	Address     		Address            `json:"address"`
 	Weight      		float32            `json:"weight"`
 	Height      		float32            `json:"height"`
 }
+
+type AppointInfoRes struct {
+	Success     bool           		`json:"success"`
+	Message     string         		`json:"message"`
+	Data        []AppointData   	`json:"data"`
+}
+
+type AppointData struct {
+	PatientID    uuid.UUID       `json:"patient_id"`
+	Fullname     string          `json:"fullname"`
+	Hnnumber     string          `json:"hnnumber"`
+	Appointment  []AppointmentInfo `json:"appointment_info"`
+}
+
+type AppointmentFullInfo struct {
+	No 	 	int            `json:"no"`
+	Date    string         `json:"date"`
+	Time    string         `json:"time"`
+	Symptom string         `json:"symptom"`
+	Note    string         `json:"note"`
+	Place   string         `json:"place"`
+	Doctor  string         `json:"doctor"`
+	Status  string         `json:"status"`
+	Letter  bool           `json:"letter"`
+	Delay   bool           `json:"delay"`
+}
+
 
 type PatientUsecase interface {
 	CreateFull(req *PatientFullCreateReq) (*PatientCreateRes, error)

@@ -22,7 +22,6 @@ func main() {
 	}
 
 	databases.MigrateAllIfEmpty(db)
-	db.AutoMigrate(&databases.Patient{})
 
 	server := servers.NewServer(appconfig, db)
 	server.Start()

@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/modules/patients/entities"
+	"github.com/chothanin01/PhoSS-Care-server/pkg/utils"
 )
 
 // ---------------------- CREATE ----------------------
@@ -233,10 +234,27 @@ func (u *patientGetUsecase) GetPatientInfoByID(id uuid.UUID) (*entities.PatientI
 		ZipCode:       patient.Address.ZipCode,
 	}
 
-	age := ""
+	var ageYears, ageMonths, ageDays int
+
 	if !patient.DOB.IsZero() {
-		years := int(time.Since(patient.DOB).Hours() / 24 / 365)
-		age = fmt.Sprintf("%d", years)
+		now := time.Now()
+		years := now.Year() - patient.DOB.Year()
+		months := int(now.Month()) - int(patient.DOB.Month())
+		days := now.Day() - patient.DOB.Day()
+
+		if days < 0 {
+			prevMonth := now.AddDate(0, -1, 0)
+			days += utils.DaysInMonth(prevMonth.Year(), prevMonth.Month())
+			months--
+		}
+		if months < 0 {
+			months += 12
+			years--
+		}
+
+		ageYears = years
+		ageMonths = months
+		ageDays = days
 	}
 
 	full := entities.PatientFullInfo{
@@ -245,7 +263,9 @@ func (u *patientGetUsecase) GetPatientInfoByID(id uuid.UUID) (*entities.PatientI
 		IDCard:      patient.IDCard,
 		HnNumber:    patient.HnID,
 		Rights:      patient.Rights,
-		Age:         age,
+		AgeYears:    ageYears,
+		AgeMonths:   ageMonths,
+		AgeDays:     ageDays,
 		Allergy:     patient.Allergy,
 		PhoneNumber: patient.PhoneNumber,
 		Address:     addr,

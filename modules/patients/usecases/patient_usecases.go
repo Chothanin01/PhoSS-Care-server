@@ -372,3 +372,64 @@ func (u *patientGetUsecase) GetPatientInfoByID(id uuid.UUID) (*entities.PatientI
 
 	return res, nil
 }
+
+func (u *patientGetUsecase) GetPatientAppointmentsByID(id uuid.UUID) (*entities.AppointInfoRes, error) {
+	patient, err := u.readRepo.GetPatientAppointmentsByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("get patient appointments: %w", err)
+	}
+
+	fullname := fmt.Sprintf("%s%s %s", patient.Title, patient.FirstName, patient.LastName)
+
+	diseaseMap := make(map[uuid.UUID]*entities.AppointDisease)
+	for _, ap := range patient.Appointments {
+		// only ongoing or delay
+		if ap.Status != "Ongoing" && ap.Status != "Delay" {
+			continue
+		}
+
+		d, ok := diseaseMap[ap.DiseaseID]
+		if !ok {
+			diseaseMap[ap.DiseaseID] = &entities.AppointDisease{
+				DiseaseID:   ap.Disease.ID,
+				DiseaseName: ap.Disease.Name,
+				Appointments: []entities.AppointmentFullInfo{},
+			}
+			d = diseaseMap[ap.DiseaseID]
+		}
+
+		d.Appointments = append(d.Appointments, entities.AppointmentFullInfo{
+			No:      ap.No,
+			Date:    ap.Date.Format("2006-01-02"),
+			Time:    ap.Time,
+			Symptom: ap.Symptom,
+			Note:    ap.Note,
+			Place:   ap.Place,
+			Doctor:  ap.Doctor,
+			Status:  ap.Status,
+			Letter:  ap.Letter,
+			Delay:   ap.Delay,
+		})
+	}
+
+	var diseases []entities.AppointDisease
+	for _, d := range diseaseMap {
+		diseases = append(diseases, *d)
+	}
+
+	res := &entities.AppointInfoRes{
+		Success: true,
+		Message: "Get patient ongoing/delay appointments successfully.",
+		Data: []entities.AppointData{
+			{
+				PatientID: patient.ID,
+				Fullname:  fullname,
+				Hnnumber:  patient.HnID,
+				Diseases:  diseases,
+			},
+		},
+	}
+
+	return res, nil
+}
+

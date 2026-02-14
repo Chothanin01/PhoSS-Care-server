@@ -258,3 +258,22 @@ func (r *PatientReadRepository) GetPatientInfoByID(id uuid.UUID) (*databases.Pat
 
 	return &patient, nil
 }
+
+func (r *PatientReadRepository) GetPatientAppointmentsByID(patientID uuid.UUID) (*databases.Patient, error) {
+	var patient databases.Patient
+
+	err := r.db.
+		Preload("Appointments", func(db *gorm.DB) *gorm.DB {
+			return db.
+				Where("status IN ?", []string{"Ongoing", "Delay"}).
+				Order("no DESC")
+		}).
+		Preload("Appointments.Disease").
+		First(&patient, "id = ?", patientID).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &patient, nil
+}

@@ -158,7 +158,13 @@ type AppointData struct {
 	PatientID    uuid.UUID       `json:"patient_id"`
 	Fullname     string          `json:"fullname"`
 	Hnnumber     string          `json:"hnnumber"`
-	Appointment  []AppointmentInfo `json:"appointment_info"`
+	Diseases  []AppointDisease  `json:"diseases"` 
+}
+
+type AppointDisease struct {
+	DiseaseID   uuid.UUID              `json:"disease_id"`
+	DiseaseName string                 `json:"disease_name"`
+	Appointments []AppointmentFullInfo `json:"appointments"`
 }
 
 type AppointmentFullInfo struct {
@@ -198,6 +204,7 @@ type PatientGetRepo interface {
 	CountPatientsWithFilter(req PatientQueryParams) (int64, error)
 	GetPatientInfoByID(id uuid.UUID) (*databases.Patient, error)
 	GetPatientDiseasesInfoByID(id uuid.UUID, diseaseID uuid.UUID) (*databases.Patient, error)
+	GetPatientAppointmentsByID(id uuid.UUID) (*databases.Patient, error)
 }
 
 type PatientGetUsecase interface {
@@ -205,4 +212,5 @@ type PatientGetUsecase interface {
 	GetPatientListWithFilter(req PatientQueryParams) (*PatientListRes, error)
 	GetPatientInfoByID(id uuid.UUID) (*PatientInfoRes, error)
 	GetPatientDiseasesInfo(id uuid.UUID, diseaseID uuid.UUID) (*DiseaseInfoRes, error)
+	GetPatientAppointmentsByID(id uuid.UUID) (*AppointInfoRes, error)
 }

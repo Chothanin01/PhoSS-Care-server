@@ -2,9 +2,8 @@ package repositories
 
 import (
 	"fmt"
-	"strconv"
+	"strings"
 	"time"
-	"errors"
 
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/modules/patients/entities"
@@ -24,12 +23,24 @@ type PatientRepository struct {
 	db *gorm.DB
 }
 
-type PatientReadRepository struct {
+type PatientGetRepository struct {
 	db *gorm.DB
 }
 
 func NewTransactionGorm(db *gorm.DB) *TransactionGorm {
 	return &TransactionGorm{db: db}
+}
+
+func NewPatientRepository(db *gorm.DB) *PatientRepository {
+	return &PatientRepository{db: db}
+}
+
+func NewPatientGetRepository(db *gorm.DB) *PatientGetRepository {
+	return &PatientGetRepository{db: db}
+}
+
+func NewUserRepository(db *gorm.DB) *UserRepository {
+	return &UserRepository{db: db}
 }
 
 func (t *TransactionGorm) Do(fn func(entities.RepositorySet) error) error {
@@ -39,32 +50,40 @@ func (t *TransactionGorm) Do(fn func(entities.RepositorySet) error) error {
 			PatientRepo:  NewPatientRepository(tx),
 			RelativeRepo: NewRelativeRepository(tx),
 			DiseaseRepo:  NewDiseaseRepository(tx),
-			DiseaseGetRepo: NewDiseaseGetRepository(tx),
 		}
 		return fn(repos)
 	})
 }
 
-func NewPatientRepository(db *gorm.DB) *PatientRepository {
-	return &PatientRepository{db: db}
-}
-
-func NewPatientReadRepository(db *gorm.DB) *PatientReadRepository {
-	return &PatientReadRepository{db: db}
-}
-
-func NewUserRepository(db *gorm.DB) *UserRepository {
-	return &UserRepository{db: db}
-}
-
 func (r *PatientRepository) GenerateNextHnID() (string, error) {
-	var last databases.Patient
-	err := r.db.Order("hn_id DESC").First(&last).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	var lastHn string
+
+	err := r.db.
+		Model(&databases.Patient{}).
+		Select("hn_id").
+		Order("hn_id DESC").
+		Limit(1).
+		Scan(&lastHn).Error
+
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return "", fmt.Errorf("fetch last HN ID: %w", err)
+	}
+
+	if lastHn == "" {
 		return "0000001", nil
 	}
-	lastInt, _ := strconv.Atoi(last.HnID)
-	return fmt.Sprintf("%07d", lastInt+1), nil
+
+	lastHn = strings.TrimSpace(lastHn)
+
+	var num int
+	_, err = fmt.Sscanf(lastHn, "HN%d", &num)
+	if err != nil {
+		return "", fmt.Errorf("invalid HN ID format (%s): %w", lastHn, err)
+	}
+
+	nextHn := fmt.Sprintf("%07d", num+1)
+
+	return nextHn, nil
 }
 
 func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userID uuid.UUID) (*entities.PatientCreateRes, error) {
@@ -72,6 +91,7 @@ func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userI
 	if err != nil {
 		return nil, fmt.Errorf("invalid dob format: %v", err)
 	}
+
 
 	patient := databases.Patient{
 		Title:       req.Title,
@@ -156,19 +176,19 @@ func (r *UserRepository) Create(username, password, role string) (*databases.Use
 	return user, nil
 }
 
-func (r *PatientReadRepository) GetPatients(page, limit int) ([]databases.Patient, error) {
+func (r *PatientGetRepository) GetPatients(page, limit int) ([]databases.Patient, error) {
 	var patients []databases.Patient
 	offset := (page - 1) * limit
 	err := r.db.
 		Preload("Diseases.Disease").
-		Preload("Appointments", "status = ?", "ongoing").
+		Preload("Appointments", "status = ?", "Ongoing").
 		Offset(offset).
 		Limit(limit).
 		Find(&patients).Error
 	return patients, err
 }
 
-func (r *PatientReadRepository) GetPatientsWithFilter(req entities.PatientQueryParams) ([]databases.Patient, error) {
+func (r *PatientGetRepository) GetPatientsWithFilter(req entities.PatientQueryParams) ([]databases.Patient, error) {
 	var patients []databases.Patient
 	if req.Page <= 0 {
 		req.Page = 1
@@ -208,13 +228,13 @@ func (r *PatientReadRepository) GetPatientsWithFilter(req entities.PatientQueryP
 	return patients, err
 }
 
-func (r *PatientReadRepository) CountPatients() (int64, error) {
+func (r *PatientGetRepository) CountPatients() (int64, error) {
 	var count int64
 	err := r.db.Model(&databases.Patient{}).Count(&count).Error
 	return count, err
 }
 
-func (r *PatientReadRepository) CountPatientsWithFilter(req entities.PatientQueryParams) (int64, error) {
+func (r *PatientGetRepository) CountPatientsWithFilter(req entities.PatientQueryParams) (int64, error) {
 	var count int64
 
 	query := r.db.Model(&databases.Patient{})
@@ -245,7 +265,7 @@ func (r *PatientReadRepository) CountPatientsWithFilter(req entities.PatientQuer
 	return count, err
 }
 
-func (r *PatientReadRepository) GetPatientInfoByID(id uuid.UUID) (*databases.Patient, error) {
+func (r *PatientGetRepository) GetPatientInfoByID(id uuid.UUID) (*databases.Patient, error) {
 	var patient databases.Patient
 	err := r.db.
 		Preload("Diseases.Disease").
@@ -259,7 +279,25 @@ func (r *PatientReadRepository) GetPatientInfoByID(id uuid.UUID) (*databases.Pat
 	return &patient, nil
 }
 
-func (r *PatientReadRepository) GetPatientAppointmentsByID(patientID uuid.UUID) (*databases.Patient, error) {
+func (r *PatientGetRepository) GetPatientDiseasesInfoByID(patientID, diseaseID uuid.UUID) (*databases.Patient, error) {
+	var patient databases.Patient
+
+	err := r.db.
+		Preload("Diseases.Disease", "id = ?", diseaseID).
+		Preload("Appointments", func(db *gorm.DB) *gorm.DB {
+			return db.Where("disease_id = ?", diseaseID).Order("no DESC")
+		}).
+		Preload("Healths").
+		First(&patient, "id = ?", patientID).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &patient, nil
+}
+
+func (r *PatientGetRepository) GetPatientAppointmentsByID(patientID uuid.UUID) (*databases.Patient, error) {
 	var patient databases.Patient
 
 	err := r.db.

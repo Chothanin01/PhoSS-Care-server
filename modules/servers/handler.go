@@ -17,12 +17,14 @@ func (s *Server) MapHandlers() error {
 	passwordSvc := utils.NewPasswordService()
 	tx := _patientRepositories.NewTransactionGorm(s.Db)
 	patientUsecase := _patientUsecases.NewPatientUsecase(tx, passwordSvc)
-	patientReadRepo := _patientRepositories.NewPatientReadRepository(s.Db)
-	patientGetUsecase := _patientUsecases.NewPatientGetUsecase(patientReadRepo)
+	patientGetRepo := _patientRepositories.NewPatientGetRepository(s.Db)
+	patientGetUsecase := _patientUsecases.NewPatientGetUsecase(patientGetRepo)
 	_patientControllers.NewPatientController(patientsGroup, patientUsecase, patientGetUsecase)
 
-	diseaseGroupUsecase := _patientUsecases.NewDiseaseUsecase(tx)
+	diseaseGetRepo := _patientRepositories.NewDiseaseGetRepository(s.Db)
+	diseaseGroupUsecase := _patientUsecases.NewDiseaseUsecase(diseaseGetRepo)
 	_patientControllers.NewDiseaseController(diseaseGroup, diseaseGroupUsecase)
+
 
 	s.App.Use(func(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{

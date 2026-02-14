@@ -419,7 +419,7 @@ func (u *patientGetUsecase) GetPatientAppointmentsByID(id uuid.UUID) (*entities.
 
 	res := &entities.AppointInfoRes{
 		Success: true,
-		Message: "Get patient ongoing/delay appointments successfully.",
+		Message: "Get patient appointments successfully.",
 		Data: []entities.AppointData{
 			{
 				PatientID: patient.ID,
@@ -433,3 +433,4 @@ func (u *patientGetUsecase) GetPatientAppointmentsByID(id uuid.UUID) (*entities.
 	return res, nil
 }
 
+// ---------------------- EDIT ----------------------

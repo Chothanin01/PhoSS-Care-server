@@ -10,7 +10,6 @@ type RepositorySet struct {
 	PatientRepo  PatientCreateRepo
 	RelativeRepo RelativeCreateRepo
 	DiseaseRepo  DiseaseRepo
-	DiseaseGetRepo DiseaseGetRepo
 }
 
 type PatientFullCreateReq struct {

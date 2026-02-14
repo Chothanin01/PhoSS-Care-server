@@ -8,20 +8,20 @@ import (
 	"gorm.io/gorm"
 )
 
-type DiseaseRepository struct {
-	db *gorm.DB
-}
-
-func NewDiseaseRepository(db *gorm.DB) *DiseaseRepository {
-	return &DiseaseRepository{db: db}
-}
-
 type DiseaseGetRepository struct {
 	db *gorm.DB
 }
 
 func NewDiseaseGetRepository(db *gorm.DB) *DiseaseGetRepository {
 	return &DiseaseGetRepository{db: db}
+}
+
+type DiseaseRepository struct {
+	db *gorm.DB
+}
+
+func NewDiseaseRepository(db *gorm.DB) *DiseaseRepository {
+	return &DiseaseRepository{db: db}
 }
 
 func (r *DiseaseGetRepository) GetAllDiseases() ([]entities.Disease, error) {
@@ -53,21 +53,5 @@ func (r *DiseaseRepository) LinkPatientDiseases(patientID uuid.UUID, diseases []
 	return r.db.Create(&records).Error
 }
 
-func (r *PatientReadRepository) GetPatientDiseasesInfoByID(patientID, diseaseID uuid.UUID) (*databases.Patient, error) {
-	var patient databases.Patient
 
-	err := r.db.
-		Preload("Diseases.Disease", "id = ?", diseaseID).
-		Preload("Appointments", func(db *gorm.DB) *gorm.DB {
-			return db.Where("disease_id = ?", diseaseID).Order("no DESC")
-		}).
-		Preload("Healths").
-		First(&patient, "id = ?", patientID).Error
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &patient, nil
-}
 

@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"time"
+	"fmt"
 
 	"github.com/chothanin01/PhoSS-Care-server/configs"
 	"github.com/chothanin01/PhoSS-Care-server/modules/servers"
@@ -20,8 +22,13 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}
+	var now time.Time
+	db.Raw("SELECT now()").Scan(&now)
+	fmt.Println("DB Time:", now)
+
 
 	databases.MigrateAllIfEmpty(db)
+	db.AutoMigrate(&databases.Patient{})
 
 	server := servers.NewServer(appconfig, db)
 	server.Start()

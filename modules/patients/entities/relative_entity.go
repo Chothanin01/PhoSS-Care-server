@@ -15,7 +15,7 @@ type RelativeEntity struct {
 	FirstName   string     `json:"firstname"`
 	LastName    string     `json:"lastname"`
 	PhoneNumber string     `json:"phonenumber"`
-	Address     AddressReq `json:"address"`
+	Address     Address `json:"address"`
 	Role        string     `json:"role"`
 	PatientID   uuid.UUID  `json:"patient_id"`
 	CreatedBy   uuid.UUID  `json:"created_by"`
@@ -27,11 +27,11 @@ type RelativeDetail struct {
 	FirstName   string     `json:"firstname"`
 	LastName    string     `json:"lastname"`
 	PhoneNumber string     `json:"phonenumber"`
-	Address     AddressReq `json:"address"`
+	Address     Address `json:"address"`
 	CreatedBy   uuid.UUID  `json:"created_by"`
 	UpdatedBy   uuid.UUID  `json:"updated_by"`
 }
 
-type RelativeRepository interface {
+type RelativeCreateRepo interface {
 	Create(relatives []RelativeEntity) error
 }

@@ -13,10 +13,9 @@ import (
 )
 
 func SetupDatabaseConnection(cfg *configs.Config) (*gorm.DB, error) {
-
 	dsn, err := utils.ConnectionUrlBuilder("gorm", cfg)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to build database DSN: %w", err)
+		return nil, fmt.Errorf("failed to build database DSN: %w", err)
 	}
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
@@ -25,10 +24,14 @@ func SetupDatabaseConnection(cfg *configs.Config) (*gorm.DB, error) {
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Failed to connect database: %w", err)
+		return nil, fmt.Errorf("failed to connect database: %w", err)
 	}
 
-	fmt.Println("Database connection established successfully")
+	if err := db.Exec("SET TIME ZONE 'Asia/Bangkok';").Error; err != nil {
+		return nil, fmt.Errorf("failed to set timezone: %w", err)
+	}
+
+	fmt.Println("Database connection established successfully (Timezone: Asia/Bangkok)")
 	return db, nil
 }
 

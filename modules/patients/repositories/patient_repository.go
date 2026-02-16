@@ -77,6 +77,7 @@ func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userI
 		Title:       req.Title,
 		FirstName:   req.FirstName,
 		LastName:    req.LastName,
+		Sex: 	     req.Sex,
 		DOB:         dob,
 		HnID:        req.HnID,
 		IDCard:      req.IDCard,
@@ -84,6 +85,8 @@ func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userI
 		Nationality: req.Nationality,
 		Ethnicity:   req.Ethnicity,
 		PhoneNumber: req.PhoneNumber,
+		Weight: 	 req.Weight,
+		Height: 	 req.Height,
 		Address: databases.Address{
 			HouseNumber:   req.Address.HouseNumber,
 			VillageNumber: req.Address.VillageNumber,
@@ -103,6 +106,29 @@ func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userI
 	if err := r.db.Create(&patient).Error; err != nil {
 		return nil, err
 	}
+	fmt.Println("Creating patient at:", time.Now())
+	fmt.Printf("Patient.CreatedAt before insert: %v\n", patient.CreatedAt)
+
+
+	for _, d := range req.Diseases {
+	var disease databases.Disease
+	if err := r.db.First(&disease, "id = ?", d.DiseaseID).Error; err != nil {
+		return nil, fmt.Errorf("disease not found: %v", d.DiseaseID)
+	}
+
+	link := databases.PatientDisease{
+		PatientID: patient.ID,
+		DiseaseID: d.DiseaseID,
+		CreatedBy: req.CreatedBy,
+		UpdatedBy: req.CreatedBy,
+	}
+	if err := r.db.
+		Session(&gorm.Session{FullSaveAssociations: false}).
+		Create(&link).Error; err != nil {
+		return nil, err
+		}
+	}
+
 
 	return &entities.PatientCreateRes{
 		Id:          patient.ID,

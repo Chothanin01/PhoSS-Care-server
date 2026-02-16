@@ -45,7 +45,7 @@ func (r *DiseaseRepository) LinkPatientDiseases(patientID uuid.UUID, diseases []
 		records = append(records, databases.PatientDisease{
 			PatientID: patientID,
 			DiseaseID: d.DiseaseID,
-			Disease: databases.Disease{
+			Disease: &databases.Disease{
 				Name: d.Name,
 			},
 		})

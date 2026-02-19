@@ -12,8 +12,8 @@ type DiseaseGetRepository struct {
 	db *gorm.DB
 }
 
-func NewDiseaseGetRepository(db *gorm.DB) *DiseaseGetRepository {
-	return &DiseaseGetRepository{db: db}
+func NewDiseaseGetRepository(db *gorm.DB) *DiseaseRepository {
+	return &DiseaseRepository{db: db}
 }
 
 type DiseaseRepository struct {
@@ -24,7 +24,7 @@ func NewDiseaseRepository(db *gorm.DB) *DiseaseRepository {
 	return &DiseaseRepository{db: db}
 }
 
-func (r *DiseaseGetRepository) GetAllDiseases() ([]entities.Disease, error) {
+func (r *DiseaseRepository) GetAllDiseases() ([]entities.Disease, error) {
 	var diseases []databases.Disease
 	if err := r.db.Find(&diseases).Error; err != nil {
 		return nil, err

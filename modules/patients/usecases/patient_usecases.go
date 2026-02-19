@@ -35,6 +35,7 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq) (*ent
 		p.Sex == "" || p.Title == "" ||
 		p.DOB == "" || p.IDCard == "" ||
 		p.Nationality == "" || p.Ethnicity == "" ||
+		p.Rights == "" || p.Weight <= 0 || p.Height <= 0 ||
 		p.PhoneNumber == "" ||
 		p.Address.HouseNumber == "" || p.Address.SubDistrict == "" || 
 		p.Address.District == "" || p.Address.Province == "" || 
@@ -456,3 +457,31 @@ func (u *patientGetUsecase) GetPatientAppointmentsByID(id uuid.UUID) (*entities.
 }
 
 // ---------------------- EDIT ----------------------
+func (u *newPatientUsecase) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq) (*entities.PatientUpdateRes, error) {
+
+	if req.FirstName == "" || req.LastName == "" ||
+		req.Sex == "" || req.Title == "" ||
+		req.DOB == "" || req.IDCard == "" ||
+		req.Rights == "" || req.Nationality == "" || req.Ethnicity == "" ||
+		req.PhoneNumber == "" ||
+		req.Address.HouseNumber == "" || req.Address.SubDistrict == "" ||
+		req.Address.District == "" || req.Address.Province == "" || req.Address.ZipCode == "" {
+		return nil, fmt.Errorf("missing required patient information")
+	}
+
+	var res *entities.PatientUpdateRes
+
+	err := u.tx.Do(func(r entities.RepositorySet) error {
+		updated, err := r.PateintUpdateRepo.UpdatePatientInfo(id, req)
+		if err != nil {
+			return fmt.Errorf("update patient info: %w", err)
+		}
+		res = updated
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}

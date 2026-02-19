@@ -9,6 +9,7 @@ import (
 	"github.com/chothanin01/PhoSS-Care-server/modules/patients/entities"
 	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type TransactionGorm struct {
@@ -63,6 +64,7 @@ func (r *PatientRepository) GenerateNextHnID() (string, error) {
 		Select("hn_id").
 		Order("hn_id DESC").
 		Limit(1).
+		Clauses(clause.Locking{Strength: "UPDATE"}).
 		Scan(&lastHn).Error
 
 	if err != nil && err != gorm.ErrRecordNotFound {
@@ -76,13 +78,12 @@ func (r *PatientRepository) GenerateNextHnID() (string, error) {
 	lastHn = strings.TrimSpace(lastHn)
 
 	var num int
-	_, err = fmt.Sscanf(lastHn, "HN%d", &num)
+	_, err = fmt.Sscanf(lastHn, "%d", &num)
 	if err != nil {
 		return "", fmt.Errorf("invalid HN ID format (%s): %w", lastHn, err)
 	}
 
 	nextHn := fmt.Sprintf("%07d", num+1)
-
 	return nextHn, nil
 }
 

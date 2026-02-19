@@ -29,9 +29,31 @@ func NewPatientUsecase(tx entities.Transaction, passwordSvc PasswordService) *ne
 
 func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq) (*entities.PatientCreateRes, error) {
 	var res *entities.PatientCreateRes
-	fmt.Print(req.CreatedBy)
+	
+	p := req.Patient
+	if p.FirstName == "" || p.LastName == "" ||
+		p.Sex == "" || p.Title == "" ||
+		p.DOB == "" || p.IDCard == "" ||
+		p.Nationality == "" || p.Ethnicity == "" ||
+		p.PhoneNumber == "" ||
+		p.Address.HouseNumber == "" || p.Address.SubDistrict == "" || 
+		p.Address.District == "" || p.Address.Province == "" || 
+		p.Address.ZipCode == "" || len(p.Diseases) == 0 ||
+		(req.Relative.Kin.FirstName == "" && req.Relative.Kin.LastName == "") {
+		return nil, fmt.Errorf("missing required patient information")
+	}
+
+	r := req.Relative.Kin
+	if r.FirstName == "" || r.LastName == "" ||
+		r.PhoneNumber == "" ||
+		r.Address.HouseNumber == "" || r.Address.SubDistrict == "" ||
+		r.Address.District == "" || r.Address.Province == "" || r.Address.ZipCode == "" {
+		return nil, fmt.Errorf("missing required kin information")
+	}
+
 	err := u.tx.Do(func(r entities.RepositorySet) error {
 		nextHnID, err := r.PatientRepo.GenerateNextHnID()
+
 		if err != nil {
 			return fmt.Errorf("generate HN ID: %w", err)
 		}

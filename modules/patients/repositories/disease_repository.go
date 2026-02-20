@@ -8,20 +8,20 @@ import (
 	"gorm.io/gorm"
 )
 
-type DiseaseRepository struct {
-	db *gorm.DB
-}
-
-func NewDiseaseRepository(db *gorm.DB) *DiseaseRepository {
-	return &DiseaseRepository{db: db}
-}
-
 type DiseaseGetRepository struct {
 	db *gorm.DB
 }
 
 func NewDiseaseGetRepository(db *gorm.DB) *DiseaseGetRepository {
 	return &DiseaseGetRepository{db: db}
+}
+
+type DiseaseRepository struct {
+	db *gorm.DB
+}
+
+func NewDiseaseRepository(db *gorm.DB) *DiseaseRepository {
+	return &DiseaseRepository{db: db}
 }
 
 func (r *DiseaseGetRepository) GetAllDiseases() ([]entities.Disease, error) {
@@ -52,3 +52,6 @@ func (r *DiseaseRepository) LinkPatientDiseases(patientID uuid.UUID, diseases []
 	}
 	return r.db.Create(&records).Error
 }
+
+
+

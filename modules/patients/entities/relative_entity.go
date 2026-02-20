@@ -22,7 +22,7 @@ type RelativeEntity struct {
 	UpdatedBy   uuid.UUID  `json:"updated_by"`
 }
 
-type RelativeDetail struct {
+type RelativeCreate struct {
 	Title       string     `json:"title"`
 	FirstName   string     `json:"firstname"`
 	LastName    string     `json:"lastname"`
@@ -30,6 +30,29 @@ type RelativeDetail struct {
 	Address     Address `json:"address"`
 	CreatedBy   uuid.UUID  `json:"created_by"`
 	UpdatedBy   uuid.UUID  `json:"updated_by"`
+}
+
+type RelativeInfo struct {
+	Fullname    string `json:"fullname"`
+	PhoneNumber string `json:"phonenumber"`
+	Role        string `json:"role"`
+	Address     Address `json:"address"`
+}
+
+type Relative struct {
+	Kin       RelativeInfo `json:"kin"`
+	Caretaker RelativeInfo `json:"caretaker"`
+	Medicine  RelativeInfo `json:"medicine"`
+}
+
+type OfficerInfo struct {
+	Fullname    string `json:"fullname"`
+	Role        string `json:"role"`
+}
+
+type Officer struct {
+	House OfficerInfo `json:"house"`
+	Nurse OfficerInfo `json:"nurse"`
 }
 
 type RelativeCreateRepo interface {

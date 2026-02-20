@@ -97,3 +97,50 @@ func (r *RelativeRepository) UpdateRelativeInfo(patientID uuid.UUID, req *entiti
 
 	return results, nil
 }
+
+func (r *RelativeRepository) UpdateOfficerInfo(patientID uuid.UUID, req *entities.OfficerAllUpdateReq) (*entities.OfficerAllUpdateRes, error) {
+	var result entities.OfficerAllUpdateRes
+
+	roles := map[string]entities.OfficerUpdateReq{
+		"house": req.House,
+		"nurse": req.Nurse,
+	}
+
+	for role, data := range roles {
+		if data.FirstName == "" && data.LastName == "" {
+			continue
+		}
+
+		fullname := fmt.Sprintf("%s%s %s", data.Title, data.FirstName, data.LastName)
+
+		updateData := map[string]interface{}{
+			"title":        data.Title,
+			"first_name":   data.FirstName,
+			"last_name":    data.LastName,
+			"updated_by":   req.UpdatedBy,
+		}
+
+		if err := r.db.Model(&databases.Relative{}).
+			Where("patient_id = ? AND role = ?", patientID, role).
+			Updates(updateData).Error; err != nil {
+			return nil, fmt.Errorf("update %s officer: %w", role, err)
+		}
+
+		switch role {
+		case "house":
+			result.House = entities.OfficerUpdateRes{	
+				ID:       uuid.New(),
+				FullName: fullname,
+				Role:     "house",
+			}
+		case "nurse":
+			result.Nurse = entities.OfficerUpdateRes{
+				ID:       uuid.New(),
+				FullName: fullname,
+				Role:     "nurse",
+			}
+		}
+	}
+
+	return &result, nil
+}

@@ -16,6 +16,7 @@ func NewRelativeController(r fiber.Router, relativeUC entities.RelativeUsecase) 
 	}
 
 	r.Patch("/:id/relatives", controller.UpdateAllRelatives)
+	r.Patch("/:id/officer", controller.UpdateOfficers)
 }
 
 func (c *RelativeController) UpdateAllRelatives(ctx *fiber.Ctx) error {
@@ -56,4 +57,26 @@ func (c *RelativeController) UpdateAllRelatives(ctx *fiber.Ctx) error {
 		"message": "Relatives updated successfully",
 		"data":    res,
 	})
+}
+
+func (c *RelativeController) UpdateOfficers(ctx *fiber.Ctx) error {
+	patientID, err := uuid.Parse(ctx.Params("id"))
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"message": "invalid patient ID",
+		})
+	}
+
+	var req entities.OfficerAllUpdateReq
+	if err := ctx.BodyParser(&req); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"success": false, "message": "invalid request body"})
+	}
+
+	res, err := c.RelativeUsecase.UpdateAllOfficers(patientID, &req)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"success": false, "message": err.Error()})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{"success": true, "message": "Officers updated successfully", "data": res})
 }

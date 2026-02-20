@@ -406,7 +406,6 @@ func (u *patientGetUsecase) GetPatientAppointmentsByID(id uuid.UUID) (*entities.
 
 	diseaseMap := make(map[uuid.UUID]*entities.AppointDisease)
 	for _, ap := range patient.Appointments {
-		// only ongoing or delay
 		if ap.Status != "Ongoing" && ap.Status != "Delay" {
 			continue
 		}

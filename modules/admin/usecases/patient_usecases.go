@@ -27,7 +27,7 @@ func NewPatientUsecase(tx entities.Transaction, passwordSvc PasswordService) *ne
 	}
 }
 
-func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq, creatorID uuid.UUID) (*entities.PatientCreateRes, error) {
+func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq, creatorID *uuid.UUID) (*entities.PatientCreateRes, error) {
 	var res *entities.PatientCreateRes
 
 	p := req.Patient
@@ -63,7 +63,7 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq, creat
 			return fmt.Errorf("hash HNID: %w", err)
 		}
 
-		user, err := r.UserRepo.Create(p.IDCard, hashedPass, "patient", &creatorID)
+		user, err := r.UserRepo.Create(p.IDCard, hashedPass, "patient")
 		if err != nil {
 			return fmt.Errorf("create user: %w", err)
 		}
@@ -113,7 +113,7 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq, creat
 			makeRelative(req.Officer.Nurse, "nurse", res.Id, creatorID),
 		}
 
-		if err := r.RelativeRepo.Create(relatives); err != nil {
+		if err := r.RelativeRepo.Create(relatives, *creatorID); err != nil {
 			return fmt.Errorf("create relatives: %w", err)
 		}
 
@@ -128,7 +128,7 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq, creat
 }
 
 
-func makeRelative(d entities.RelativeCreate, role string, pid uuid.UUID, creator uuid.UUID) entities.RelativeEntity {
+func makeRelative(d entities.RelativeCreate, role string, pid uuid.UUID, creator *uuid.UUID) entities.RelativeEntity {
 	return entities.RelativeEntity{
 		Title:       d.Title,
 		FirstName:   d.FirstName,
@@ -468,7 +468,7 @@ func (u *newPatientUsecase) UpdatePatientInfo(id uuid.UUID, req *entities.Patien
 	var res *entities.PatientUpdateRes
 
 	err := u.tx.Do(func(r entities.RepositorySet) error {
-		updated, err := r.PateintUpdateRepo.UpdatePatientInfo(id, req, adminID)
+		updated, err := r.PateintUpdateRepo.UpdatePatientInfo(id, req, &adminID)
 		if err != nil {
 			return fmt.Errorf("update patient info: %w", err)
 		}

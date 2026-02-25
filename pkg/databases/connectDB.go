@@ -2,6 +2,7 @@ package databases
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/chothanin01/PhoSS-Care-server/configs"
 	"github.com/chothanin01/PhoSS-Care-server/pkg/utils"
@@ -31,6 +32,20 @@ func SetupDatabaseConnection(cfg *configs.Config) (*gorm.DB, error) {
 	}
 
 	fmt.Println("Database connection established successfully (Timezone: Asia/Bangkok)")
+	
+	passwordSvc := utils.NewPasswordService()
+	if err := SeedSuperAdmin(db, passwordSvc); err != nil {
+		log.Fatalf("Failed to seed superadmin: %v", err)
+	}
+
+	if err := SeedDiseases(db); err != nil {
+		log.Fatalf("Failed to seed diseases: %v", err)
+	} 
+
+	if err := MigrateAll(db); err != nil {
+		log.Fatalf("Failed to migrate database: %v", err)
+	}
+
 	return db, nil
 }
 
@@ -60,3 +75,4 @@ func MigrateAll(db *gorm.DB) error {
 		return nil
 	})
 }
+

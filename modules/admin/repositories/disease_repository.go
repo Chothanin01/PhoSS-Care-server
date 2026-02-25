@@ -70,7 +70,6 @@ func (r *PatientGetRepository) GetPatientVaccinesByID(patientID uuid.UUID) (*ent
 		var vaccineDetails []entities.VaccineFullInfo
 
 		for _, rec := range v.Records {
-			// Filter by patient ID and appointment status
 			if rec.Appoint.PatientID != patientID || strings.ToLower(rec.Appoint.Status) != "completed" {
 				continue
 			}

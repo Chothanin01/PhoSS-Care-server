@@ -201,7 +201,6 @@ type VaccineFullInfo struct {
 	Age          string    `json:"age"`
 }
 
-
 type PatientUpdateReq struct {
 	Title        string  `json:"title"`
 	FirstName    string  `json:"firstname"`
@@ -230,18 +229,18 @@ type PatientUpdateRes struct {
 }
 
 type PatientUsecase interface {
-	CreateFull(req *PatientFullCreateReq, creatorID uuid.UUID) (*PatientCreateRes, error)
+	CreateFull(req *PatientFullCreateReq, creatorID *uuid.UUID) (*PatientCreateRes, error)
 }
 
 type Transaction interface {
 	Do(fn func(repos RepositorySet) error) error
 }
 type UserRepository interface {
-	Create(username, password, role string, creatorID *uuid.UUID) (*databases.User, error)
+	Create(username, password, role string) (*databases.User, error)
 }
 
 type PatientCreateRepo interface {
-	CreateWithUser(req *PatientCreateReq, userID uuid.UUID, adminID uuid.UUID) (*PatientCreateRes, error)
+	CreateWithUser(req *PatientCreateReq, userID uuid.UUID, adminID *uuid.UUID) (*PatientCreateRes, error)
 	GenerateNextHnID() (string, error)
 }
 
@@ -266,7 +265,7 @@ type PatientGetUsecase interface {
 }
 
 type PatientUpdateRepo interface {
-	UpdatePatientInfo(id uuid.UUID, req *PatientUpdateReq, adminID uuid.UUID) (*PatientUpdateRes, error)
+	UpdatePatientInfo(id uuid.UUID, req *PatientUpdateReq, adminID *uuid.UUID) (*PatientUpdateRes, error)
 }
 
 type PatientUpdateUsecase interface {

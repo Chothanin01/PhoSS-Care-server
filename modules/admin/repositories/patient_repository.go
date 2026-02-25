@@ -90,7 +90,7 @@ func (r *PatientRepository) GenerateNextHnID() (string, error) {
 	return nextHn, nil
 }
 
-func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userID uuid.UUID, creatorID uuid.UUID) (*entities.PatientCreateRes, error) {
+func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userID uuid.UUID, creatorID *uuid.UUID) (*entities.PatientCreateRes, error) {
 	dob, err := time.Parse("2006-01-02", req.Dob)
 	if err != nil {
 		return nil, fmt.Errorf("invalid dob format: %v", err)
@@ -159,6 +159,7 @@ func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userI
 		LastName:    patient.LastName,
 		HnID:        patient.HnID,
 		IDCard:      patient.IDCard,
+		Sex:		 patient.Sex,
 		PhoneNumber: patient.PhoneNumber,
 		Rights:      patient.Rights,
 		Nationality: patient.Nationality,
@@ -167,15 +168,11 @@ func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userI
 }
 
 
-func (r *UserRepository) Create(username, password, role string, creatorID *uuid.UUID) (*databases.User, error) {
+func (r *UserRepository) Create(username, password, role string) (*databases.User, error) {
 	user := &databases.User{
 		Username: username,
 		Password: password,
 		Role:     role,
-		BaseModel: databases.BaseModel{
-			CreatedBy: creatorID,
-			UpdatedBy: creatorID,
-		},
 	}
 	if err := r.db.Create(user).Error; err != nil {
 		return nil, err
@@ -325,9 +322,9 @@ func (r *PatientGetRepository) GetPatientAppointmentsByID(patientID uuid.UUID) (
 	return &patient, nil
 }
 
-// ---------------------- EDIT ----------------------
+// ---------------------- UPDATE ----------------------
 
-func (r *PatientRepository) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq, adminID uuid.UUID) (*entities.PatientUpdateRes, error) {
+func (r *PatientRepository) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq, adminID *uuid.UUID) (*entities.PatientUpdateRes, error) {
 	var patient databases.Patient
 
 	if err := r.db.First(&patient, "id = ?", id).Error; err != nil {
@@ -352,16 +349,6 @@ func (r *PatientRepository) UpdatePatientInfo(id uuid.UUID, req *entities.Patien
 		if exists {
 			return nil, fmt.Errorf("ID card already used by another user")
 		}
-
-		if err := r.db.Model(&databases.User{}).
-			Where("id = ?", patient.UserID).
-			Updates(map[string]interface{}{
-				"username":   req.IDCard,
-				"updated_by": adminID,   
-				"updated_at": time.Now(),    
-			}).Error; err != nil {
-			return nil, fmt.Errorf("update user username: %w", err)
-		}
 	}
 
 	patient.Title = req.Title
@@ -378,6 +365,8 @@ func (r *PatientRepository) UpdatePatientInfo(id uuid.UUID, req *entities.Patien
 	patient.Nationality = req.Nationality
 	patient.Ethnicity = req.Ethnicity
 	patient.PhoneNumber = req.PhoneNumber
+	patient.UpdatedAt = time.Now()
+	patient.UpdatedBy = adminID
 	patient.Address = databases.Address{
 		HouseNumber:   req.Address.HouseNumber,
 		VillageNumber: req.Address.VillageNumber,
@@ -388,8 +377,7 @@ func (r *PatientRepository) UpdatePatientInfo(id uuid.UUID, req *entities.Patien
 		Province:      req.Address.Province,
 		ZipCode:       req.Address.ZipCode,
 	}
-	patient.UpdatedBy = adminID
-
+	
 	if err := r.db.Save(&patient).Error; err != nil {
 		return nil, fmt.Errorf("update patient info: %w", err)
 	}

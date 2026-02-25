@@ -52,7 +52,7 @@ func (c *PatientController) CreatePatient(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid user_id"})
 	}
 
-	res, err := c.PatientUsecase.CreateFull(req, creatorID)
+	res, err := c.PatientUsecase.CreateFull(req, &creatorID)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}

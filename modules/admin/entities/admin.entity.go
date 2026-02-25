@@ -8,7 +8,7 @@ type AdminCreateReq struct {
 	LastName       string `json:"last_name"`
 	Username       string `json:"username"`
 	Password       string `json:"password"`
-	CreatedBy      uuid.UUID `json:"created_by"`
+	CreatedBy      *uuid.UUID `json:"created_by"`
 }
 
 type AdminCreateRes struct {

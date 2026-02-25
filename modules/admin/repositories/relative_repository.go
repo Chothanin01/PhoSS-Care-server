@@ -18,7 +18,7 @@ func NewRelativeRepository(db *gorm.DB) *RelativeRepository {
 	return &RelativeRepository{db: db}
 }
 
-func (r *RelativeRepository) Create(relatives []entities.RelativeEntity) error {
+func (r *RelativeRepository) Create(relatives []entities.RelativeEntity, adminID uuid.UUID) error {
 	var records []databases.Relative
 	for _, rel := range relatives {
 		records = append(records, databases.Relative{
@@ -38,14 +38,14 @@ func (r *RelativeRepository) Create(relatives []entities.RelativeEntity) error {
 				Province:     rel.Address.Province,
 				ZipCode:      rel.Address.ZipCode,
 			},
-			CreatedBy: rel.CreatedBy,
-			UpdatedBy: rel.UpdatedBy,
+			CreatedBy: &adminID,
+			UpdatedBy: &adminID,
 		})
 	}
 	return r.db.Create(&records).Error
 }
 
-func (r *RelativeRepository) UpdateRelativeInfo(patientID uuid.UUID, req *entities.RelativeAllUpdateReq) (*entities.RelativeAllUpdateRes, error) {
+func (r *RelativeRepository) UpdateRelativeInfo(patientID uuid.UUID, req *entities.RelativeAllUpdateReq, adminID uuid.UUID) (*entities.RelativeAllUpdateRes, error) {
 	roles := map[string]entities.RelativeUpdateReq{
 		"kin":       req.Kin,
 		"caretaker": req.Caretaker,
@@ -56,7 +56,7 @@ func (r *RelativeRepository) UpdateRelativeInfo(patientID uuid.UUID, req *entiti
 
 	for role, data := range roles {
 		if data.FirstName == "" && data.LastName == "" {
-			continue // skip empty relative update sections
+			continue
 		}
 
 		var relative databases.Relative
@@ -70,7 +70,7 @@ func (r *RelativeRepository) UpdateRelativeInfo(patientID uuid.UUID, req *entiti
 			"last_name":    data.LastName,
 			"phone_number": data.PhoneNumber,
 			"address":      data.Address,
-			"updated_by":   req.UpdatedBy,
+			"updated_by":   adminID,
 			"updated_at":   time.Now(),
 		}
 
@@ -98,7 +98,7 @@ func (r *RelativeRepository) UpdateRelativeInfo(patientID uuid.UUID, req *entiti
 	return results, nil
 }
 
-func (r *RelativeRepository) UpdateOfficerInfo(patientID uuid.UUID, req *entities.OfficerAllUpdateReq) (*entities.OfficerAllUpdateRes, error) {
+func (r *RelativeRepository) UpdateOfficerInfo(patientID uuid.UUID, req *entities.OfficerAllUpdateReq, adminID uuid.UUID) (*entities.OfficerAllUpdateRes, error) {
 	var result entities.OfficerAllUpdateRes
 
 	roles := map[string]entities.OfficerUpdateReq{
@@ -117,7 +117,7 @@ func (r *RelativeRepository) UpdateOfficerInfo(patientID uuid.UUID, req *entitie
 			"title":        data.Title,
 			"first_name":   data.FirstName,
 			"last_name":    data.LastName,
-			"updated_by":   req.UpdatedBy,
+			"updated_by":   adminID,
 		}
 
 		if err := r.db.Model(&databases.Relative{}).

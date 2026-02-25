@@ -179,6 +179,29 @@ type AppointmentFullInfo struct {
 	Delay   bool           `json:"delay"`
 }
 
+type VaccineInfoRes struct {
+	Success     bool           		`json:"success"`
+	Message     string         		`json:"message"`
+	Data        []VaccineData   	`json:"data"`
+}
+
+type VaccineData struct {
+	VaccineID   uuid.UUID `json:"vaccine_id"`
+	VaccineName		string    `json:"name"`
+	Vaccine     []VaccineFullInfo   `json:"vaccine"`
+}
+
+type VaccineFullInfo struct {
+	RecordID    uuid.UUID `json:"record_id"`
+	Date         string    `json:"date"`
+	Type         string    `json:"type"`
+	Effect       string    `json:"effect"`
+	Note         string    `json:"note"`
+	Status       string    `json:"status"`
+	Age          string    `json:"age"`
+}
+
+
 type PatientUpdateReq struct {
 	Title        string  `json:"title"`
 	FirstName    string  `json:"firstname"`
@@ -230,6 +253,7 @@ type PatientGetRepo interface {
 	GetPatientInfoByID(id uuid.UUID) (*databases.Patient, error)
 	GetPatientDiseasesInfoByID(id uuid.UUID, diseaseID uuid.UUID) (*databases.Patient, error)
 	GetPatientAppointmentsByID(id uuid.UUID) (*databases.Patient, error)
+	GetPatientVaccinesByID(id uuid.UUID) (*VaccineInfoRes, error)
 }
 
 type PatientGetUsecase interface {
@@ -238,6 +262,7 @@ type PatientGetUsecase interface {
 	GetPatientInfoByID(id uuid.UUID) (*PatientInfoRes, error)
 	GetPatientDiseasesInfo(id uuid.UUID, diseaseID uuid.UUID) (*DiseaseInfoRes, error)
 	GetPatientAppointmentsByID(id uuid.UUID) (*AppointInfoRes, error)
+	GetPatientVaccinesByID(patientID uuid.UUID) (*VaccineInfoRes, error)
 }
 
 type PatientUpdateRepo interface {

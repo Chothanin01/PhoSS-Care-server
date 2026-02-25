@@ -174,6 +174,7 @@ type Vaccine struct {
 	BaseModel
 	Name    string              `gorm:"not null" json:"name"`
 	Age     string              `gorm:"not null" json:"age"`
+	Type    string              `gorm:"not null" json:"type"`
 	Effect  string              `gorm:"not null" json:"effect"`
 	Note    string              `json:"note"`
 	Records []VaccinationRecord `json:"records"`
@@ -185,6 +186,7 @@ type VaccinationRecord struct {
 	Vaccine       Vaccine   `gorm:"foreignKey:VaccineID"`
 	AppointID     uuid.UUID `json:"appoint_id"`
 	DoseNumber    int       `json:"dose_number"`
+	Status        string    `gorm:"size:50;not null" json:"status"`
 	Appoint       Appoint   `gorm:"foreignKey:AppointID"`
 	CreatedBy     uuid.UUID
 	CreatedByUser User `gorm:"foreignKey:CreatedBy;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;references:ID;"`

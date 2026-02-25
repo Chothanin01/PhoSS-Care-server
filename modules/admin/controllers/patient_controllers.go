@@ -27,6 +27,7 @@ func NewPatientController(r fiber.Router, createUC entities.PatientUsecase, getU
 	r.Get("/", controller.GetPatients)
 	r.Get("/:id", controller.GetPatientByID)
 	r.Get("/:id/appointments", controller.GetPatientAppointments)
+	r.Get("/:id/vaccines", controller.GetPatientVaccines)
 	r.Get("/:id/:disease_id", controller.GetPatientDiseaseInfo)
 	r.Patch("/:id", controller.UpdatePatient)
 
@@ -248,4 +249,32 @@ func (c *PatientController) UpdatePatient(ctx *fiber.Ctx) error {
 		"message": "Patient updated successfully",
 		"data":    res,
 	})
+}
+
+func (c *PatientController) GetPatientVaccines(ctx *fiber.Ctx) error {
+	idParam := ctx.Params("id")
+	if idParam == "" {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"message": "Missing patient ID",
+		})
+	}
+
+	patientID, err := uuid.Parse(idParam)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"message": "Invalid patient ID format",
+		})
+	}
+
+	res, err := c.PatientGetUsecase.GetPatientVaccinesByID(patientID)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"message": err.Error(),
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(res)
 }

@@ -13,12 +13,14 @@ import (
 type PatientController struct {
 	PatientUsecase    entities.PatientUsecase
 	PatientGetUsecase entities.PatientGetUsecase
+	PatientUpdateUsecase entities.PatientUpdateUsecase
 }
 
-func NewPatientController(r fiber.Router, createUC entities.PatientUsecase, getUC entities.PatientGetUsecase) {
+func NewPatientController(r fiber.Router, createUC entities.PatientUsecase, getUC entities.PatientGetUsecase, updateUC entities.PatientUpdateUsecase) {
 	controller := &PatientController{
 		PatientUsecase:    createUC,
 		PatientGetUsecase: getUC,
+		PatientUpdateUsecase: updateUC,
 	}	
 
 	r.Post("/", controller.CreatePatient)
@@ -26,6 +28,7 @@ func NewPatientController(r fiber.Router, createUC entities.PatientUsecase, getU
 	r.Get("/:id", controller.GetPatientByID)
 	r.Get("/:id/appointments", controller.GetPatientAppointments)
 	r.Get("/:id/:disease_id", controller.GetPatientDiseaseInfo)
+	r.Patch("/:id", controller.UpdatePatient)
 
 }
 
@@ -193,4 +196,45 @@ func (c *PatientController) GetPatientAppointments(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(res)
+}
+
+func (c *PatientController) UpdatePatient(ctx *fiber.Ctx) error {
+	idParam := ctx.Params("id")
+	if idParam == "" {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"message": "Missing patient ID",
+		})
+	}
+
+	patientID, err := uuid.Parse(idParam)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"message": "Invalid patient ID format",
+		})
+	}
+
+	var req entities.PatientUpdateReq
+	if err := ctx.BodyParser(&req); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"message": "Invalid request body",
+		})
+	}
+
+	res, err := c.PatientUpdateUsecase.UpdatePatientInfo(patientID, &req)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"message": err.Error(),
+		})
+	}
+
+	// ✅ Return success response
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": true,
+		"message": "Patient updated successfully",
+		"data":    res,
+	})
 }

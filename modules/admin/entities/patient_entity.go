@@ -10,6 +10,7 @@ type RepositorySet struct {
 	PatientRepo  PatientCreateRepo
 	RelativeRepo RelativeCreateRepo
 	DiseaseRepo  DiseaseRepo
+	PateintUpdateRepo PatientUpdateRepo
 }
 
 type PatientFullCreateReq struct {
@@ -178,6 +179,33 @@ type AppointmentFullInfo struct {
 	Delay   bool           `json:"delay"`
 }
 
+type PatientUpdateReq struct {
+	Title        string  `json:"title"`
+	FirstName    string  `json:"firstname"`
+	LastName     string  `json:"lastname"`
+	Sex          string  `json:"sex"`
+	DOB          string  `json:"dob"`
+	Weight       float32 `json:"weight"`
+	Height       float32 `json:"height"`
+	IDCard       string  `json:"idcard"`
+	Rights       string  `json:"rights"`
+	Nationality  string  `json:"nationality"`
+	Ethnicity    string  `json:"ethnicity"`
+	PhoneNumber  string  `json:"phonenumber"`
+	Address      Address `json:"address"`
+	UpdatedBy    uuid.UUID `json:"updated_by"`
+}
+
+type PatientUpdateRes struct {
+	ID          uuid.UUID `json:"id"`
+	Fullname    string    `json:"fullname"`
+	HnNumber    string    `json:"hnnumber"`
+	IDCard      string    `json:"idcard"`
+	PhoneNumber string    `json:"phonenumber"`
+	Rights      string    `json:"rights"`
+	Nationality string    `json:"nationality"`
+	Ethnicity   string    `json:"ethnicity"`
+}
 
 type PatientUsecase interface {
 	CreateFull(req *PatientFullCreateReq, creatorID uuid.UUID) (*PatientCreateRes, error)
@@ -211,4 +239,12 @@ type PatientGetUsecase interface {
 	GetPatientInfoByID(id uuid.UUID) (*PatientInfoRes, error)
 	GetPatientDiseasesInfo(id uuid.UUID, diseaseID uuid.UUID) (*DiseaseInfoRes, error)
 	GetPatientAppointmentsByID(id uuid.UUID) (*AppointInfoRes, error)
+}
+
+type PatientUpdateRepo interface {
+	UpdatePatientInfo(id uuid.UUID, req *PatientUpdateReq) (*PatientUpdateRes, error)
+}
+
+type PatientUpdateUsecase interface {
+	UpdatePatientInfo(id uuid.UUID, req *PatientUpdateReq) (*PatientUpdateRes, error)
 }

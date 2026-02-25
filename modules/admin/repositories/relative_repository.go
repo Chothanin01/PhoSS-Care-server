@@ -1,7 +1,10 @@
 package repositories
 
 import (
+	"fmt"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
 	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
 	"gorm.io/gorm"
@@ -42,3 +45,102 @@ func (r *RelativeRepository) Create(relatives []entities.RelativeEntity) error {
 	return r.db.Create(&records).Error
 }
 
+func (r *RelativeRepository) UpdateRelativeInfo(patientID uuid.UUID, req *entities.RelativeAllUpdateReq) (*entities.RelativeAllUpdateRes, error) {
+	roles := map[string]entities.RelativeUpdateReq{
+		"kin":       req.Kin,
+		"caretaker": req.Caretaker,
+		"medicine":  req.Medicine,
+	}
+
+	results := &entities.RelativeAllUpdateRes{}
+
+	for role, data := range roles {
+		if data.FirstName == "" && data.LastName == "" {
+			continue // skip empty relative update sections
+		}
+
+		var relative databases.Relative
+		if err := r.db.First(&relative, "patient_id = ? AND role = ?", patientID, role).Error; err != nil {
+			return nil, fmt.Errorf("%s not found: %w", role, err)
+		}
+
+		update := map[string]interface{}{
+			"title":        data.Title,
+			"first_name":   data.FirstName,
+			"last_name":    data.LastName,
+			"phone_number": data.PhoneNumber,
+			"address":      data.Address,
+			"updated_by":   req.UpdatedBy,
+			"updated_at":   time.Now(),
+		}
+
+		if err := r.db.Model(&relative).Updates(update).Error; err != nil {
+			return nil, fmt.Errorf("update %s failed: %w", role, err)
+		}
+
+		res := entities.RelativeUpdateRes{
+			ID:          relative.ID,
+			FullName:    fmt.Sprintf("%s%s %s", data.Title, data.FirstName, data.LastName),
+			PhoneNumber: data.PhoneNumber,
+			Role:        role,
+		}
+
+		switch role {
+		case "kin":
+			results.Kin = res
+		case "caretaker":
+			results.Caretaker = res
+		case "medicine":
+			results.Medicine = res
+		}
+	}
+
+	return results, nil
+}
+
+func (r *RelativeRepository) UpdateOfficerInfo(patientID uuid.UUID, req *entities.OfficerAllUpdateReq) (*entities.OfficerAllUpdateRes, error) {
+	var result entities.OfficerAllUpdateRes
+
+	roles := map[string]entities.OfficerUpdateReq{
+		"house": req.House,
+		"nurse": req.Nurse,
+	}
+
+	for role, data := range roles {
+		if data.FirstName == "" && data.LastName == "" {
+			continue
+		}
+
+		fullname := fmt.Sprintf("%s%s %s", data.Title, data.FirstName, data.LastName)
+
+		updateData := map[string]interface{}{
+			"title":        data.Title,
+			"first_name":   data.FirstName,
+			"last_name":    data.LastName,
+			"updated_by":   req.UpdatedBy,
+		}
+
+		if err := r.db.Model(&databases.Relative{}).
+			Where("patient_id = ? AND role = ?", patientID, role).
+			Updates(updateData).Error; err != nil {
+			return nil, fmt.Errorf("update %s officer: %w", role, err)
+		}
+
+		switch role {
+		case "house":
+			result.House = entities.OfficerUpdateRes{	
+				ID:       uuid.New(),
+				FullName: fullname,
+				Role:     "house",
+			}
+		case "nurse":
+			result.Nurse = entities.OfficerUpdateRes{
+				ID:       uuid.New(),
+				FullName: fullname,
+				Role:     "nurse",
+			}
+		}
+	}
+
+	return &result, nil
+}

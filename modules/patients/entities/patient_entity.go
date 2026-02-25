@@ -10,6 +10,7 @@ type RepositorySet struct {
 	PatientRepo  PatientCreateRepo
 	RelativeRepo RelativeCreateRepo
 	DiseaseRepo  DiseaseRepo
+	PateintUpdateRepo PatientUpdateRepo
 }
 
 type PatientFullCreateReq struct {
@@ -179,6 +180,56 @@ type AppointmentFullInfo struct {
 	Delay   bool           `json:"delay"`
 }
 
+type VaccineInfoRes struct {
+	Success     bool           		`json:"success"`
+	Message     string         		`json:"message"`
+	Data        []VaccineData   	`json:"data"`
+}
+
+type VaccineData struct {
+	VaccineID   uuid.UUID `json:"vaccine_id"`
+	VaccineName		string    `json:"name"`
+	Vaccine     []VaccineFullInfo   `json:"vaccine"`
+}
+
+type VaccineFullInfo struct {
+	RecordID    uuid.UUID `json:"record_id"`
+	Date         string    `json:"date"`
+	Type         string    `json:"type"`
+	Effect       string    `json:"effect"`
+	Note         string    `json:"note"`
+	Status       string    `json:"status"`
+	Age          string    `json:"age"`
+}
+
+
+type PatientUpdateReq struct {
+	Title        string  `json:"title"`
+	FirstName    string  `json:"firstname"`
+	LastName     string  `json:"lastname"`
+	Sex          string  `json:"sex"`
+	DOB          string  `json:"dob"`
+	Weight       float32 `json:"weight"`
+	Height       float32 `json:"height"`
+	IDCard       string  `json:"idcard"`
+	Rights       string  `json:"rights"`
+	Nationality  string  `json:"nationality"`
+	Ethnicity    string  `json:"ethnicity"`
+	PhoneNumber  string  `json:"phonenumber"`
+	Address      Address `json:"address"`
+	UpdatedBy    uuid.UUID `json:"updated_by"`
+}
+
+type PatientUpdateRes struct {
+	ID          uuid.UUID `json:"id"`
+	Fullname    string    `json:"fullname"`
+	HnNumber    string    `json:"hnnumber"`
+	IDCard      string    `json:"idcard"`
+	PhoneNumber string    `json:"phonenumber"`
+	Rights      string    `json:"rights"`
+	Nationality string    `json:"nationality"`
+	Ethnicity   string    `json:"ethnicity"`
+}
 
 type PatientUsecase interface {
 	CreateFull(req *PatientFullCreateReq) (*PatientCreateRes, error)
@@ -204,6 +255,7 @@ type PatientGetRepo interface {
 	GetPatientInfoByID(id uuid.UUID) (*databases.Patient, error)
 	GetPatientDiseasesInfoByID(id uuid.UUID, diseaseID uuid.UUID) (*databases.Patient, error)
 	GetPatientAppointmentsByID(id uuid.UUID) (*databases.Patient, error)
+	GetPatientVaccinesByID(id uuid.UUID) (*VaccineInfoRes, error)
 }
 
 type PatientGetUsecase interface {
@@ -212,4 +264,13 @@ type PatientGetUsecase interface {
 	GetPatientInfoByID(id uuid.UUID) (*PatientInfoRes, error)
 	GetPatientDiseasesInfo(id uuid.UUID, diseaseID uuid.UUID) (*DiseaseInfoRes, error)
 	GetPatientAppointmentsByID(id uuid.UUID) (*AppointInfoRes, error)
+	GetPatientVaccinesByID(patientID uuid.UUID) (*VaccineInfoRes, error)
+}
+
+type PatientUpdateRepo interface {
+	UpdatePatientInfo(id uuid.UUID, req *PatientUpdateReq) (*PatientUpdateRes, error)
+}
+
+type PatientUpdateUsecase interface {
+	UpdatePatientInfo(id uuid.UUID, req *PatientUpdateReq) (*PatientUpdateRes, error)
 }

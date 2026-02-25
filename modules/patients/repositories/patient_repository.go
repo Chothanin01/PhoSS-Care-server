@@ -51,10 +51,13 @@ func (t *TransactionGorm) Do(fn func(entities.RepositorySet) error) error {
 			PatientRepo:  NewPatientRepository(tx),
 			RelativeRepo: NewRelativeRepository(tx),
 			DiseaseRepo:  NewDiseaseRepository(tx),
+			PateintUpdateRepo: NewPatientRepository(tx),
 		}
 		return fn(repos)
 	})
 }
+
+// ---------------------- CREATE ----------------------
 
 func (r *PatientRepository) GenerateNextHnID() (string, error) {
 	var lastHn string
@@ -176,6 +179,8 @@ func (r *UserRepository) Create(username, password, role string) (*databases.Use
 	}
 	return user, nil
 }
+
+// ---------------------- GET ----------------------
 
 func (r *PatientGetRepository) GetPatients(page, limit int) ([]databases.Patient, error) {
 	var patients []databases.Patient
@@ -315,4 +320,87 @@ func (r *PatientGetRepository) GetPatientAppointmentsByID(patientID uuid.UUID) (
 	}
 
 	return &patient, nil
+}
+
+// ---------------------- EDIT ----------------------
+
+func (r *PatientRepository) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq) (*entities.PatientUpdateRes, error) {
+	var patient databases.Patient
+
+	if err := r.db.First(&patient, "id = ?", id).Error; err != nil {
+		return nil, fmt.Errorf("patient not found: %w", err)
+	}
+
+	var dob time.Time
+	if req.DOB != "" {
+		parsedDOB, err := time.Parse("2006-01-02", req.DOB)
+		if err != nil {
+			return nil, fmt.Errorf("invalid dob format: %v", err)
+		}
+		dob = parsedDOB
+	}
+
+	if req.IDCard != "" && req.IDCard != patient.IDCard {
+		var exists bool
+		r.db.Model(&databases.User{}).
+			Where("username = ? AND id <> ?", req.IDCard, patient.UserID).
+			Select("count(*) > 0").
+			Find(&exists)
+		if exists {
+			return nil, fmt.Errorf("ID card already used by another user")
+		}
+
+		if err := r.db.Model(&databases.User{}).
+			Where("id = ?", patient.UserID).
+			Updates(map[string]interface{}{
+				"username":   req.IDCard,
+				"updated_by": req.UpdatedBy,   
+				"updated_at": time.Now(),    
+			}).Error; err != nil {
+			return nil, fmt.Errorf("update user username: %w", err)
+		}
+	}
+
+	patient.Title = req.Title
+	patient.FirstName = req.FirstName
+	patient.LastName = req.LastName
+	patient.Sex = req.Sex
+	if !dob.IsZero() {
+		patient.DOB = dob
+	}
+	patient.Weight = req.Weight
+	patient.Height = req.Height
+	patient.IDCard = req.IDCard
+	patient.Rights = req.Rights
+	patient.Nationality = req.Nationality
+	patient.Ethnicity = req.Ethnicity
+	patient.PhoneNumber = req.PhoneNumber
+	patient.Address = databases.Address{
+		HouseNumber:   req.Address.HouseNumber,
+		VillageNumber: req.Address.VillageNumber,
+		Alley:         req.Address.Alley,
+		Road:          req.Address.Road,
+		SubDistrict:   req.Address.SubDistrict,
+		District:      req.Address.District,
+		Province:      req.Address.Province,
+		ZipCode:       req.Address.ZipCode,
+	}
+	patient.UpdatedBy = req.UpdatedBy
+
+	if err := r.db.Save(&patient).Error; err != nil {
+		return nil, fmt.Errorf("update patient info: %w", err)
+	}
+
+	res := &entities.PatientUpdateRes{
+		ID:          patient.ID,
+		Fullname:    fmt.Sprintf("%s%s %s", patient.Title, patient.FirstName, patient.LastName),
+		HnNumber:    patient.HnID,
+		IDCard:      patient.IDCard,
+		PhoneNumber: patient.PhoneNumber,
+		Rights:      patient.Rights,
+		Nationality: patient.Nationality,
+		Ethnicity:   patient.Ethnicity,
+	}
+
+	return res, nil
 }

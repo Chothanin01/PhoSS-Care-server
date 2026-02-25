@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/modules/patients/entities"
@@ -12,8 +13,8 @@ type DiseaseGetRepository struct {
 	db *gorm.DB
 }
 
-func NewDiseaseGetRepository(db *gorm.DB) *DiseaseGetRepository {
-	return &DiseaseGetRepository{db: db}
+func NewDiseaseGetRepository(db *gorm.DB) *DiseaseRepository {
+	return &DiseaseRepository{db: db}
 }
 
 type DiseaseRepository struct {
@@ -24,7 +25,7 @@ func NewDiseaseRepository(db *gorm.DB) *DiseaseRepository {
 	return &DiseaseRepository{db: db}
 }
 
-func (r *DiseaseGetRepository) GetAllDiseases() ([]entities.Disease, error) {
+func (r *DiseaseRepository) GetAllDiseases() ([]entities.Disease, error) {
 	var diseases []databases.Disease
 	if err := r.db.Find(&diseases).Error; err != nil {
 		return nil, err
@@ -53,5 +54,53 @@ func (r *DiseaseRepository) LinkPatientDiseases(patientID uuid.UUID, diseases []
 	return r.db.Create(&records).Error
 }
 
+func (r *PatientGetRepository) GetPatientVaccinesByID(patientID uuid.UUID) (*entities.VaccineInfoRes, error) {
+	var vaccines []databases.Vaccine
 
+	// Preload vaccination records and appointments
+	if err := r.db.
+		Preload("Records.Appoint").
+		Find(&vaccines).Error; err != nil {
+		return nil, err
+	}
+
+	var data []entities.VaccineData
+
+	for _, v := range vaccines {
+		var vaccineDetails []entities.VaccineFullInfo
+
+		for _, rec := range v.Records {
+			// Filter by patient ID and appointment status
+			if rec.Appoint.PatientID != patientID || strings.ToLower(rec.Appoint.Status) != "completed" {
+				continue
+			}
+
+			vaccineDetails = append(vaccineDetails, entities.VaccineFullInfo{
+				RecordID: rec.ID,
+				Date:     rec.Appoint.Date.Format("2006-01-02"),
+				Type:     v.Type,
+				Effect:   v.Effect,
+				Note:     v.Note,
+				Status:   rec.Status,
+				Age:      v.Age,
+			})
+		}
+
+		if len(vaccineDetails) > 0 {
+			data = append(data, entities.VaccineData{
+				VaccineID:   v.ID,
+				VaccineName: v.Name,
+				Vaccine:     vaccineDetails,
+			})
+		}
+	}
+
+	res := &entities.VaccineInfoRes{
+		Success: true,
+		Message: "Vaccine info retrieved successfully (only completed appointments)",
+		Data:    data,
+	}
+
+	return res, nil
+}
 

@@ -93,3 +93,37 @@ func (u *patientGetUsecase) GetPatientDiseasesInfo(id uuid.UUID, diseaseID uuid.
 
 	return res, nil
 }
+
+func (u *patientGetUsecase) GetPatientVaccinesByID(patientID uuid.UUID) (*entities.VaccineInfoRes, error) {
+	patient, err := u.readRepo.GetPatientInfoByID(patientID)
+	if err != nil {
+		return nil, fmt.Errorf("patient not found: %w", err)
+	}
+
+	if len(patient.Diseases) == 0 {
+		return nil, fmt.Errorf("this patient has no disease records")
+	}
+
+	hasVaccineDisease := false
+	for _, pd := range patient.Diseases {
+		if pd.Disease.Name == "วัคซีน" {
+			hasVaccineDisease = true
+			break
+		}
+	}
+
+	if !hasVaccineDisease {
+		return nil, fmt.Errorf("this patient has no vaccine-related disease")
+	}
+
+	vaccineInfo, err := u.readRepo.GetPatientVaccinesByID(patientID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get vaccine records: %w", err)
+	}
+
+	if vaccineInfo == nil || len(vaccineInfo.Data) == 0 {
+		return nil, fmt.Errorf("no vaccine records found for this patient")
+	}
+
+	return vaccineInfo, nil
+}

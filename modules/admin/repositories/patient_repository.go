@@ -167,11 +167,15 @@ func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userI
 }
 
 
-func (r *UserRepository) Create(username, password, role string) (*databases.User, error) {
+func (r *UserRepository) Create(username, password, role string, creatorID *uuid.UUID) (*databases.User, error) {
 	user := &databases.User{
 		Username: username,
 		Password: password,
 		Role:     role,
+		BaseModel: databases.BaseModel{
+			CreatedBy: creatorID,
+			UpdatedBy: creatorID,
+		},
 	}
 	if err := r.db.Create(user).Error; err != nil {
 		return nil, err
@@ -323,7 +327,7 @@ func (r *PatientGetRepository) GetPatientAppointmentsByID(patientID uuid.UUID) (
 
 // ---------------------- EDIT ----------------------
 
-func (r *PatientRepository) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq) (*entities.PatientUpdateRes, error) {
+func (r *PatientRepository) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq, adminID uuid.UUID) (*entities.PatientUpdateRes, error) {
 	var patient databases.Patient
 
 	if err := r.db.First(&patient, "id = ?", id).Error; err != nil {
@@ -353,7 +357,7 @@ func (r *PatientRepository) UpdatePatientInfo(id uuid.UUID, req *entities.Patien
 			Where("id = ?", patient.UserID).
 			Updates(map[string]interface{}{
 				"username":   req.IDCard,
-				"updated_by": req.UpdatedBy,   
+				"updated_by": adminID,   
 				"updated_at": time.Now(),    
 			}).Error; err != nil {
 			return nil, fmt.Errorf("update user username: %w", err)
@@ -384,7 +388,7 @@ func (r *PatientRepository) UpdatePatientInfo(id uuid.UUID, req *entities.Patien
 		Province:      req.Address.Province,
 		ZipCode:       req.Address.ZipCode,
 	}
-	patient.UpdatedBy = req.UpdatedBy
+	patient.UpdatedBy = adminID
 
 	if err := r.db.Save(&patient).Error; err != nil {
 		return nil, fmt.Errorf("update patient info: %w", err)

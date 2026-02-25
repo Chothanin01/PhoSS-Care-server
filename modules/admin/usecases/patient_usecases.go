@@ -63,7 +63,7 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq, creat
 			return fmt.Errorf("hash HNID: %w", err)
 		}
 
-		user, err := r.UserRepo.Create(p.IDCard, hashedPass, "patient")
+		user, err := r.UserRepo.Create(p.IDCard, hashedPass, "patient", &creatorID)
 		if err != nil {
 			return fmt.Errorf("create user: %w", err)
 		}
@@ -454,7 +454,7 @@ func (u *patientGetUsecase) GetPatientAppointmentsByID(id uuid.UUID) (*entities.
 }
 
 // ---------------------- EDIT ----------------------
-func (u *newPatientUsecase) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq) (*entities.PatientUpdateRes, error) {
+func (u *newPatientUsecase) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq, adminID uuid.UUID) (*entities.PatientUpdateRes, error) {
 
 	if req.FirstName == "" || req.LastName == "" ||
 		req.Sex == "" || req.Title == "" ||
@@ -469,7 +469,7 @@ func (u *newPatientUsecase) UpdatePatientInfo(id uuid.UUID, req *entities.Patien
 	var res *entities.PatientUpdateRes
 
 	err := u.tx.Do(func(r entities.RepositorySet) error {
-		updated, err := r.PateintUpdateRepo.UpdatePatientInfo(id, req)
+		updated, err := r.PateintUpdateRepo.UpdatePatientInfo(id, req, adminID)
 		if err != nil {
 			return fmt.Errorf("update patient info: %w", err)
 		}

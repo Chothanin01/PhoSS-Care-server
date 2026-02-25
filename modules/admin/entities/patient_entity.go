@@ -193,7 +193,6 @@ type PatientUpdateReq struct {
 	Ethnicity    string  `json:"ethnicity"`
 	PhoneNumber  string  `json:"phonenumber"`
 	Address      Address `json:"address"`
-	UpdatedBy    uuid.UUID `json:"updated_by"`
 }
 
 type PatientUpdateRes struct {
@@ -215,7 +214,7 @@ type Transaction interface {
 	Do(fn func(repos RepositorySet) error) error
 }
 type UserRepository interface {
-	Create(username, password, role string) (*databases.User, error)
+	Create(username, password, role string, creatorID *uuid.UUID) (*databases.User, error)
 }
 
 type PatientCreateRepo interface {
@@ -242,9 +241,9 @@ type PatientGetUsecase interface {
 }
 
 type PatientUpdateRepo interface {
-	UpdatePatientInfo(id uuid.UUID, req *PatientUpdateReq) (*PatientUpdateRes, error)
+	UpdatePatientInfo(id uuid.UUID, req *PatientUpdateReq, adminID uuid.UUID) (*PatientUpdateRes, error)
 }
 
 type PatientUpdateUsecase interface {
-	UpdatePatientInfo(id uuid.UUID, req *PatientUpdateReq) (*PatientUpdateRes, error)
+	UpdatePatientInfo(id uuid.UUID, req *PatientUpdateReq, adminID uuid.UUID) (*PatientUpdateRes, error)
 }

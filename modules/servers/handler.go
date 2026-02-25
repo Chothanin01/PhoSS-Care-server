@@ -53,7 +53,7 @@ func (s *Server) MapHandlers() error {
 	patientUC := _adminUsecases.NewPatientUsecase(tx, passSvc)
 	patientGetRepo := _adminRepositories.NewPatientGetRepository(s.Db)
 	patientGetUC := _adminUsecases.NewPatientGetUsecase(patientGetRepo)
-	_adminControllers.NewPatientController(adminGroup.Group("/patients"), patientUC, patientGetUC)
+	_adminControllers.NewPatientController(adminGroup.Group("/patients"), patientUC, patientGetUC, patientUC)
 
 	// ------------------ PATIENT MODULES ------------------
 

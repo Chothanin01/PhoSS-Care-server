@@ -216,6 +216,18 @@ func (c *PatientController) UpdatePatient(ctx *fiber.Ctx) error {
 	}
 
 	var req entities.PatientUpdateReq
+
+	claims := ctx.Locals("user").(jwt.MapClaims)
+	userIDStr, ok := claims["user_id"].(string)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid token"})
+	}
+
+	adminID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid user_id"})
+	}
+
 	if err := ctx.BodyParser(&req); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
@@ -223,7 +235,7 @@ func (c *PatientController) UpdatePatient(ctx *fiber.Ctx) error {
 		})
 	}
 
-	res, err := c.PatientUpdateUsecase.UpdatePatientInfo(patientID, &req)
+	res, err := c.PatientUpdateUsecase.UpdatePatientInfo(patientID, &req, adminID)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
@@ -231,7 +243,6 @@ func (c *PatientController) UpdatePatient(ctx *fiber.Ctx) error {
 		})
 	}
 
-	// ✅ Return success response
 	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
 		"success": true,
 		"message": "Patient updated successfully",

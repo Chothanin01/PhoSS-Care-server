@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/chothanin01/PhoSS-Care-server/modules/patients/entities"
+	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
 	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -87,7 +87,7 @@ func (r *PatientRepository) GenerateNextHnID() (string, error) {
 	return nextHn, nil
 }
 
-func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userID uuid.UUID) (*entities.PatientCreateRes, error) {
+func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userID uuid.UUID, creatorID uuid.UUID) (*entities.PatientCreateRes, error) {
 	dob, err := time.Parse("2006-01-02", req.Dob)
 	if err != nil {
 		return nil, fmt.Errorf("invalid dob format: %v", err)
@@ -120,8 +120,8 @@ func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userI
 		},
 		Allergy:   req.Allergy,
 		UserID:    userID,
-		CreatedBy: req.CreatedBy,
-		UpdatedBy: req.CreatedBy,
+		CreatedBy: creatorID,
+		UpdatedBy: creatorID,
 	}
 
 	if err := r.db.Create(&patient).Error; err != nil {
@@ -140,8 +140,8 @@ func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userI
 	link := databases.PatientDisease{
 		PatientID: patient.ID,
 		DiseaseID: d.DiseaseID,
-		CreatedBy: req.CreatedBy,
-		UpdatedBy: req.CreatedBy,
+		CreatedBy: creatorID,
+		UpdatedBy: creatorID,
 	}
 	if err := r.db.
 		Session(&gorm.Session{FullSaveAssociations: false}).
@@ -149,7 +149,6 @@ func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userI
 		return nil, err
 		}
 	}
-
 
 	return &entities.PatientCreateRes{
 		Id:          patient.ID,

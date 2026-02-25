@@ -68,7 +68,6 @@ type PatientCreateReq struct {
 	Allergy      string     `json:"allergy"`
 	Diseases     []PatientDiseaseEntity `json:"diseases"`
 	UserID       uuid.UUID  `json:"user_id"`
-	CreatedBy    uuid.UUID  `json:"created_by"`
 }
 
 type PatientCreateRes struct {
@@ -181,7 +180,7 @@ type AppointmentFullInfo struct {
 
 
 type PatientUsecase interface {
-	CreateFull(req *PatientFullCreateReq) (*PatientCreateRes, error)
+	CreateFull(req *PatientFullCreateReq, creatorID uuid.UUID) (*PatientCreateRes, error)
 }
 
 type Transaction interface {
@@ -192,7 +191,7 @@ type UserRepository interface {
 }
 
 type PatientCreateRepo interface {
-	CreateWithUser(req *PatientCreateReq, userID uuid.UUID) (*PatientCreateRes, error)
+	CreateWithUser(req *PatientCreateReq, userID uuid.UUID, adminID uuid.UUID) (*PatientCreateRes, error)
 	GenerateNextHnID() (string, error)
 }
 

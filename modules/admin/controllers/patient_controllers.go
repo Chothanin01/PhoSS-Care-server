@@ -4,8 +4,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/chothanin01/PhoSS-Care-server/modules/patients/entities"
+	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -36,18 +37,26 @@ func (c *PatientController) CreatePatient(ctx *fiber.Ctx) error {
 		})
 	}
 
-	res, err := c.PatientUsecase.CreateFull(req)
+	claims := ctx.Locals("user").(jwt.MapClaims)
+	userIDStr, ok := claims["user_id"].(string)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid token"})
+	}
+
+	creatorID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid user_id"})
+	}
+
+	res, err := c.PatientUsecase.CreateFull(req, creatorID)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-		"status":     "success",
-		"message":    "User, Patient, and Relatives created successfully",
-		"data":       res,
-		"statusCode": fiber.StatusOK,
+		"status":  "success",
+		"message": "Patient created successfully",
+		"data":    res,
 	})
 }
 

@@ -11,6 +11,7 @@ type RepositorySet struct {
 	RelativeRepo RelativeCreateRepo
 	DiseaseRepo  DiseaseRepo
 	PateintUpdateRepo PatientUpdateRepo
+	AppointmentRepo AppointmentRepository
 }
 
 type PatientFullCreateReq struct {

@@ -3,6 +3,7 @@ package usecases
 import (
 	"fmt"
 	"time"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
@@ -403,7 +404,7 @@ func (u *patientGetUsecase) GetPatientAppointmentsByID(id uuid.UUID) (*entities.
 
 	diseaseMap := make(map[uuid.UUID]*entities.AppointDisease)
 	for _, ap := range patient.Appointments {
-		if ap.Status != "Ongoing" && ap.Status != "Delay" {
+		if ap.Status != "ongoing" && ap.Status != "delay" {
 			continue
 		}
 
@@ -417,17 +418,26 @@ func (u *patientGetUsecase) GetPatientAppointmentsByID(id uuid.UUID) (*entities.
 			d = diseaseMap[ap.DiseaseID]
 		}
 
+		note := ap.Note
+		officer := ""
+		if strings.Contains(ap.Note, "|OFFICER:") {
+			parts := strings.SplitN(ap.Note, "|OFFICER:", 2)
+			note = parts[0]
+			officer = parts[1]
+		}
+
 		d.Appointments = append(d.Appointments, entities.AppointmentFullInfo{
 			No:      ap.No,
 			Date:    ap.Date.Format("2006-01-02"),
 			Time:    ap.Time,
 			Symptom: ap.Symptom,
-			Note:    ap.Note,
+			Note:    note,
 			Place:   ap.Place,
 			Doctor:  ap.Doctor,
 			Status:  ap.Status,
 			Letter:  ap.Letter,
 			Delay:   ap.Delay,
+			Officer: officer,
 		})
 	}
 

@@ -309,15 +309,40 @@ func (r *PatientGetRepository) GetPatientAppointmentsByID(patientID uuid.UUID) (
 
 	err := r.db.
 		Preload("Appointments", func(db *gorm.DB) *gorm.DB {
-			return db.
-				Where("status IN ?", []string{"Ongoing", "Delay"}).
-				Order("no DESC")
+			return db.Where("status IN ?", []string{"ongoing", "delay"}).Order("no DESC")
 		}).
 		Preload("Appointments.Disease").
 		First(&patient, "id = ?", patientID).Error
-
 	if err != nil {
 		return nil, err
+	}
+
+	adminIDs := []uuid.UUID{}
+	for _, ap := range patient.Appointments {
+		if ap.CreatedBy != nil {
+			adminIDs = append(adminIDs, *ap.CreatedBy)
+		}
+	}
+
+	if len(adminIDs) == 0 {
+		return &patient, nil
+	}
+
+	var admins []databases.Admin
+	if err := r.db.Where("user_id IN ?", adminIDs).Find(&admins).Error; err != nil {
+		return nil, err
+	}
+
+	adminMap := map[uuid.UUID]string{}
+	for _, a := range admins {
+		adminMap[a.UserID] = fmt.Sprintf("%s%s %s", a.Title, a.FirstName, a.LastName)
+	}
+
+	for i := range patient.Appointments {
+		if patient.Appointments[i].CreatedBy != nil {
+			officer := adminMap[*patient.Appointments[i].CreatedBy]
+			patient.Appointments[i].Note = fmt.Sprintf("%s|OFFICER:%s", patient.Appointments[i].Note, officer)
+		}
 	}
 
 	return &patient, nil

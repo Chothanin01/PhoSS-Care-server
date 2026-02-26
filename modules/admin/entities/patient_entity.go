@@ -175,6 +175,7 @@ type AppointmentFullInfo struct {
 	Note    string         `json:"note"`
 	Place   string         `json:"place"`
 	Doctor  string         `json:"doctor"`
+	Officer string         `json:"officer"`
 	Status  string         `json:"status"`
 	Letter  bool           `json:"letter"`
 	Delay   bool           `json:"delay"`

@@ -394,8 +394,8 @@ func (u *patientGetUsecase) GetPatientInfoByID(id uuid.UUID) (*entities.PatientI
 	return res, nil
 }
 
-func (u *patientGetUsecase) GetPatientAppointmentsByID(id uuid.UUID) (*entities.AppointInfoRes, error) {
-	patient, err := u.readRepo.GetPatientAppointmentsByID(id)
+func (u *patientGetUsecase) GetPatientAppointmentsInfoByID(id uuid.UUID) (*entities.AppointInfoRes, error) {
+	patient, err := u.readRepo.GetPatientAppointmentsInfoByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("get patient appointments: %w", err)
 	}

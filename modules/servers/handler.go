@@ -59,6 +59,10 @@ func (s *Server) MapHandlers() error {
 	appointUC := _adminUsecases.NewAppointmentUsecase(appointTx)
 	_adminControllers.NewAppointmentController(adminGroup.Group("/appointments"), appointUC)
 
+	requestRepo := _adminRepositories.NewRequestGetRepository(s.Db)
+	requestUC := _adminUsecases.NewRequestGetUsecase(requestRepo)
+	_adminControllers.NewRequestController(adminGroup.Group("/requests"), requestUC)
+
 	// ------------------ PATIENT MODULES ------------------
 
 	// ------------------ 404 HANDLER ------------------

@@ -253,7 +253,7 @@ type PatientGetRepo interface {
 	CountPatientsWithFilter(req PatientQueryParams) (int64, error)
 	GetPatientInfoByID(id uuid.UUID) (*databases.Patient, error)
 	GetPatientDiseasesInfoByID(id uuid.UUID, diseaseID uuid.UUID) (*databases.Patient, error)
-	GetPatientAppointmentsByID(id uuid.UUID) (*databases.Patient, error)
+	GetPatientAppointmentsInfoByID(id uuid.UUID) (*databases.Patient, error)
 	GetPatientVaccinesByID(id uuid.UUID) (*VaccineInfoRes, error)
 }
 
@@ -262,7 +262,7 @@ type PatientGetUsecase interface {
 	GetPatientListWithFilter(req PatientQueryParams) (*PatientListRes, error)
 	GetPatientInfoByID(id uuid.UUID) (*PatientInfoRes, error)
 	GetPatientDiseasesInfo(id uuid.UUID, diseaseID uuid.UUID) (*DiseaseInfoRes, error)
-	GetPatientAppointmentsByID(id uuid.UUID) (*AppointInfoRes, error)
+	GetPatientAppointmentsInfoByID(id uuid.UUID) (*AppointInfoRes, error)
 	GetPatientVaccinesByID(patientID uuid.UUID) (*VaccineInfoRes, error)
 }
 

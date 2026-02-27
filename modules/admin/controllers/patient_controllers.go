@@ -26,7 +26,7 @@ func NewPatientController(r fiber.Router, createUC entities.PatientUsecase, getU
 	r.Post("/", controller.CreatePatient)
 	r.Get("/", controller.GetPatients)
 	r.Get("/:id", controller.GetPatientByID)
-	r.Get("/:id/appointments", controller.GetPatientAppointments)
+	r.Get("/:id/appointments", controller.GetPatientAppointmentsInfo)
 	r.Get("/:id/vaccines", controller.GetPatientVaccines)
 	r.Get("/:id/:disease_id", controller.GetPatientDiseaseInfo)
 	r.Patch("/:id", controller.UpdatePatient)
@@ -171,7 +171,7 @@ func (c *PatientController) GetPatientDiseaseInfo(ctx *fiber.Ctx) error {
 	})
 }
 
-func (c *PatientController) GetPatientAppointments(ctx *fiber.Ctx) error {
+func (c *PatientController) GetPatientAppointmentsInfo(ctx *fiber.Ctx) error {
 	idParam := ctx.Params("id")
 	if idParam == "" {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -188,7 +188,7 @@ func (c *PatientController) GetPatientAppointments(ctx *fiber.Ctx) error {
 		})
 	}
 
-	res, err := c.PatientGetUsecase.GetPatientAppointmentsByID(patientID)
+	res, err := c.PatientGetUsecase.GetPatientAppointmentsInfoByID(patientID)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,

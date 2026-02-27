@@ -31,7 +31,7 @@ func SetupDatabaseConnection(cfg *configs.Config) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to set timezone: %w", err)
 	}
 
-	fmt.Println("Database connection established successfully (Timezone: Asia/Bangkok)")
+	fmt.Println("Database connection established successfully.")
 	
 	passwordSvc := utils.NewPasswordService()
 	if err := SeedSuperAdmin(db, passwordSvc); err != nil {

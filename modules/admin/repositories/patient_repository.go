@@ -304,7 +304,7 @@ func (r *PatientGetRepository) GetPatientDiseasesInfoByID(patientID, diseaseID u
 	return &patient, nil
 }
 
-func (r *PatientGetRepository) GetPatientAppointmentsByID(patientID uuid.UUID) (*databases.Patient, error) {
+func (r *PatientGetRepository) GetPatientAppointmentsInfoByID(patientID uuid.UUID) (*databases.Patient, error) {
 	var patient databases.Patient
 
 	err := r.db.

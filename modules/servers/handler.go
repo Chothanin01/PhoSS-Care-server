@@ -61,7 +61,9 @@ func (s *Server) MapHandlers() error {
 
 	requestRepo := _adminRepositories.NewRequestGetRepository(s.Db)
 	requestUC := _adminUsecases.NewRequestGetUsecase(requestRepo)
-	_adminControllers.NewRequestController(adminGroup.Group("/requests"), requestUC)
+	requestUpdateRepo := _adminRepositories.NewRequestUpdateRepository(s.Db)
+	requestUpdateUC := _adminUsecases.NewRequestUpdateUsecase(requestUpdateRepo)
+	_adminControllers.NewRequestController(adminGroup.Group("/requests"), requestUC, requestUpdateUC)
 
 	// ------------------ PATIENT MODULES ------------------
 

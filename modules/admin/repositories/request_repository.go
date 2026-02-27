@@ -16,6 +16,14 @@ func NewRequestGetRepository(db *gorm.DB) *RequestGetRepository {
 	return &RequestGetRepository{db: db}
 }
 
+type RequestUpdateRepository struct {
+	db *gorm.DB
+}
+
+func NewRequestUpdateRepository(db *gorm.DB) *RequestUpdateRepository {
+	return &RequestUpdateRepository{db: db}
+}
+
 func (r *RequestGetRepository) GetRequestsWithFilter(params entities.RequestQueryParams) ([]entities.RequestInfo, error) {
 	var results []entities.RequestInfo
 
@@ -118,4 +126,43 @@ func (r *RequestGetRepository) GetRequestInfoByID(id uuid.UUID) (*entities.Reque
 	}
 
 	return res, nil
+}
+
+func (r *RequestUpdateRepository) FindRequestByID(id uuid.UUID) (*entities.RequestInfo, error) {
+	var req databases.Request
+	err := r.db.Preload("Appoint").First(&req, "id = ?", id).Error
+	if err != nil {
+		return nil, err
+	}
+
+	detail := &entities.RequestInfo{
+		ID:          req.ID,
+		RequestType: req.RequestType,
+		Status:      req.Status,
+		Description: req.Description,
+	}
+	if req.AppointID != uuid.Nil {
+		detail.AppointID = req.AppointID
+	}
+	return detail, nil
+}
+
+func (r *RequestUpdateRepository) UpdateRequestStatus(id uuid.UUID, status, description string, adminID uuid.UUID) error {
+	return r.db.Model(&databases.Request{}).
+		Where("id = ?", id).
+		Updates(map[string]interface{}{
+			"status":      status,
+			"description": description,
+			"updated_by":  adminID,
+		}).Error
+}
+
+func (r *RequestUpdateRepository) UpdateAppointForAccepted(appointID uuid.UUID, adminID uuid.UUID) error {
+	return r.db.Model(&databases.Appoint{}).
+		Where("id = ?", appointID).
+		Updates(map[string]interface{}{
+			"delay":      true,
+			"status":     "ongoing",
+			"updated_by": adminID,
+		}).Error
 }

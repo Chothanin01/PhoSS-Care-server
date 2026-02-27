@@ -6,15 +6,16 @@ import (
 )
 
 type RequestInfo struct {
-	ID           uuid.UUID `json:"id"`
-	RequestType  string    `json:"req_type"`
-	PatientName  string    `json:"patient_name"`
-	DiseaseName  string    `json:"disease_name"`
-	HnNumber     string    `json:"hn_number"`
-	Status       string    `json:"status"`
-	Description  string    `json:"description"`
-	Date		 string    `json:"date"`
-	Time		 string    `json:"time"`
+	ID           uuid.UUID  `json:"id"`
+	RequestType  string     `json:"req_type"`
+	PatientName  string     `json:"patient_name"`
+	DiseaseName  string     `json:"disease_name"`
+	HnNumber     string     `json:"hn_number"`
+	Status       string     `json:"status"`
+	Description  string     `json:"description"`
+	Date		 string     `json:"date"`
+	Time		 string     `json:"time"`
+	AppointID	 uuid.UUID  `json:"appoint_id"`
 }
 
 type RequestQueryParams struct {
@@ -48,6 +49,19 @@ type RequestInfoRes struct {
 	AppointTime      string     `json:"appoint_time,omitempty"`
 }
 
+type RequestStatusUpdateReq struct {
+	RequestID   uuid.UUID `json:"request_id"`
+	Status      string    `json:"status"`       
+	Description string    `json:"description"`  
+}
+
+type RequestStatusUpdateRes struct {
+	ID          uuid.UUID `json:"id"`
+	RequestType string    `json:"request_type"`
+	Status      string    `json:"status"`
+}
+
+
 type RequestGetRepo interface {
 	GetRequestInfoByID(id uuid.UUID) (*RequestInfoRes, error)
 	GetRequestsWithFilter(params RequestQueryParams) ([]RequestInfo, error)
@@ -57,4 +71,14 @@ type RequestGetRepo interface {
 type RequestGetUsecase interface {
 	GetRequestsWithFilter(params RequestQueryParams) (*RequestListRes, error)
 	GetRequestInfoByID(id uuid.UUID) (*RequestInfoRes, error)
+}
+
+type RequestUpdateRepo interface {
+	FindRequestByID(id uuid.UUID) (*RequestInfo, error)
+	UpdateRequestStatus(id uuid.UUID, status, description string, adminID uuid.UUID) error
+	UpdateAppointForAccepted(appointID uuid.UUID, adminID uuid.UUID) error
+}
+
+type RequestUpdateUsecase interface {
+	UpdateRequestStatus(req *RequestStatusUpdateReq, adminID uuid.UUID) (*RequestStatusUpdateRes, error)
 }

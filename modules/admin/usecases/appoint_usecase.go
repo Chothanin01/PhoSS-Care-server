@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"fmt"
+    "time"
 
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
@@ -79,6 +80,69 @@ func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateRe
 			Place:  savedAppoint.Place,
 		}
 
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (u *appointmentUsecase) UpdateAppointment(req *entities.AppointmentUpdateReq, adminID uuid.UUID) (*entities.AppointmentUpdateRes, error) {
+	var result *entities.AppointmentUpdateRes
+
+	err := u.tx.Do(func(r entities.RepositorySet) error {
+		appointRepo := r.AppointmentRepo
+
+		appoint, err := appointRepo.FindByID(req.AppointID)
+		if err != nil {
+			return fmt.Errorf("appointment not found: %w", err)
+		}
+
+		if req.DoctorFirstName == "" || req.Place == "" || req.Note == "" || req.Date == "" || req.Time == "" {
+			return fmt.Errorf("missing required fields")
+		}
+
+		dateParsed, err := time.Parse("2006-01-02", req.Date)
+		if err != nil {
+			return fmt.Errorf("invalid date format (expected YYYY-MM-DD)")
+		}
+
+		appoint.Doctor = req.DoctorTitle + req.DoctorFirstName + " " + req.DoctorLastName
+		appoint.Symptom = req.Symptom
+		appoint.Note = req.Note
+		appoint.Place = req.Place
+		appoint.Time = req.Time
+		appoint.Date = dateParsed
+		appoint.UpdatedBy = &adminID
+
+		if err := appointRepo.UpdateAppointment(appoint); err != nil {
+			return err
+		}
+
+		health := &entities.Health{
+			Weight: req.Health.Weight,
+			Height: req.Health.Height,
+			BMI:    req.Health.BMI,
+			Pulse:  req.Health.Pulse,
+			Sugar:  req.Health.Sugar,
+		}
+
+		if err := appointRepo.UpdateHealth(req.AppointID, health, adminID); err != nil {
+			return err
+		}
+
+		result = &entities.AppointmentUpdateRes{
+			ID: appoint.ID,
+			Doctor: appoint.Doctor,
+			Status: appoint.Status,
+			Note: appoint.Note,
+			Place: appoint.Place,
+			Date: appoint.Date.Format("2006-01-02"),
+			Time: appoint.Time,
+		}
 		return nil
 	})
 

@@ -52,12 +52,39 @@ type AppointmentCreateRes struct {
 	Place     string    `json:"place"`
 }
 
+type AppointmentUpdateReq struct {
+	AppointID       uuid.UUID `json:"appoint_id"`
+	DoctorTitle     string    `json:"doctor_title"`
+	DoctorFirstName string    `json:"doctor_firstname"`
+	DoctorLastName  string    `json:"doctor_lastname"`
+	Symptom         string    `json:"symptom"`
+	Note            string    `json:"note"`
+	Place           string    `json:"place"`
+	Date            string    `json:"date"`
+	Time            string    `json:"time"`
+	Health          Health    `json:"health"`
+}
+ 
+type AppointmentUpdateRes struct {
+    ID        uuid.UUID `json:"id"`
+	Doctor    string    `json:"doctor"`
+	Status    string    `json:"status"`
+	Note      string    `json:"note"`
+	Place     string    `json:"place"`
+	Date      string    `json:"date"`
+	Time      string    `json:"time"`
+}
+
 type AppointmentUsecase interface {
 	CreateAppointment(req *AppointmentCreateReq, adminID uuid.UUID) (*AppointmentCreateRes, error)
+    UpdateAppointment(req *AppointmentUpdateReq, adminID uuid.UUID) (*AppointmentUpdateRes, error)
 }
 
 type AppointmentRepository interface {
 	FindOngoing(patientID, diseaseID uuid.UUID) (*databases.Appoint, error)
+    FindByID(appointID uuid.UUID) (*databases.Appoint, error)
+    UpdateAppointment(e *databases.Appoint) error
+    UpdateHealth(appointID uuid.UUID, health *Health, adminID uuid.UUID) error
 	CompleteAppoint(appointID uuid.UUID, adminID uuid.UUID) error
 	CreateAppointment(entity *AppointmentEntity, adminID uuid.UUID) (*databases.Appoint, error)
 	CreateHealthRecord(health *Health, patientID uuid.UUID, appointID uuid.UUID, adminID uuid.UUID) error

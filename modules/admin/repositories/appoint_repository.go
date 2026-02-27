@@ -94,3 +94,42 @@ func (r *AppointmentRepository) CreateHealthRecord(health *entities.Health, pati
     }
 	return r.db.Create(&healthRecord).Error
 }
+
+func (r *AppointmentRepository) FindByID(appointID uuid.UUID) (*databases.Appoint, error) {
+	var appoint databases.Appoint
+	if err := r.db.Preload("Healths").First(&appoint, "id = ?", appointID).Error; err != nil {
+		return nil, err
+	}
+	return &appoint, nil
+}
+
+func (r *AppointmentRepository) UpdateAppointment(e *databases.Appoint) error {
+	return r.db.Model(&databases.Appoint{}).
+		Where("id = ?", e.ID).
+		Updates(map[string]interface{}{
+			"doctor":     e.Doctor,
+			"symptom":    e.Symptom,
+			"note":       e.Note,
+			"place":      e.Place,
+			"date":       e.Date,
+			"time":       e.Time,
+			"updated_by": e.UpdatedBy,
+		}).Error
+}
+
+func (r *AppointmentRepository) UpdateHealth(appointID uuid.UUID, health *entities.Health, adminID uuid.UUID) error {
+	var existing databases.Health
+	err := r.db.Where("appoint_id = ?", appointID).First(&existing).Error
+
+	if err == nil {
+		return r.db.Model(&existing).Updates(map[string]interface{}{
+			"weight":     health.Weight,
+			"height":     health.Height,
+			"bmi":        health.BMI,
+			"pulse":      health.Pulse,
+			"sugar":      health.Sugar,
+			"updated_by": adminID,
+		}).Error
+	}
+	return err
+}

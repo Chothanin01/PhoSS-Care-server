@@ -41,6 +41,16 @@ func (r *AppointmentRepository) CompleteAppoint(appointID, adminID uuid.UUID) er
         }).Error
 }
 
+func (r *AppointmentRepository) DiseaseExists(diseaseID uuid.UUID) (bool, error) {
+    var count int64
+    if err := r.db.Model(&databases.Disease{}).
+        Where("id = ?", diseaseID).
+        Count(&count).Error; err != nil {
+        return false, err
+    }
+    return count > 0, nil
+}
+
 func (r *AppointmentRepository) CreateAppointment(e *entities.AppointmentEntity, adminID uuid.UUID) (*databases.Appoint, error) {
     var lastNo int
     err := r.db.

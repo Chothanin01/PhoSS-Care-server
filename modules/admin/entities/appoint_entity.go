@@ -88,6 +88,7 @@ type AppointmentRepository interface {
 	CompleteAppoint(appointID uuid.UUID, adminID uuid.UUID) error
 	CreateAppointment(entity *AppointmentEntity, adminID uuid.UUID) (*databases.Appoint, error)
 	CreateHealthRecord(health *Health, patientID uuid.UUID, appointID uuid.UUID, adminID uuid.UUID) error
+    DiseaseExists(diseaseID uuid.UUID) (bool, error)
 }
 
 type AppointmentTransaction interface {

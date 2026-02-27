@@ -16,47 +16,58 @@ func NewAppointmentUsecase(tx entities.AppointmentTransaction) entities.Appointm
 	return &appointmentUsecase{tx: tx}
 }
 
+
 func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateReq, adminID uuid.UUID) (*entities.AppointmentCreateRes, error) {
 	var result *entities.AppointmentCreateRes
 
 	err := u.tx.Do(func(r entities.RepositorySet) error {
 		appointRepo := r.AppointmentRepo
 
-        if req.DoctorFirstName == "" || req.DoctorLastName == "" || req.Place == "" ||
-            req.Note == "" || req.Health.Weight == 0 || req.PatientID == uuid.Nil || req.DiseaseID == uuid.Nil || 
-            req.Date == "" || req.Time == "" || req.Health.Height == 0 {
-            return fmt.Errorf("missing required fields for follow-up appointment")
-        }
+		if req.DoctorFirstName == "" || req.DoctorLastName == "" || req.Place == "" ||
+			req.Note == "" || req.Health.Weight == 0 || req.Health.Height == 0 ||
+			req.PatientID == uuid.Nil || req.DiseaseID == uuid.Nil ||
+			req.Date == "" || req.Time == "" {
+			return fmt.Errorf("missing required fields for appointment creation")
+		}
+
+        exists, err := appointRepo.DiseaseExists(req.DiseaseID)
+		if err != nil {
+			return fmt.Errorf("failed to verify disease: %w", err)
+		}
+		if !exists {
+			return fmt.Errorf("invalid disease_id: disease not found")
+		}
+
+		oldAppoint, err := appointRepo.FindOngoing(req.PatientID, req.DiseaseID)
+		if err != nil {
+			return fmt.Errorf("find ongoing appointment: %w", err)
+		}
+
+		if oldAppoint != nil {
+			if err := appointRepo.CompleteAppoint(oldAppoint.ID, adminID); err != nil {
+				return fmt.Errorf("complete ongoing appointment: %w", err)
+			}
+		}
 
 		newAppoint := &entities.AppointmentEntity{
 			Doctor:    req.DoctorTitle + req.DoctorFirstName + " " + req.DoctorLastName,
 			Status:    "ongoing",
 			Note:      req.Note,
 			Place:     req.Place,
-            Time:      req.Time,
-            Date:      req.Date,
+			Time:      req.Time,
+			Date:      req.Date,
 			PatientID: req.PatientID,
 			DiseaseID: req.DiseaseID,
 			CreatedBy: adminID,
 			UpdatedBy: adminID,
 		}
 
-        oldAppoint, err := appointRepo.FindOngoing(req.PatientID, req.DiseaseID)
-        if err != nil {
-            return fmt.Errorf("find ongoing appointment: %w", err)
-        }
-
-        if err := appointRepo.CompleteAppoint(oldAppoint.ID, adminID); err != nil {
-            return fmt.Errorf("complete ongoing appointment: %w", err)
-        }
-
 		savedAppoint, err := appointRepo.CreateAppointment(newAppoint, adminID)
 		if err != nil {
-			return err
+			return fmt.Errorf("create appointment: %w", err)
 		}
 
 		if req.Health.Height > 0 && req.Health.Weight > 0 {
-
 			health := &entities.Health{
 				Weight: req.Health.Weight,
 				Height: req.Health.Height,
@@ -64,29 +75,27 @@ func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateRe
 				Pulse:  req.Health.Pulse,
 				Sugar:  req.Health.Sugar,
 			}
-
 			if err := appointRepo.CreateHealthRecord(health, req.PatientID, savedAppoint.ID, adminID); err != nil {
-				return err
+				return fmt.Errorf("create health record: %w", err)
 			}
 		}
 
 		result = &entities.AppointmentCreateRes{
 			ID:     savedAppoint.ID,
 			Status: savedAppoint.Status,
+            No:     savedAppoint.No,
 			Date:   savedAppoint.Date,
 			Time:   savedAppoint.Time,
 			Doctor: savedAppoint.Doctor,
 			Note:   savedAppoint.Note,
 			Place:  savedAppoint.Place,
 		}
-
 		return nil
 	})
 
 	if err != nil {
 		return nil, err
 	}
-
 	return result, nil
 }
 

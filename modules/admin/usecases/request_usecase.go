@@ -1,6 +1,8 @@
 package usecases
 
 import (
+	
+	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
 )
 
@@ -36,4 +38,8 @@ func (u *requestGetUsecase) GetRequestsWithFilter(params entities.RequestQueryPa
 		TotalPages: int((total + int64(params.Limit) - 1) / int64(params.Limit)),
 		Data:       data,
 	}, nil
+}
+
+func (u *requestGetUsecase) GetRequestInfoByID(id uuid.UUID) (*entities.RequestInfoRes, error) {
+	return u.repo.GetRequestInfoByID(id)
 }

@@ -1,6 +1,8 @@
 package repositories
 
 import (
+
+	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
 	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
 	"gorm.io/gorm"
@@ -71,4 +73,49 @@ func (r *RequestGetRepository) CountRequestsWithFilter(params entities.RequestQu
 
 	err := query.Count(&count).Error
 	return count, err
+}
+
+func (r *RequestGetRepository) GetRequestInfoByID(id uuid.UUID) (*entities.RequestInfoRes, error) {
+	var req databases.Request
+	err := r.db.
+		Preload("Appoint.Patient").
+		Preload("Appoint").
+		Preload("Patient").
+		First(&req, "id = ?", id).Error
+	if err != nil {
+		return nil, err
+	}
+
+	p := req.Patient
+	fullname := p.Title + p.FirstName + " " + p.LastName
+
+	res := &entities.RequestInfoRes{
+		RequestID: req.ID,
+		RequestType: req.RequestType,
+		Status:      req.Status,
+		PatientID: 	 p.ID,
+		FullName: fullname,
+		IDCard:      p.IDCard,
+		HnNumber:    p.HnID,
+	}
+
+	switch req.RequestType {
+	case "appoint":
+		res.Date = req.Date.Format("2006-01-02")
+		res.Time = req.Time
+		res.Doctor = req.Appoint.Doctor
+		res.AppointDate = req.Appoint.Date.Format("2006-01-02")
+		res.AppointTime = req.Appoint.Time
+
+	case "medical":
+		res.CreatedDate = req.CreatedAt.Format("2006-01-02")
+		res.Description = req.Description
+		res.Doctor = req.Appoint.Doctor
+
+	case "document":
+		res.CreatedDate = req.CreatedAt.Format("2006-01-02")
+		res.Description = req.Description
+	}
+
+	return res, nil
 }

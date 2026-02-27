@@ -1,6 +1,9 @@
 package entities
 
-import "github.com/google/uuid"
+import (
+
+	"github.com/google/uuid"
+)
 
 type RequestInfo struct {
 	ID           uuid.UUID `json:"id"`
@@ -28,11 +31,30 @@ type RequestListRes struct {
 	Data       []RequestInfo  `json:"data"`
 }
 
+type RequestInfoRes struct {
+	RequestID        uuid.UUID  `json:"request_id"`
+	RequestType      string     `json:"request_type"`
+	Status           string     `json:"status"`
+	PatientID        uuid.UUID  `json:"patient_id"`
+	FullName         string     `json:"fullname"`
+	Date             string     `json:"date,omitempty"`
+	Time             string     `json:"time,omitempty"`
+	CreatedDate      string     `json:"created_date,omitempty"`
+	Description      string     `json:"description,omitempty"`
+	IDCard           string     `json:"id_card"`
+	HnNumber         string     `json:"hn_number"`
+	Doctor           string     `json:"doctor,omitempty"`
+	AppointDate      string     `json:"appoint_date,omitempty"`
+	AppointTime      string     `json:"appoint_time,omitempty"`
+}
+
 type RequestGetRepo interface {
+	GetRequestInfoByID(id uuid.UUID) (*RequestInfoRes, error)
 	GetRequestsWithFilter(params RequestQueryParams) ([]RequestInfo, error)
 	CountRequestsWithFilter(params RequestQueryParams) (int64, error)
 }
 
 type RequestGetUsecase interface {
 	GetRequestsWithFilter(params RequestQueryParams) (*RequestListRes, error)
+	GetRequestInfoByID(id uuid.UUID) (*RequestInfoRes, error)
 }

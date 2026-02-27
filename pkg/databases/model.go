@@ -121,6 +121,7 @@ type Appoint struct {
 	Place     string    `json:"place"`
 	Doctor    string    `json:"doctor"`
 	Status    string    `json:"status"`
+	Purpose   string    `json:"purpose"`
 	Letter    bool      `json:"letter"`
 	Delay     bool      `json:"delay"`
 	PatientID uuid.UUID `json:"patient_id"`

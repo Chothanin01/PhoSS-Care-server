@@ -24,8 +24,8 @@ func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateRe
 		appointRepo := r.AppointmentRepo
 
 		if req.DoctorFirstName == "" || req.DoctorLastName == "" || req.Place == "" ||
-			req.Note == "" || req.Health.Weight == 0 || req.Health.Height == 0 ||
-			req.PatientID == uuid.Nil || req.DiseaseID == uuid.Nil ||
+			req.Note == "" || req.Health.Weight == 0 || req.Health.Height == 0 || req.Symptom == "" ||
+			req.PatientID == uuid.Nil || req.DiseaseID == uuid.Nil || req.Purpose == "" ||
 			req.Date == "" || req.Time == "" {
 			return fmt.Errorf("missing required fields for appointment creation")
 		}
@@ -52,7 +52,7 @@ func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateRe
 		newAppoint := &entities.AppointmentEntity{
 			Doctor:    req.DoctorTitle + req.DoctorFirstName + " " + req.DoctorLastName,
 			Status:    "ongoing",
-			Note:      req.Note,
+			Purpose:   req.Purpose,
 			Place:     req.Place,
 			Time:      req.Time,
 			Date:      req.Date,
@@ -81,14 +81,14 @@ func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateRe
 		}
 
 		result = &entities.AppointmentCreateRes{
-			ID:     savedAppoint.ID,
-			Status: savedAppoint.Status,
-            No:     savedAppoint.No,
-			Date:   savedAppoint.Date,
-			Time:   savedAppoint.Time,
-			Doctor: savedAppoint.Doctor,
-			Note:   savedAppoint.Note,
-			Place:  savedAppoint.Place,
+			ID:     	savedAppoint.ID,
+			Status: 	savedAppoint.Status,
+            No:     	savedAppoint.No,
+			Date:   	savedAppoint.Date,
+			Time:   	savedAppoint.Time,
+			Doctor: 	savedAppoint.Doctor,
+			Purpose:  	savedAppoint.Purpose,
+			Place:  	savedAppoint.Place,
 		}
 		return nil
 	})
@@ -106,11 +106,16 @@ func (u *appointmentUsecase) UpdateAppointment(req *entities.AppointmentUpdateRe
 		appointRepo := r.AppointmentRepo
 
 		appoint, err := appointRepo.FindByID(req.AppointID)
+
+		if appoint.Status != "ongoing" && appoint.Status != "delay" {
+			return fmt.Errorf("appointment cannot be updated because its status is '%s'", appoint.Status)
+		}
+		
 		if err != nil {
 			return fmt.Errorf("appointment not found: %w", err)
 		}
 
-		if req.DoctorFirstName == "" || req.Place == "" || req.Note == "" || req.Date == "" || req.Time == "" {
+		if req.DoctorFirstName == "" || req.Place == "" || req.Purpose == "" || req.Date == "" || req.Time == "" {
 			return fmt.Errorf("missing required fields")
 		}
 
@@ -121,7 +126,7 @@ func (u *appointmentUsecase) UpdateAppointment(req *entities.AppointmentUpdateRe
 
 		appoint.Doctor = req.DoctorTitle + req.DoctorFirstName + " " + req.DoctorLastName
 		appoint.Symptom = req.Symptom
-		appoint.Note = req.Note
+		appoint.Purpose = req.Purpose
 		appoint.Place = req.Place
 		appoint.Time = req.Time
 		appoint.Date = dateParsed
@@ -147,7 +152,7 @@ func (u *appointmentUsecase) UpdateAppointment(req *entities.AppointmentUpdateRe
 			ID: appoint.ID,
 			Doctor: appoint.Doctor,
 			Status: appoint.Status,
-			Note: appoint.Note,
+			Purpose: appoint.Purpose,
 			Place: appoint.Place,
 			Date: appoint.Date.Format("2006-01-02"),
 			Time: appoint.Time,

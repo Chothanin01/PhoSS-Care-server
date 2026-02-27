@@ -433,6 +433,7 @@ func (u *patientGetUsecase) GetPatientAppointmentsInfoByID(id uuid.UUID) (*entit
 			Symptom: ap.Symptom,
 			Note:    note,
 			Place:   ap.Place,
+			Purpose: ap.Purpose,
 			Doctor:  ap.Doctor,
 			Status:  ap.Status,
 			Letter:  ap.Letter,

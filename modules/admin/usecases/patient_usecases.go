@@ -292,6 +292,8 @@ func (u *patientGetUsecase) GetPatientInfoByID(id uuid.UUID) (*entities.PatientI
 		Address:     addr,
 		Weight:      patient.Weight,
 		Height:      patient.Height,
+		Ethnicity:   patient.Ethnicity,
+		Nationality: patient.Nationality,
 	}
 
 	var diseases []entities.Disease

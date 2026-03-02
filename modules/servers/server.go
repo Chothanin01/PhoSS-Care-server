@@ -7,6 +7,7 @@ import (
 	"github.com/chothanin01/PhoSS-Care-server/pkg/utils"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"gorm.io/gorm"
 )
 
@@ -17,14 +18,26 @@ type Server struct {
 }
 
 func NewServer(cfg *configs.Config, db *gorm.DB) *Server {
-	return &Server{
+	
+		return &Server{
 		App: fiber.New(),
 		Cfg: cfg,
 		Db:  db,
 	}
 }
 
+func (s *Server) SetupMiddleware() {
+	s.App.Use(cors.New(cors.Config{
+		AllowOrigins: "http://localhost:3000",
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+		AllowMethods: "GET, POST, PUT, DELETE, OPTIONS",
+		AllowCredentials: true,
+	}))
+}
+
 func (s *Server) Start() {
+	s.SetupMiddleware()
+
 	if err := s.MapHandlers(); err != nil {
 		log.Fatalf("Failed to map handlers: %v", err)
 	}

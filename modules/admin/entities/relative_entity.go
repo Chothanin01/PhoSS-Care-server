@@ -18,8 +18,8 @@ type RelativeEntity struct {
 	Address     Address `json:"address"`
 	Role        string     `json:"role"`
 	PatientID   uuid.UUID  `json:"patient_id"`
-	CreatedBy   uuid.UUID  `json:"created_by"`
-	UpdatedBy   uuid.UUID  `json:"updated_by"`
+	CreatedBy   *uuid.UUID  `json:"created_by"`
+	UpdatedBy   *uuid.UUID  `json:"updated_by"`
 }
 
 type RelativeCreate struct {
@@ -60,7 +60,6 @@ type RelativeAllUpdateReq struct {
 	Kin       RelativeUpdateReq `json:"kin"`
 	Caretaker RelativeUpdateReq `json:"caretaker"`
 	Medicine  RelativeUpdateReq `json:"medicine"`
-	UpdatedBy uuid.UUID         `json:"updated_by"`
 }
 
 type RelativeUpdateReq struct {
@@ -108,15 +107,15 @@ type OfficerUpdateRes struct {
 }
 
 type RelativeCreateRepo interface {
-	Create(relatives []RelativeEntity) error
+	Create(relatives []RelativeEntity, adminID uuid.UUID) error
 }
 
 type RelativeUpdateRepo interface {
-	UpdateRelativeInfo(patientID uuid.UUID, req *RelativeAllUpdateReq) (*RelativeAllUpdateRes, error)
-	UpdateOfficerInfo(patientID uuid.UUID, req *OfficerAllUpdateReq) (*OfficerAllUpdateRes, error)
+	UpdateRelativeInfo(patientID uuid.UUID, req *RelativeAllUpdateReq, adminID uuid.UUID) (*RelativeAllUpdateRes, error)
+	UpdateOfficerInfo(patientID uuid.UUID, req *OfficerAllUpdateReq, adminID uuid.UUID) (*OfficerAllUpdateRes, error)
 }
 
 type RelativeUsecase interface {
-	UpdateAllRelatives(patientID uuid.UUID, req *RelativeAllUpdateReq) (*RelativeAllUpdateRes, error)
-	UpdateAllOfficers(patientID uuid.UUID, req *OfficerAllUpdateReq) (*OfficerAllUpdateRes, error)
+	UpdateAllRelatives(patientID uuid.UUID, req *RelativeAllUpdateReq, adminID uuid.UUID) (*RelativeAllUpdateRes, error)
+	UpdateAllOfficers(patientID uuid.UUID, req *OfficerAllUpdateReq, adminID uuid.UUID) (*OfficerAllUpdateRes, error)
 }

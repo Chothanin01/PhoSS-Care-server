@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/chothanin01/PhoSS-Care-server/modules/patients/entities"
+	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
 	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -52,6 +52,7 @@ func (t *TransactionGorm) Do(fn func(entities.RepositorySet) error) error {
 			RelativeRepo: NewRelativeRepository(tx),
 			DiseaseRepo:  NewDiseaseRepository(tx),
 			PateintUpdateRepo: NewPatientRepository(tx),
+			AppointmentRepo: NewAppointmentRepository(tx),
 		}
 		return fn(repos)
 	})
@@ -90,7 +91,7 @@ func (r *PatientRepository) GenerateNextHnID() (string, error) {
 	return nextHn, nil
 }
 
-func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userID uuid.UUID) (*entities.PatientCreateRes, error) {
+func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userID uuid.UUID, creatorID *uuid.UUID) (*entities.PatientCreateRes, error) {
 	dob, err := time.Parse("2006-01-02", req.Dob)
 	if err != nil {
 		return nil, fmt.Errorf("invalid dob format: %v", err)
@@ -123,8 +124,8 @@ func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userI
 		},
 		Allergy:   req.Allergy,
 		UserID:    userID,
-		CreatedBy: req.CreatedBy,
-		UpdatedBy: req.CreatedBy,
+		CreatedBy: creatorID,
+		UpdatedBy: creatorID,
 	}
 
 	if err := r.db.Create(&patient).Error; err != nil {
@@ -143,8 +144,8 @@ func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userI
 	link := databases.PatientDisease{
 		PatientID: patient.ID,
 		DiseaseID: d.DiseaseID,
-		CreatedBy: req.CreatedBy,
-		UpdatedBy: req.CreatedBy,
+		CreatedBy: creatorID,
+		UpdatedBy: creatorID,
 	}
 	if err := r.db.
 		Session(&gorm.Session{FullSaveAssociations: false}).
@@ -153,13 +154,13 @@ func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userI
 		}
 	}
 
-
 	return &entities.PatientCreateRes{
 		Id:          patient.ID,
 		FirstName:   patient.FirstName,
 		LastName:    patient.LastName,
 		HnID:        patient.HnID,
 		IDCard:      patient.IDCard,
+		Sex:		 patient.Sex,
 		PhoneNumber: patient.PhoneNumber,
 		Rights:      patient.Rights,
 		Nationality: patient.Nationality,
@@ -303,28 +304,53 @@ func (r *PatientGetRepository) GetPatientDiseasesInfoByID(patientID, diseaseID u
 	return &patient, nil
 }
 
-func (r *PatientGetRepository) GetPatientAppointmentsByID(patientID uuid.UUID) (*databases.Patient, error) {
+func (r *PatientGetRepository) GetPatientAppointmentsInfoByID(patientID uuid.UUID) (*databases.Patient, error) {
 	var patient databases.Patient
 
 	err := r.db.
 		Preload("Appointments", func(db *gorm.DB) *gorm.DB {
-			return db.
-				Where("status IN ?", []string{"Ongoing", "Delay"}).
-				Order("no DESC")
+			return db.Where("status IN ?", []string{"ongoing", "delay"}).Order("no DESC")
 		}).
 		Preload("Appointments.Disease").
 		First(&patient, "id = ?", patientID).Error
-
 	if err != nil {
 		return nil, err
+	}
+
+	adminIDs := []uuid.UUID{}
+	for _, ap := range patient.Appointments {
+		if ap.CreatedBy != nil {
+			adminIDs = append(adminIDs, *ap.CreatedBy)
+		}
+	}
+
+	if len(adminIDs) == 0 {
+		return &patient, nil
+	}
+
+	var admins []databases.Admin
+	if err := r.db.Where("user_id IN ?", adminIDs).Find(&admins).Error; err != nil {
+		return nil, err
+	}
+
+	adminMap := map[uuid.UUID]string{}
+	for _, a := range admins {
+		adminMap[a.UserID] = fmt.Sprintf("%s%s %s", a.Title, a.FirstName, a.LastName)
+	}
+
+	for i := range patient.Appointments {
+		if patient.Appointments[i].CreatedBy != nil {
+			officer := adminMap[*patient.Appointments[i].CreatedBy]
+			patient.Appointments[i].Note = fmt.Sprintf("%s|OFFICER:%s", patient.Appointments[i].Note, officer)
+		}
 	}
 
 	return &patient, nil
 }
 
-// ---------------------- EDIT ----------------------
+// ---------------------- UPDATE ----------------------
 
-func (r *PatientRepository) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq) (*entities.PatientUpdateRes, error) {
+func (r *PatientRepository) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq, adminID *uuid.UUID) (*entities.PatientUpdateRes, error) {
 	var patient databases.Patient
 
 	if err := r.db.First(&patient, "id = ?", id).Error; err != nil {
@@ -349,16 +375,6 @@ func (r *PatientRepository) UpdatePatientInfo(id uuid.UUID, req *entities.Patien
 		if exists {
 			return nil, fmt.Errorf("ID card already used by another user")
 		}
-
-		if err := r.db.Model(&databases.User{}).
-			Where("id = ?", patient.UserID).
-			Updates(map[string]interface{}{
-				"username":   req.IDCard,
-				"updated_by": req.UpdatedBy,   
-				"updated_at": time.Now(),    
-			}).Error; err != nil {
-			return nil, fmt.Errorf("update user username: %w", err)
-		}
 	}
 
 	patient.Title = req.Title
@@ -375,6 +391,8 @@ func (r *PatientRepository) UpdatePatientInfo(id uuid.UUID, req *entities.Patien
 	patient.Nationality = req.Nationality
 	patient.Ethnicity = req.Ethnicity
 	patient.PhoneNumber = req.PhoneNumber
+	patient.UpdatedAt = time.Now()
+	patient.UpdatedBy = adminID
 	patient.Address = databases.Address{
 		HouseNumber:   req.Address.HouseNumber,
 		VillageNumber: req.Address.VillageNumber,
@@ -385,8 +403,7 @@ func (r *PatientRepository) UpdatePatientInfo(id uuid.UUID, req *entities.Patien
 		Province:      req.Address.Province,
 		ZipCode:       req.Address.ZipCode,
 	}
-	patient.UpdatedBy = req.UpdatedBy
-
+	
 	if err := r.db.Save(&patient).Error; err != nil {
 		return nil, fmt.Errorf("update patient info: %w", err)
 	}

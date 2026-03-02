@@ -2,7 +2,7 @@ package controllers
 
 import (
 
-	"github.com/chothanin01/PhoSS-Care-server/modules/patients/entities"
+	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
 	"github.com/gofiber/fiber/v2"
 )
 

@@ -2,8 +2,9 @@ package controllers
 
 import (
 	"github.com/google/uuid"
-	"github.com/chothanin01/PhoSS-Care-server/modules/patients/entities"
+	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type RelativeController struct {
@@ -44,7 +45,18 @@ func (c *RelativeController) UpdateAllRelatives(ctx *fiber.Ctx) error {
 		})
 	}
 
-	res, err := c.RelativeUsecase.UpdateAllRelatives(patientID, &req)
+	claims := ctx.Locals("user").(jwt.MapClaims)
+	userIDStr, ok := claims["user_id"].(string)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid token"})
+	}
+
+	adminID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid user_id"})
+	}
+
+	res, err := c.RelativeUsecase.UpdateAllRelatives(patientID, &req, adminID)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
@@ -73,7 +85,18 @@ func (c *RelativeController) UpdateOfficers(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"success": false, "message": "invalid request body"})
 	}
 
-	res, err := c.RelativeUsecase.UpdateAllOfficers(patientID, &req)
+	claims := ctx.Locals("user").(jwt.MapClaims)
+	userIDStr, ok := claims["user_id"].(string)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid token"})
+	}
+
+	adminID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid user_id"})
+	}
+
+	res, err := c.RelativeUsecase.UpdateAllOfficers(patientID, &req, adminID)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"success": false, "message": err.Error()})
 	}

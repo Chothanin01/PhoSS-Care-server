@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/chothanin01/PhoSS-Care-server/modules/patients/entities"
+	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
 )
 
 type RelativeUpdateUsecase interface {
@@ -19,10 +19,7 @@ func NewRelativeUsecase(repo entities.RelativeUpdateRepo) entities.RelativeUseca
 	return &relativeUpdateUsecase{repo: repo}
 }
 
-func (u *relativeUpdateUsecase) UpdateAllRelatives(patientID uuid.UUID, req *entities.RelativeAllUpdateReq) (*entities.RelativeAllUpdateRes, error) {
-	if req.UpdatedBy == uuid.Nil {
-		return nil, fmt.Errorf("missing updated_by field")
-	}
+func (u *relativeUpdateUsecase) UpdateAllRelatives(patientID uuid.UUID, req *entities.RelativeAllUpdateReq, adminID uuid.UUID) (*entities.RelativeAllUpdateRes, error) {
 
 	if req.Kin.FirstName == "" || req.Kin.LastName == "" ||
 		req.Caretaker.FirstName == "" || req.Caretaker.LastName == "" ||
@@ -46,10 +43,10 @@ func (u *relativeUpdateUsecase) UpdateAllRelatives(patientID uuid.UUID, req *ent
 		}
 	}
 
-	return u.repo.UpdateRelativeInfo(patientID, req)
+	return u.repo.UpdateRelativeInfo(patientID, req, adminID)
 }
 
-func (u *relativeUpdateUsecase) UpdateAllOfficers(patientID uuid.UUID, req *entities.OfficerAllUpdateReq) (*entities.OfficerAllUpdateRes, error) {
+func (u *relativeUpdateUsecase) UpdateAllOfficers(patientID uuid.UUID, req *entities.OfficerAllUpdateReq, adminID uuid.UUID) (*entities.OfficerAllUpdateRes, error) {
 	if req.UpdatedBy == uuid.Nil {
 		return nil, fmt.Errorf("missing updated_by field")
 	}
@@ -63,5 +60,5 @@ func (u *relativeUpdateUsecase) UpdateAllOfficers(patientID uuid.UUID, req *enti
 		return nil, fmt.Errorf("title is required for both house and nurse officers")
 	}
 
-	return u.repo.UpdateOfficerInfo(patientID, req)
+	return u.repo.UpdateOfficerInfo(patientID, req, adminID)
 }

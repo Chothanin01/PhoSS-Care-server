@@ -13,6 +13,9 @@ type DBConfig struct {
 	Username string
 	Password string
 	DBName   string
+	JWTSecretAdmin   string
+	JWTSecretPatient string
+	JWTIssuer        string
 }
 
 type AppConfig struct {
@@ -29,5 +32,8 @@ func LoadConfig() *Config {
 	cfg.DB.Username = os.Getenv("DB_USERNAME")
 	cfg.DB.Password = os.Getenv("DB_PASSWORD")
 	cfg.DB.DBName = os.Getenv("DB_NAME")
+	cfg.DB.JWTSecretAdmin = os.Getenv("JWT_SECRET_ADMIN")
+	cfg.DB.JWTSecretPatient = os.Getenv("JWT_SECRET_PATIENT")
+	cfg.DB.JWTIssuer = os.Getenv("JWT_ISSUER")
 	return cfg
 }

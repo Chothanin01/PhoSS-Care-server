@@ -1,38 +1,73 @@
 package servers
 
 import (
-	_patientControllers "github.com/chothanin01/PhoSS-Care-server/modules/patients/controllers"
-	_patientRepositories "github.com/chothanin01/PhoSS-Care-server/modules/patients/repositories"
-	_patientUsecases "github.com/chothanin01/PhoSS-Care-server/modules/patients/usecases"
-	"github.com/chothanin01/PhoSS-Care-server/pkg/utils"
+	"os"
 
 	"github.com/gofiber/fiber/v2"
+
+	_adminControllers "github.com/chothanin01/PhoSS-Care-server/modules/admin/controllers"
+	_adminRepositories "github.com/chothanin01/PhoSS-Care-server/modules/admin/repositories"
+	_adminUsecases "github.com/chothanin01/PhoSS-Care-server/modules/admin/usecases"
+
+	_authControllers "github.com/chothanin01/PhoSS-Care-server/modules/auth/controllers"
+	_authRepositories "github.com/chothanin01/PhoSS-Care-server/modules/auth/repositories"
+	_authUsecases "github.com/chothanin01/PhoSS-Care-server/modules/auth/usecases"
+
+	"github.com/chothanin01/PhoSS-Care-server/pkg/utils"
 )
 
 func (s *Server) MapHandlers() error {
 	v1 := s.App.Group("/v1")
-	patientsGroup := v1.Group("/patients")
-	diseaseGroup := v1.Group("/diseases")
 
-	passwordSvc := utils.NewPasswordService()
-	tx := _patientRepositories.NewTransactionGorm(s.Db)
+	// ------------------ 🔐 AUTH SETUP ------------------
+	passSvc := utils.NewPasswordService()
+	authRepo := _authRepositories.NewAuthRepository(s.Db)
 
-	patientUsecase := _patientUsecases.NewPatientUsecase(tx, passwordSvc)
-	patientGetRepo := _patientRepositories.NewPatientGetRepository(s.Db)
-	patientGetUsecase := _patientUsecases.NewPatientGetUsecase(patientGetRepo)
+	jwtAdmin := utils.NewJWTService(os.Getenv("JWT_SECRET_ADMIN"), "admin-api")
+	jwtPatient := utils.NewJWTService(os.Getenv("JWT_SECRET_PATIENT"), "patient-api")
 
-	relativeRepo := _patientRepositories.NewRelativeRepository(s.Db)
-	relativeUsecase := _patientUsecases.NewRelativeUsecase(relativeRepo)
+	adminAuthUC := _authUsecases.NewAuthUsecase(authRepo, passSvc, jwtAdmin, "admin")
+	patientAuthUC := _authUsecases.NewAuthUsecase(authRepo, passSvc, jwtPatient, "patient")
 
-	_patientControllers.NewPatientController(patientsGroup, patientUsecase, patientGetUsecase, patientUsecase)
-	_patientControllers.NewRelativeController(patientsGroup, relativeUsecase)
+	// Auth endpoints
+	authGroup := v1.Group("/auth")
+	_authControllers.NewAuthController(authGroup.Group("/admin"), adminAuthUC)
+	_authControllers.NewAuthController(authGroup.Group("/patient"), patientAuthUC)
 
-	diseaseGetRepo := _patientRepositories.NewDiseaseRepository(s.Db)
-	diseaseGroupUsecase := _patientUsecases.NewDiseaseUsecase(diseaseGetRepo)
-	_patientControllers.NewDiseaseController(diseaseGroup, diseaseGroupUsecase)
+	// Role-based JWT middleware
+	adminAuth := utils.NewJWTMiddleware(jwtAdmin, "admin")
+	// patientAuth := utils.NewJWTMiddleware(jwtPatient, "patient")
 
+	// ------------------ ADMIN MODULES ------------------
+	adminGroup := v1.Group("/admins", adminAuth)
 
-	// Default 404 handler
+	adminRepo := _adminRepositories.NewAdminRepository(s.Db)
+	adminUsecase := _adminUsecases.NewAdminUsecase(adminRepo, passSvc)
+	_adminControllers.NewAdminController(adminGroup, adminUsecase)
+
+	diseaseRepo := _adminRepositories.NewDiseaseGetRepository(s.Db)
+	diseaseUC := _adminUsecases.NewDiseaseUsecase(diseaseRepo)
+	_adminControllers.NewDiseaseController(adminGroup.Group("/diseases"), diseaseUC)
+
+	tx := _adminRepositories.NewTransactionGorm(s.Db)
+	patientUC := _adminUsecases.NewPatientUsecase(tx, passSvc)
+	patientGetRepo := _adminRepositories.NewPatientGetRepository(s.Db)
+	patientGetUC := _adminUsecases.NewPatientGetUsecase(patientGetRepo)
+	_adminControllers.NewPatientController(adminGroup.Group("/patients"), patientUC, patientGetUC, patientUC)
+
+	appointTx := _adminRepositories.NewTransactionGorm(s.Db)
+	appointUC := _adminUsecases.NewAppointmentUsecase(appointTx)
+	_adminControllers.NewAppointmentController(adminGroup.Group("/appointments"), appointUC)
+
+	requestRepo := _adminRepositories.NewRequestGetRepository(s.Db)
+	requestUC := _adminUsecases.NewRequestGetUsecase(requestRepo)
+	requestUpdateRepo := _adminRepositories.NewRequestUpdateRepository(s.Db)
+	requestUpdateUC := _adminUsecases.NewRequestUpdateUsecase(requestUpdateRepo)
+	_adminControllers.NewRequestController(adminGroup.Group("/requests"), requestUC, requestUpdateUC)
+
+	// ------------------ PATIENT MODULES ------------------
+
+	// ------------------ 404 HANDLER ------------------
 	s.App.Use(func(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"status":      "error",
@@ -44,5 +79,3 @@ func (s *Server) MapHandlers() error {
 
 	return nil
 }
-
-

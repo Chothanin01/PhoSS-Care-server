@@ -3,9 +3,10 @@ package usecases
 import (
 	"fmt"
 	"time"
+	"strings"
 
 	"github.com/google/uuid"
-	"github.com/chothanin01/PhoSS-Care-server/modules/patients/entities"
+	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
 	"github.com/chothanin01/PhoSS-Care-server/pkg/utils"
 )
 
@@ -27,9 +28,9 @@ func NewPatientUsecase(tx entities.Transaction, passwordSvc PasswordService) *ne
 	}
 }
 
-func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq) (*entities.PatientCreateRes, error) {
+func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq, creatorID *uuid.UUID) (*entities.PatientCreateRes, error) {
 	var res *entities.PatientCreateRes
-	
+
 	p := req.Patient
 	if p.FirstName == "" || p.LastName == "" ||
 		p.Sex == "" || p.Title == "" ||
@@ -37,8 +38,8 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq) (*ent
 		p.Nationality == "" || p.Ethnicity == "" ||
 		p.Rights == "" || p.Weight <= 0 || p.Height <= 0 ||
 		p.PhoneNumber == "" ||
-		p.Address.HouseNumber == "" || p.Address.SubDistrict == "" || 
-		p.Address.District == "" || p.Address.Province == "" || 
+		p.Address.HouseNumber == "" || p.Address.SubDistrict == "" ||
+		p.Address.District == "" || p.Address.Province == "" ||
 		p.Address.ZipCode == "" || len(p.Diseases) == 0 ||
 		(req.Relative.Kin.FirstName == "" && req.Relative.Kin.LastName == "") {
 		return nil, fmt.Errorf("missing required patient information")
@@ -54,7 +55,6 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq) (*ent
 
 	err := u.tx.Do(func(r entities.RepositorySet) error {
 		nextHnID, err := r.PatientRepo.GenerateNextHnID()
-
 		if err != nil {
 			return fmt.Errorf("generate HN ID: %w", err)
 		}
@@ -63,42 +63,39 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq) (*ent
 		if err != nil {
 			return fmt.Errorf("hash HNID: %w", err)
 		}
-	
-		user, err := r.UserRepo.Create(req.Patient.IDCard, hashedPass, "patient")
-		
-		fmt.Print(req)
+
+		user, err := r.UserRepo.Create(p.IDCard, hashedPass, "patient")
 		if err != nil {
 			return fmt.Errorf("create user: %w", err)
 		}
 
 		patientReq := &entities.PatientCreateReq{
-			Title:       req.Patient.Title,
-			FirstName:   req.Patient.FirstName,
-			LastName:    req.Patient.LastName,
-			Sex:         req.Patient.Sex,
-			Dob:         req.Patient.DOB,
+			Title:       p.Title,
+			FirstName:   p.FirstName,
+			LastName:    p.LastName,
+			Sex:         p.Sex,
+			Dob:         p.DOB,
 			HnID:        nextHnID,
-			IDCard:      req.Patient.IDCard,
-			Nationality: req.Patient.Nationality,
-			Ethnicity:   req.Patient.Ethnicity,
-			PhoneNumber: req.Patient.PhoneNumber,
-			Address:     req.Patient.Address,
-			Allergy:     req.Patient.Allergy,
-			Rights:      req.Patient.Rights,
-			Weight:      req.Patient.Weight,
-			Height:      req.Patient.Height,
+			IDCard:      p.IDCard,
+			Nationality: p.Nationality,
+			Ethnicity:   p.Ethnicity,
+			PhoneNumber: p.PhoneNumber,
+			Address:     p.Address,
+			Allergy:     p.Allergy,
+			Rights:      p.Rights,
+			Weight:      p.Weight,
+			Height:      p.Height,
 			UserID:      user.ID,
-			CreatedBy:   req.CreatedBy,
 		}
 
-		res, err = r.PatientRepo.CreateWithUser(patientReq, user.ID)
+		res, err = r.PatientRepo.CreateWithUser(patientReq, user.ID, creatorID)
 		if err != nil {
 			return fmt.Errorf("create patient: %w", err)
 		}
 
-		if len(req.Patient.Diseases) > 0 {
-			diseases := make([]entities.PatientDiseaseEntity, 0, len(req.Patient.Diseases))
-			for _, d := range req.Patient.Diseases {
+		if len(p.Diseases) > 0 {
+			diseases := make([]entities.PatientDiseaseEntity, 0, len(p.Diseases))
+			for _, d := range p.Diseases {
 				diseases = append(diseases, entities.PatientDiseaseEntity{
 					DiseaseID: d.DiseaseID,
 					Name:      d.Name,
@@ -110,14 +107,14 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq) (*ent
 		}
 
 		relatives := []entities.RelativeEntity{
-			makeRelative(req.Relative.Kin, "kin", res.Id, req.CreatedBy),
-			makeRelative(req.Relative.Caretaker, "caretaker", res.Id, req.CreatedBy),
-			makeRelative(req.Relative.Medicine, "medicine", res.Id, req.CreatedBy),
-			makeRelative(req.Officer.House, "house", res.Id, req.CreatedBy),
-			makeRelative(req.Officer.Nurse, "nurse", res.Id, req.CreatedBy),
+			makeRelative(req.Relative.Kin, "kin", res.Id, creatorID),
+			makeRelative(req.Relative.Caretaker, "caretaker", res.Id, creatorID),
+			makeRelative(req.Relative.Medicine, "medicine", res.Id, creatorID),
+			makeRelative(req.Officer.House, "house", res.Id, creatorID),
+			makeRelative(req.Officer.Nurse, "nurse", res.Id, creatorID),
 		}
 
-		if err := r.RelativeRepo.Create(relatives); err != nil {
+		if err := r.RelativeRepo.Create(relatives, *creatorID); err != nil {
 			return fmt.Errorf("create relatives: %w", err)
 		}
 
@@ -127,11 +124,12 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq) (*ent
 	if err != nil {
 		return nil, err
 	}
+
 	return res, nil
 }
 
 
-func makeRelative(d entities.RelativeCreate, role string, pid uuid.UUID, creator uuid.UUID) entities.RelativeEntity {
+func makeRelative(d entities.RelativeCreate, role string, pid uuid.UUID, creator *uuid.UUID) entities.RelativeEntity {
 	return entities.RelativeEntity{
 		Title:       d.Title,
 		FirstName:   d.FirstName,
@@ -294,6 +292,8 @@ func (u *patientGetUsecase) GetPatientInfoByID(id uuid.UUID) (*entities.PatientI
 		Address:     addr,
 		Weight:      patient.Weight,
 		Height:      patient.Height,
+		Ethnicity:   patient.Ethnicity,
+		Nationality: patient.Nationality,
 	}
 
 	var diseases []entities.Disease
@@ -396,8 +396,8 @@ func (u *patientGetUsecase) GetPatientInfoByID(id uuid.UUID) (*entities.PatientI
 	return res, nil
 }
 
-func (u *patientGetUsecase) GetPatientAppointmentsByID(id uuid.UUID) (*entities.AppointInfoRes, error) {
-	patient, err := u.readRepo.GetPatientAppointmentsByID(id)
+func (u *patientGetUsecase) GetPatientAppointmentsInfoByID(id uuid.UUID) (*entities.AppointInfoRes, error) {
+	patient, err := u.readRepo.GetPatientAppointmentsInfoByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("get patient appointments: %w", err)
 	}
@@ -406,7 +406,7 @@ func (u *patientGetUsecase) GetPatientAppointmentsByID(id uuid.UUID) (*entities.
 
 	diseaseMap := make(map[uuid.UUID]*entities.AppointDisease)
 	for _, ap := range patient.Appointments {
-		if ap.Status != "Ongoing" && ap.Status != "Delay" {
+		if ap.Status != "ongoing" && ap.Status != "delay" {
 			continue
 		}
 
@@ -420,17 +420,27 @@ func (u *patientGetUsecase) GetPatientAppointmentsByID(id uuid.UUID) (*entities.
 			d = diseaseMap[ap.DiseaseID]
 		}
 
+		note := ap.Note
+		officer := ""
+		if strings.Contains(ap.Note, "|OFFICER:") {
+			parts := strings.SplitN(ap.Note, "|OFFICER:", 2)
+			note = parts[0]
+			officer = parts[1]
+		}
+
 		d.Appointments = append(d.Appointments, entities.AppointmentFullInfo{
 			No:      ap.No,
 			Date:    ap.Date.Format("2006-01-02"),
 			Time:    ap.Time,
 			Symptom: ap.Symptom,
-			Note:    ap.Note,
+			Note:    note,
 			Place:   ap.Place,
+			Purpose: ap.Purpose,
 			Doctor:  ap.Doctor,
 			Status:  ap.Status,
 			Letter:  ap.Letter,
 			Delay:   ap.Delay,
+			Officer: officer,
 		})
 	}
 
@@ -456,7 +466,7 @@ func (u *patientGetUsecase) GetPatientAppointmentsByID(id uuid.UUID) (*entities.
 }
 
 // ---------------------- EDIT ----------------------
-func (u *newPatientUsecase) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq) (*entities.PatientUpdateRes, error) {
+func (u *newPatientUsecase) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq, adminID uuid.UUID) (*entities.PatientUpdateRes, error) {
 
 	if req.FirstName == "" || req.LastName == "" ||
 		req.Sex == "" || req.Title == "" ||
@@ -471,7 +481,7 @@ func (u *newPatientUsecase) UpdatePatientInfo(id uuid.UUID, req *entities.Patien
 	var res *entities.PatientUpdateRes
 
 	err := u.tx.Do(func(r entities.RepositorySet) error {
-		updated, err := r.PateintUpdateRepo.UpdatePatientInfo(id, req)
+		updated, err := r.PateintUpdateRepo.UpdatePatientInfo(id, req, &adminID)
 		if err != nil {
 			return fmt.Errorf("update patient info: %w", err)
 		}

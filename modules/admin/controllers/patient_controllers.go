@@ -4,8 +4,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/chothanin01/PhoSS-Care-server/modules/patients/entities"
+	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -25,7 +26,7 @@ func NewPatientController(r fiber.Router, createUC entities.PatientUsecase, getU
 	r.Post("/", controller.CreatePatient)
 	r.Get("/", controller.GetPatients)
 	r.Get("/:id", controller.GetPatientByID)
-	r.Get("/:id/appointments", controller.GetPatientAppointments)
+	r.Get("/:id/appointments", controller.GetPatientAppointmentsInfo)
 	r.Get("/:id/vaccines", controller.GetPatientVaccines)
 	r.Get("/:id/:disease_id", controller.GetPatientDiseaseInfo)
 	r.Patch("/:id", controller.UpdatePatient)
@@ -40,18 +41,26 @@ func (c *PatientController) CreatePatient(ctx *fiber.Ctx) error {
 		})
 	}
 
-	res, err := c.PatientUsecase.CreateFull(req)
+	claims := ctx.Locals("user").(jwt.MapClaims)
+	userIDStr, ok := claims["user_id"].(string)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid token"})
+	}
+
+	creatorID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid user_id"})
+	}
+
+	res, err := c.PatientUsecase.CreateFull(req, &creatorID)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-		"status":     "success",
-		"message":    "User, Patient, and Relatives created successfully",
-		"data":       res,
-		"statusCode": fiber.StatusOK,
+		"status":  "success",
+		"message": "Patient created successfully",
+		"data":    res,
 	})
 }
 
@@ -162,7 +171,7 @@ func (c *PatientController) GetPatientDiseaseInfo(ctx *fiber.Ctx) error {
 	})
 }
 
-func (c *PatientController) GetPatientAppointments(ctx *fiber.Ctx) error {
+func (c *PatientController) GetPatientAppointmentsInfo(ctx *fiber.Ctx) error {
 	idParam := ctx.Params("id")
 	if idParam == "" {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -179,7 +188,7 @@ func (c *PatientController) GetPatientAppointments(ctx *fiber.Ctx) error {
 		})
 	}
 
-	res, err := c.PatientGetUsecase.GetPatientAppointmentsByID(patientID)
+	res, err := c.PatientGetUsecase.GetPatientAppointmentsInfoByID(patientID)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
@@ -208,6 +217,18 @@ func (c *PatientController) UpdatePatient(ctx *fiber.Ctx) error {
 	}
 
 	var req entities.PatientUpdateReq
+
+	claims := ctx.Locals("user").(jwt.MapClaims)
+	userIDStr, ok := claims["user_id"].(string)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid token"})
+	}
+
+	adminID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid user_id"})
+	}
+
 	if err := ctx.BodyParser(&req); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
@@ -215,7 +236,7 @@ func (c *PatientController) UpdatePatient(ctx *fiber.Ctx) error {
 		})
 	}
 
-	res, err := c.PatientUpdateUsecase.UpdatePatientInfo(patientID, &req)
+	res, err := c.PatientUpdateUsecase.UpdatePatientInfo(patientID, &req, adminID)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,

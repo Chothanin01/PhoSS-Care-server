@@ -68,7 +68,7 @@ type PatientCreateReq struct {
 	Height	     float32    `json:"height"`
 	Address      Address `json:"address"`
 	Allergy      string     `json:"allergy"`
-	Diseases     []PatientDiseaseEntity `json:"diseases"`
+	Diseases     []Disease `json:"diseases"`
 	UserID       uuid.UUID  `json:"user_id"`
 }
 
@@ -220,6 +220,7 @@ type PatientUpdateReq struct {
 	Ethnicity    string  `json:"ethnicity"`
 	PhoneNumber  string  `json:"phonenumber"`
 	Address      Address `json:"address"`
+	Diseases     []PatientDisease `json:"diseases"`
 }
 
 type PatientUpdateRes struct {
@@ -231,6 +232,11 @@ type PatientUpdateRes struct {
 	Rights      string    `json:"rights"`
 	Nationality string    `json:"nationality"`
 	Ethnicity   string    `json:"ethnicity"`
+}
+
+type PatientDisease struct {
+	DiseaseID uuid.UUID `json:"disease_id"`
+	Name      string    `json:"name"`
 }
 
 type PatientUsecase interface {
@@ -271,6 +277,7 @@ type PatientGetUsecase interface {
 
 type PatientUpdateRepo interface {
 	UpdatePatientInfo(id uuid.UUID, req *PatientUpdateReq, adminID *uuid.UUID) (*PatientUpdateRes, error)
+	UpdatePatientDiseases(patientID uuid.UUID, newDiseases []PatientDisease, adminID *uuid.UUID) error
 }
 
 type PatientUpdateUsecase interface {

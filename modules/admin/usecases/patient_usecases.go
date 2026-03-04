@@ -86,6 +86,7 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq, creat
 			Weight:      p.Weight,
 			Height:      p.Height,
 			UserID:      user.ID,
+			Diseases:    p.Diseases,
 		}
 
 		res, err = r.PatientRepo.CreateWithUser(patientReq, user.ID, creatorID)
@@ -465,13 +466,13 @@ func (u *patientGetUsecase) GetPatientAppointmentsInfoByID(id uuid.UUID) (*entit
 	return res, nil
 }
 
-// ---------------------- EDIT ----------------------
-func (u *newPatientUsecase) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq, adminID uuid.UUID) (*entities.PatientUpdateRes, error) {
+// ---------------------- UPDATE ----------------------
 
+func (u *newPatientUsecase) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq, adminID uuid.UUID) (*entities.PatientUpdateRes, error) {
 	if req.FirstName == "" || req.LastName == "" ||
-		req.Sex == "" || req.Title == "" ||
-		req.DOB == "" || req.IDCard == "" ||
-		req.Rights == "" || req.Nationality == "" || req.Ethnicity == "" ||
+		req.Sex == "" || req.Title == "" || req.DOB == "" ||
+		req.IDCard == "" || req.Rights == "" ||
+		req.Nationality == "" || req.Ethnicity == "" ||
 		req.PhoneNumber == "" ||
 		req.Address.HouseNumber == "" || req.Address.SubDistrict == "" ||
 		req.Address.District == "" || req.Address.Province == "" || req.Address.ZipCode == "" {
@@ -479,18 +480,22 @@ func (u *newPatientUsecase) UpdatePatientInfo(id uuid.UUID, req *entities.Patien
 	}
 
 	var res *entities.PatientUpdateRes
-
 	err := u.tx.Do(func(r entities.RepositorySet) error {
 		updated, err := r.PateintUpdateRepo.UpdatePatientInfo(id, req, &adminID)
 		if err != nil {
 			return fmt.Errorf("update patient info: %w", err)
 		}
+		if len(req.Diseases) > 0 {
+			if err := r.PateintUpdateRepo.UpdatePatientDiseases(id, req.Diseases, &adminID); err != nil {
+				return fmt.Errorf("update diseases: %w", err)
+			}
+		}
+
 		res = updated
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
-
 	return res, nil
 }

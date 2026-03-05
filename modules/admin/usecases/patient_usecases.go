@@ -94,19 +94,6 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq, creat
 			return fmt.Errorf("create patient: %w", err)
 		}
 
-		if len(p.Diseases) > 0 {
-			diseases := make([]entities.PatientDiseaseEntity, 0, len(p.Diseases))
-			for _, d := range p.Diseases {
-				diseases = append(diseases, entities.PatientDiseaseEntity{
-					DiseaseID: d.DiseaseID,
-					Name:      d.Name,
-				})
-			}
-			if err := r.DiseaseRepo.LinkPatientDiseases(res.Id, diseases); err != nil {
-				return fmt.Errorf("link diseases: %w", err)
-			}
-		}
-
 		relatives := []entities.RelativeEntity{
 			makeRelative(req.Relative.Kin, "kin", res.Id, creatorID),
 			makeRelative(req.Relative.Caretaker, "caretaker", res.Id, creatorID),

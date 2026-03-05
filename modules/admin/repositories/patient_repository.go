@@ -97,7 +97,6 @@ func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userI
 		return nil, fmt.Errorf("invalid dob format: %v", err)
 	}
 
-
 	patient := databases.Patient{
 		Title:       req.Title,
 		FirstName:   req.FirstName,
@@ -141,7 +140,7 @@ func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userI
 			Find(&exists).Error; err != nil {
 			return nil, fmt.Errorf("check disease: %w", err)
 		}
-
+		fmt.Print("check disease")
 		if !exists {
 			return nil, fmt.Errorf("disease not found: %v", d.DiseaseID)
 		}

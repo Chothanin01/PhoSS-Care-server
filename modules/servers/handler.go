@@ -19,7 +19,7 @@ import (
 func (s *Server) MapHandlers() error {
 	v1 := s.App.Group("/v1")
 
-	// ------------------ 🔐 AUTH SETUP ------------------
+	// ------------------ AUTH SETUP ------------------
 	passSvc := utils.NewPasswordService()
 	authRepo := _authRepositories.NewAuthRepository(s.Db)
 

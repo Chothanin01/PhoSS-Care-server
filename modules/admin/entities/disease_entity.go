@@ -33,6 +33,7 @@ type DiseaseData struct {
 	DiseaseID    uuid.UUID              `json:"disease_id"`
 	DiseaseName  string               	`json:"disease_name"`
 	Appointment  []AppointmentInfo 		`json:"appointment_info"`
+	Disease      []Disease              `json:"diseases"`
 }
 
 type AppointmentInfo struct {

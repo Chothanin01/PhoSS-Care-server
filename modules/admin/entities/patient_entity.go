@@ -68,7 +68,7 @@ type PatientCreateReq struct {
 	Height	     float32    `json:"height"`
 	Address      Address `json:"address"`
 	Allergy      string     `json:"allergy"`
-	Diseases     []PatientDiseaseEntity `json:"diseases"`
+	Diseases     []Disease `json:"diseases"`
 	UserID       uuid.UUID  `json:"user_id"`
 }
 
@@ -127,7 +127,7 @@ type PatientInfoRes struct {
 
 type PatientData struct {
 	Patient  PatientFullInfo      `json:"patient"`
-	Disease  []Disease        `json:"disease"`
+	Disease  []Disease        `json:"diseases"`
 	Relative Relative     `json:"relative"`
 	Officer  Officer     `json:"officer"`
 }
@@ -157,10 +157,11 @@ type AppointInfoRes struct {
 }
 
 type AppointData struct {
-	PatientID    uuid.UUID       `json:"patient_id"`
-	Fullname     string          `json:"fullname"`
-	Hnnumber     string          `json:"hnnumber"`
-	Diseases  []AppointDisease  `json:"diseases"` 
+	PatientID     uuid.UUID          `json:"patient_id"`
+	Fullname      string             `json:"fullname"`
+	Hnnumber      string             `json:"hnnumber"`
+	Appointments  []AppointDisease   `json:"appointments"`
+	Diseases      []Disease          `json:"diseases"` 
 }
 
 type AppointDisease struct {
@@ -191,6 +192,14 @@ type VaccineInfoRes struct {
 }
 
 type VaccineData struct {
+	PatientID     uuid.UUID          `json:"patient_id"`
+	Fullname      string             `json:"fullname"`
+	Hnnumber      string             `json:"hnnumber"`
+	Vaccine       []Vaccine          `json:"vaccine"`
+	Disease       []Disease			 `json:"diseases"`
+}
+
+type Vaccine struct {
 	VaccineID   uuid.UUID `json:"vaccine_id"`
 	VaccineName		string    `json:"name"`
 	Vaccine     []VaccineFullInfo   `json:"vaccine"`
@@ -220,6 +229,7 @@ type PatientUpdateReq struct {
 	Ethnicity    string  `json:"ethnicity"`
 	PhoneNumber  string  `json:"phonenumber"`
 	Address      Address `json:"address"`
+	Diseases     []PatientDisease `json:"diseases"`
 }
 
 type PatientUpdateRes struct {
@@ -231,6 +241,11 @@ type PatientUpdateRes struct {
 	Rights      string    `json:"rights"`
 	Nationality string    `json:"nationality"`
 	Ethnicity   string    `json:"ethnicity"`
+}
+
+type PatientDisease struct {
+	DiseaseID uuid.UUID `json:"disease_id"`
+	Name      string    `json:"name"`
 }
 
 type PatientUsecase interface {
@@ -257,7 +272,7 @@ type PatientGetRepo interface {
 	GetPatientInfoByID(id uuid.UUID) (*databases.Patient, error)
 	GetPatientDiseasesInfoByID(id uuid.UUID, diseaseID uuid.UUID) (*databases.Patient, error)
 	GetPatientAppointmentsInfoByID(id uuid.UUID) (*databases.Patient, error)
-	GetPatientVaccinesByID(id uuid.UUID) (*VaccineInfoRes, error)
+	GetPatientVaccinesByID(id uuid.UUID) (*databases.Patient , []databases.Vaccine, error)
 }
 
 type PatientGetUsecase interface {
@@ -271,6 +286,7 @@ type PatientGetUsecase interface {
 
 type PatientUpdateRepo interface {
 	UpdatePatientInfo(id uuid.UUID, req *PatientUpdateReq, adminID *uuid.UUID) (*PatientUpdateRes, error)
+	UpdatePatientDiseases(patientID uuid.UUID, newDiseases []PatientDisease, adminID *uuid.UUID) error
 }
 
 type PatientUpdateUsecase interface {

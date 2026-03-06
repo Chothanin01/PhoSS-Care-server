@@ -86,24 +86,12 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq, creat
 			Weight:      p.Weight,
 			Height:      p.Height,
 			UserID:      user.ID,
+			Diseases:    p.Diseases,
 		}
 
 		res, err = r.PatientRepo.CreateWithUser(patientReq, user.ID, creatorID)
 		if err != nil {
 			return fmt.Errorf("create patient: %w", err)
-		}
-
-		if len(p.Diseases) > 0 {
-			diseases := make([]entities.PatientDiseaseEntity, 0, len(p.Diseases))
-			for _, d := range p.Diseases {
-				diseases = append(diseases, entities.PatientDiseaseEntity{
-					DiseaseID: d.DiseaseID,
-					Name:      d.Name,
-				})
-			}
-			if err := r.DiseaseRepo.LinkPatientDiseases(res.Id, diseases); err != nil {
-				return fmt.Errorf("link diseases: %w", err)
-			}
 		}
 
 		relatives := []entities.RelativeEntity{
@@ -404,20 +392,17 @@ func (u *patientGetUsecase) GetPatientAppointmentsInfoByID(id uuid.UUID) (*entit
 
 	fullname := fmt.Sprintf("%s%s %s", patient.Title, patient.FirstName, patient.LastName)
 
-	diseaseMap := make(map[uuid.UUID]*entities.AppointDisease)
+	appointMap := make(map[uuid.UUID]*entities.AppointDisease)
 	for _, ap := range patient.Appointments {
-		if ap.Status != "ongoing" && ap.Status != "delay" {
-			continue
-		}
 
-		d, ok := diseaseMap[ap.DiseaseID]
+		d, ok := appointMap[ap.DiseaseID]
 		if !ok {
-			diseaseMap[ap.DiseaseID] = &entities.AppointDisease{
+			appointMap[ap.DiseaseID] = &entities.AppointDisease{
 				DiseaseID:   ap.Disease.ID,
 				DiseaseName: ap.Disease.Name,
 				Appointments: []entities.AppointmentFullInfo{},
 			}
-			d = diseaseMap[ap.DiseaseID]
+			d = appointMap[ap.DiseaseID]
 		}
 
 		note := ap.Note
@@ -444,9 +429,20 @@ func (u *patientGetUsecase) GetPatientAppointmentsInfoByID(id uuid.UUID) (*entit
 		})
 	}
 
-	var diseases []entities.AppointDisease
-	for _, d := range diseaseMap {
-		diseases = append(diseases, *d)
+	var appoint []entities.AppointDisease
+	for _, d := range appointMap {
+		appoint = append(appoint, *d)
+	}
+
+	var diseases []entities.Disease
+
+	for _, pd := range patient.Diseases {
+		if pd.Disease != nil {
+			diseases = append(diseases, entities.Disease{
+				DiseaseID: pd.Disease.ID,
+				Name:      pd.Disease.Name,
+			})
+		}
 	}
 
 	res := &entities.AppointInfoRes{
@@ -457,6 +453,7 @@ func (u *patientGetUsecase) GetPatientAppointmentsInfoByID(id uuid.UUID) (*entit
 				PatientID: patient.ID,
 				Fullname:  fullname,
 				Hnnumber:  patient.HnID,
+				Appointments:  appoint,
 				Diseases:  diseases,
 			},
 		},
@@ -465,13 +462,13 @@ func (u *patientGetUsecase) GetPatientAppointmentsInfoByID(id uuid.UUID) (*entit
 	return res, nil
 }
 
-// ---------------------- EDIT ----------------------
-func (u *newPatientUsecase) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq, adminID uuid.UUID) (*entities.PatientUpdateRes, error) {
+// ---------------------- UPDATE ----------------------
 
+func (u *newPatientUsecase) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq, adminID uuid.UUID) (*entities.PatientUpdateRes, error) {
 	if req.FirstName == "" || req.LastName == "" ||
-		req.Sex == "" || req.Title == "" ||
-		req.DOB == "" || req.IDCard == "" ||
-		req.Rights == "" || req.Nationality == "" || req.Ethnicity == "" ||
+		req.Sex == "" || req.Title == "" || req.DOB == "" ||
+		req.IDCard == "" || req.Rights == "" ||
+		req.Nationality == "" || req.Ethnicity == "" ||
 		req.PhoneNumber == "" ||
 		req.Address.HouseNumber == "" || req.Address.SubDistrict == "" ||
 		req.Address.District == "" || req.Address.Province == "" || req.Address.ZipCode == "" {
@@ -479,18 +476,22 @@ func (u *newPatientUsecase) UpdatePatientInfo(id uuid.UUID, req *entities.Patien
 	}
 
 	var res *entities.PatientUpdateRes
-
 	err := u.tx.Do(func(r entities.RepositorySet) error {
 		updated, err := r.PateintUpdateRepo.UpdatePatientInfo(id, req, &adminID)
 		if err != nil {
 			return fmt.Errorf("update patient info: %w", err)
 		}
+		if len(req.Diseases) > 0 {
+			if err := r.PateintUpdateRepo.UpdatePatientDiseases(id, req.Diseases, &adminID); err != nil {
+				return fmt.Errorf("update diseases: %w", err)
+			}
+		}
+
 		res = updated
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
-
 	return res, nil
 }

@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
@@ -54,52 +53,30 @@ func (r *DiseaseRepository) LinkPatientDiseases(patientID uuid.UUID, diseases []
 	return r.db.Create(&records).Error
 }
 
-func (r *PatientGetRepository) GetPatientVaccinesByID(patientID uuid.UUID) (*entities.VaccineInfoRes, error) {
+func (r *PatientGetRepository) GetPatientVaccinesByID(patientID uuid.UUID) (*databases.Patient, []databases.Vaccine, error) {
+	var patient databases.Patient
+
+	err := r.db.
+		Preload("Diseases", func(db *gorm.DB) *gorm.DB {
+			return db.Unscoped()
+		}).
+		Preload("Diseases.Disease", func(db *gorm.DB) *gorm.DB {
+			return db.Unscoped()
+		}).
+		First(&patient, "id = ?", patientID).Error
+	if err != nil {
+		return nil, nil, err
+	}
+
 	var vaccines []databases.Vaccine
 
-	// Preload vaccination records and appointments
-	if err := r.db.
+	err = r.db.
+		Preload("Records").
 		Preload("Records.Appoint").
-		Find(&vaccines).Error; err != nil {
-		return nil, err
+		Find(&vaccines).Error
+	if err != nil {
+		return nil, nil, err
 	}
 
-	var data []entities.VaccineData
-
-	for _, v := range vaccines {
-		var vaccineDetails []entities.VaccineFullInfo
-
-		for _, rec := range v.Records {
-			if rec.Appoint.PatientID != patientID || strings.ToLower(rec.Appoint.Status) != "completed" {
-				continue
-			}
-
-			vaccineDetails = append(vaccineDetails, entities.VaccineFullInfo{
-				RecordID: rec.ID,
-				Date:     rec.Appoint.Date.Format("2006-01-02"),
-				Type:     v.Type,
-				Effect:   v.Effect,
-				Note:     v.Note,
-				Status:   rec.Status,
-				Age:      v.Age,
-			})
-		}
-
-		if len(vaccineDetails) > 0 {
-			data = append(data, entities.VaccineData{
-				VaccineID:   v.ID,
-				VaccineName: v.Name,
-				Vaccine:     vaccineDetails,
-			})
-		}
-	}
-
-	res := &entities.VaccineInfoRes{
-		Success: true,
-		Message: "Vaccine info retrieved successfully (only completed appointments)",
-		Data:    data,
-	}
-
-	return res, nil
+	return &patient, vaccines, nil
 }
-

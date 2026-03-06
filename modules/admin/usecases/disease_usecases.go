@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
@@ -50,6 +51,16 @@ func (u *patientGetUsecase) GetPatientDiseasesInfo(id uuid.UUID, diseaseID uuid.
 			Sugar:  h.Sugar,
 		}
 	}
+	var diseases []entities.Disease
+
+	for _, pd := range patient.Diseases {
+		if pd.Disease != nil {
+			diseases = append(diseases, entities.Disease{
+				DiseaseID: pd.Disease.ID,
+				Name:      pd.Disease.Name,
+			})
+		}
+	}
 
 	var appointments []entities.AppointmentInfo
 	for _, ap := range patient.Appointments {
@@ -82,6 +93,7 @@ func (u *patientGetUsecase) GetPatientDiseasesInfo(id uuid.UUID, diseaseID uuid.
 			DiseaseID:   diseaseID,
 			DiseaseName: diseaseName,
 			Appointment: appointments,
+			Disease: diseases,
 		},
 	}
 
@@ -95,35 +107,74 @@ func (u *patientGetUsecase) GetPatientDiseasesInfo(id uuid.UUID, diseaseID uuid.
 }
 
 func (u *patientGetUsecase) GetPatientVaccinesByID(patientID uuid.UUID) (*entities.VaccineInfoRes, error) {
-	patient, err := u.readRepo.GetPatientInfoByID(patientID)
+
+	patient, vaccines, err := u.readRepo.GetPatientVaccinesByID(patientID)
 	if err != nil {
-		return nil, fmt.Errorf("patient not found: %w", err)
+		return nil, fmt.Errorf("get patient vaccine info: %w", err)
 	}
 
-	if len(patient.Diseases) == 0 {
-		return nil, fmt.Errorf("this patient has no disease records")
-	}
+	fullname := fmt.Sprintf("%s%s %s", patient.Title, patient.FirstName, patient.LastName)
 
-	hasVaccineDisease := false
+	var diseases []entities.Disease
 	for _, pd := range patient.Diseases {
-		if pd.Disease.Name == "วัคซีน" {
-			hasVaccineDisease = true
-			break
+		if pd.Disease != nil {
+			diseases = append(diseases, entities.Disease{
+				DiseaseID: pd.Disease.ID,
+				Name:      pd.Disease.Name,
+			})
 		}
 	}
 
-	if !hasVaccineDisease {
-		return nil, fmt.Errorf("this patient has no vaccine-related disease")
+	var vaccineList []entities.Vaccine
+
+	for _, v := range vaccines {
+
+		var vaccineDetails []entities.VaccineFullInfo
+
+		for _, rec := range v.Records {
+
+			if rec.Appoint.PatientID != patientID || strings.ToLower(rec.Appoint.Status) != "completed" {
+				continue
+			}
+
+			vaccineDetails = append(vaccineDetails, entities.VaccineFullInfo{
+				RecordID: rec.ID,
+				Date:     rec.Appoint.Date.Format("2006-01-02"),
+				Type:     v.Type,
+				Effect:   v.Effect,
+				Note:     v.Note,
+				Status:   rec.Status,
+				Age:      v.Age,
+			})
+		}
+
+		if len(vaccineDetails) > 0 {
+			vaccineList = append(vaccineList, entities.Vaccine{
+				VaccineID:   v.ID,
+				VaccineName: v.Name,
+				Vaccine:     vaccineDetails,
+			})
+		}
 	}
 
-	vaccineInfo, err := u.readRepo.GetPatientVaccinesByID(patientID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get vaccine records: %w", err)
+	data := []entities.VaccineData{
+		{
+			PatientID: patient.ID,
+			Fullname:  fullname,
+			Hnnumber:  patient.HnID,
+			Vaccine:   vaccineList,
+			Disease:   diseases,
+		},
 	}
 
-	if vaccineInfo == nil || len(vaccineInfo.Data) == 0 {
-		return nil, fmt.Errorf("no vaccine records found for this patient")
+	message := "Vaccine info retrieved successfully"
+	if len(vaccineList) == 0 {
+		message = "No vaccine records found"
 	}
 
-	return vaccineInfo, nil
+	return &entities.VaccineInfoRes{
+		Success: true,
+		Message: message,
+		Data:    data,
+	}, nil
 }

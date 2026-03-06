@@ -278,6 +278,9 @@ func (r *PatientGetRepository) CountPatientsWithFilter(req entities.PatientQuery
 func (r *PatientGetRepository) GetPatientInfoByID(id uuid.UUID) (*databases.Patient, error) {
 	var patient databases.Patient
 	err := r.db.
+		Preload("Diseases", func(db *gorm.DB) *gorm.DB {
+			return db.Unscoped()
+		}).
 		Preload("Diseases.Disease").
 		Preload("Relatives").
 		First(&patient, "id = ?", id).Error
@@ -293,7 +296,10 @@ func (r *PatientGetRepository) GetPatientDiseasesInfoByID(patientID, diseaseID u
 	var patient databases.Patient
 
 	err := r.db.
-		Preload("Diseases.Disease", "id = ?", diseaseID).
+		Preload("Diseases", func(db *gorm.DB) *gorm.DB {
+			return db.Unscoped()
+		}).
+		Preload("Diseases.Disease").
 		Preload("Appointments", func(db *gorm.DB) *gorm.DB {
 			return db.Where("disease_id = ?", diseaseID).Order("no DESC")
 		}).
@@ -311,6 +317,10 @@ func (r *PatientGetRepository) GetPatientAppointmentsInfoByID(patientID uuid.UUI
 	var patient databases.Patient
 
 	err := r.db.
+		Preload("Diseases", func(db *gorm.DB) *gorm.DB {
+			return db.Unscoped()
+		}).
+		Preload("Diseases.Disease").
 		Preload("Appointments", func(db *gorm.DB) *gorm.DB {
 			return db.Where("status IN ?", []string{"ongoing", "delay"}).Order("no DESC")
 		}).

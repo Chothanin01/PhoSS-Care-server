@@ -127,7 +127,7 @@ type PatientInfoRes struct {
 
 type PatientData struct {
 	Patient  PatientFullInfo      `json:"patient"`
-	Disease  []Disease        `json:"disease"`
+	Disease  []Disease        `json:"diseases"`
 	Relative Relative     `json:"relative"`
 	Officer  Officer     `json:"officer"`
 }
@@ -157,10 +157,11 @@ type AppointInfoRes struct {
 }
 
 type AppointData struct {
-	PatientID    uuid.UUID       `json:"patient_id"`
-	Fullname     string          `json:"fullname"`
-	Hnnumber     string          `json:"hnnumber"`
-	Diseases  []AppointDisease  `json:"diseases"` 
+	PatientID     uuid.UUID          `json:"patient_id"`
+	Fullname      string             `json:"fullname"`
+	Hnnumber      string             `json:"hnnumber"`
+	Appointments  []AppointDisease   `json:"appointments"`
+	Diseases      []Disease          `json:"diseases"` 
 }
 
 type AppointDisease struct {
@@ -191,6 +192,14 @@ type VaccineInfoRes struct {
 }
 
 type VaccineData struct {
+	PatientID     uuid.UUID          `json:"patient_id"`
+	Fullname      string             `json:"fullname"`
+	Hnnumber      string             `json:"hnnumber"`
+	Vaccine       []Vaccine          `json:"vaccine"`
+	Disease       []Disease			 `json:"diseases"`
+}
+
+type Vaccine struct {
 	VaccineID   uuid.UUID `json:"vaccine_id"`
 	VaccineName		string    `json:"name"`
 	Vaccine     []VaccineFullInfo   `json:"vaccine"`
@@ -263,7 +272,7 @@ type PatientGetRepo interface {
 	GetPatientInfoByID(id uuid.UUID) (*databases.Patient, error)
 	GetPatientDiseasesInfoByID(id uuid.UUID, diseaseID uuid.UUID) (*databases.Patient, error)
 	GetPatientAppointmentsInfoByID(id uuid.UUID) (*databases.Patient, error)
-	GetPatientVaccinesByID(id uuid.UUID) (*VaccineInfoRes, error)
+	GetPatientVaccinesByID(id uuid.UUID) (*databases.Patient , []databases.Vaccine, error)
 }
 
 type PatientGetUsecase interface {

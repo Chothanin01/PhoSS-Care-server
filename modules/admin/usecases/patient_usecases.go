@@ -392,20 +392,17 @@ func (u *patientGetUsecase) GetPatientAppointmentsInfoByID(id uuid.UUID) (*entit
 
 	fullname := fmt.Sprintf("%s%s %s", patient.Title, patient.FirstName, patient.LastName)
 
-	diseaseMap := make(map[uuid.UUID]*entities.AppointDisease)
+	appointMap := make(map[uuid.UUID]*entities.AppointDisease)
 	for _, ap := range patient.Appointments {
-		if ap.Status != "ongoing" && ap.Status != "delay" {
-			continue
-		}
 
-		d, ok := diseaseMap[ap.DiseaseID]
+		d, ok := appointMap[ap.DiseaseID]
 		if !ok {
-			diseaseMap[ap.DiseaseID] = &entities.AppointDisease{
+			appointMap[ap.DiseaseID] = &entities.AppointDisease{
 				DiseaseID:   ap.Disease.ID,
 				DiseaseName: ap.Disease.Name,
 				Appointments: []entities.AppointmentFullInfo{},
 			}
-			d = diseaseMap[ap.DiseaseID]
+			d = appointMap[ap.DiseaseID]
 		}
 
 		note := ap.Note
@@ -432,9 +429,20 @@ func (u *patientGetUsecase) GetPatientAppointmentsInfoByID(id uuid.UUID) (*entit
 		})
 	}
 
-	var diseases []entities.AppointDisease
-	for _, d := range diseaseMap {
-		diseases = append(diseases, *d)
+	var appoint []entities.AppointDisease
+	for _, d := range appointMap {
+		appoint = append(appoint, *d)
+	}
+
+	var diseases []entities.Disease
+
+	for _, pd := range patient.Diseases {
+		if pd.Disease != nil {
+			diseases = append(diseases, entities.Disease{
+				DiseaseID: pd.Disease.ID,
+				Name:      pd.Disease.Name,
+			})
+		}
 	}
 
 	res := &entities.AppointInfoRes{
@@ -445,6 +453,7 @@ func (u *patientGetUsecase) GetPatientAppointmentsInfoByID(id uuid.UUID) (*entit
 				PatientID: patient.ID,
 				Fullname:  fullname,
 				Hnnumber:  patient.HnID,
+				Appointments:  appoint,
 				Diseases:  diseases,
 			},
 		},

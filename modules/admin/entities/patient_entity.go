@@ -127,7 +127,6 @@ type PatientInfoRes struct {
 
 type PatientData struct {
 	Patient  PatientFullInfo      `json:"patient"`
-	Disease  []Disease        `json:"diseases"`
 	Relative Relative     `json:"relative"`
 	Officer  Officer     `json:"officer"`
 }
@@ -161,7 +160,6 @@ type AppointData struct {
 	Fullname      string             `json:"fullname"`
 	Hnnumber      string             `json:"hnnumber"`
 	Appointments  []AppointDisease   `json:"appointments"`
-	Diseases      []Disease          `json:"diseases"` 
 }
 
 type AppointDisease struct {
@@ -196,7 +194,6 @@ type VaccineData struct {
 	Fullname      string             `json:"fullname"`
 	Hnnumber      string             `json:"hnnumber"`
 	Vaccine       []Vaccine          `json:"vaccine"`
-	Disease       []Disease			 `json:"diseases"`
 }
 
 type Vaccine struct {
@@ -229,7 +226,7 @@ type PatientUpdateReq struct {
 	Ethnicity    string  `json:"ethnicity"`
 	PhoneNumber  string  `json:"phonenumber"`
 	Address      Address `json:"address"`
-	Diseases     []PatientDisease `json:"diseases"`
+	Diseases     []Disease `json:"diseases"`
 }
 
 type PatientUpdateRes struct {
@@ -243,10 +240,22 @@ type PatientUpdateRes struct {
 	Ethnicity   string    `json:"ethnicity"`
 }
 
-type PatientDisease struct {
-	DiseaseID uuid.UUID `json:"disease_id"`
-	Name      string    `json:"name"`
+type PatientDiseaseRes struct {
+	PatientID uuid.UUID             `json:"patient_id"`
+	HnNumber  string                `json:"hn_number"`
+	FullName  string                `json:"fullname"`
+	Diseases  []Disease  			`json:"diseases"`
 }
+
+type PatientBasicInfoRes struct {
+	PatientID uuid.UUID `json:"patient_id"`
+	FullName  string    `json:"fullname"`
+	HnNumber  string    `json:"hn_number"`
+	AgeYears  int       `json:"age_years"`
+	AgeMonths int       `json:"age_months"`
+	AgeDays   int       `json:"age_days"`
+}
+
 
 type PatientUsecase interface {
 	CreateFull(req *PatientFullCreateReq, creatorID *uuid.UUID) (*PatientCreateRes, error)
@@ -273,6 +282,8 @@ type PatientGetRepo interface {
 	GetPatientDiseasesInfoByID(id uuid.UUID, diseaseID uuid.UUID) (*databases.Patient, error)
 	GetPatientAppointmentsInfoByID(id uuid.UUID) (*databases.Patient, error)
 	GetPatientVaccinesByID(id uuid.UUID) (*databases.Patient , []databases.Vaccine, error)
+	GetPatientDiseasesByID(patientID uuid.UUID) (*databases.Patient, error)
+	GetPatientBasicInfoByID(id uuid.UUID) (*databases.Patient, error)
 }
 
 type PatientGetUsecase interface {
@@ -282,11 +293,13 @@ type PatientGetUsecase interface {
 	GetPatientDiseasesInfo(id uuid.UUID, diseaseID uuid.UUID) (*DiseaseInfoRes, error)
 	GetPatientAppointmentsInfoByID(id uuid.UUID) (*AppointInfoRes, error)
 	GetPatientVaccinesByID(patientID uuid.UUID) (*VaccineInfoRes, error)
+	GetPatientDiseasesByID(id uuid.UUID) (*PatientDiseaseRes, error) 
+	GetPatientBasicInfoByID(id uuid.UUID) (*PatientBasicInfoRes, error)
 }
 
 type PatientUpdateRepo interface {
 	UpdatePatientInfo(id uuid.UUID, req *PatientUpdateReq, adminID *uuid.UUID) (*PatientUpdateRes, error)
-	UpdatePatientDiseases(patientID uuid.UUID, newDiseases []PatientDisease, adminID *uuid.UUID) error
+	UpdatePatientDiseases(patientID uuid.UUID, newDiseases []Disease, adminID *uuid.UUID) error
 }
 
 type PatientUpdateUsecase interface {

@@ -278,9 +278,7 @@ func (r *PatientGetRepository) CountPatientsWithFilter(req entities.PatientQuery
 func (r *PatientGetRepository) GetPatientInfoByID(id uuid.UUID) (*databases.Patient, error) {
 	var patient databases.Patient
 	err := r.db.
-		Preload("Diseases", func(db *gorm.DB) *gorm.DB {
-			return db.Unscoped()
-		}).
+		Preload("Diseases").
 		Preload("Diseases.Disease").
 		Preload("Relatives").
 		First(&patient, "id = ?", id).Error
@@ -296,9 +294,7 @@ func (r *PatientGetRepository) GetPatientDiseasesInfoByID(patientID, diseaseID u
 	var patient databases.Patient
 
 	err := r.db.
-		Preload("Diseases", func(db *gorm.DB) *gorm.DB {
-			return db.Unscoped()
-		}).
+		Preload("Diseases").
 		Preload("Diseases.Disease").
 		Preload("Appointments", func(db *gorm.DB) *gorm.DB {
 			return db.Where("disease_id = ?", diseaseID).Order("no DESC")
@@ -317,9 +313,7 @@ func (r *PatientGetRepository) GetPatientAppointmentsInfoByID(patientID uuid.UUI
 	var patient databases.Patient
 
 	err := r.db.
-		Preload("Diseases", func(db *gorm.DB) *gorm.DB {
-			return db.Unscoped()
-		}).
+		Preload("Diseases").
 		Preload("Diseases.Disease").
 		Preload("Appointments", func(db *gorm.DB) *gorm.DB {
 			return db.Where("status IN ?", []string{"ongoing", "delay"}).Order("no DESC")
@@ -356,6 +350,35 @@ func (r *PatientGetRepository) GetPatientAppointmentsInfoByID(patientID uuid.UUI
 			officer := adminMap[*patient.Appointments[i].CreatedBy]
 			patient.Appointments[i].Note = fmt.Sprintf("%s|OFFICER:%s", patient.Appointments[i].Note, officer)
 		}
+	}
+
+	return &patient, nil
+}
+
+func (r *PatientGetRepository) GetPatientDiseasesByID(patientID uuid.UUID) (*databases.Patient, error) {
+	var patient databases.Patient
+
+	err := r.db.
+		Unscoped().
+		Preload("Diseases").
+		Preload("Diseases.Disease").
+		First(&patient, "id = ?", patientID).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &patient, nil
+}
+
+func (r *PatientGetRepository) GetPatientBasicInfoByID(id uuid.UUID) (*databases.Patient, error) {
+	var patient databases.Patient
+
+	err := r.db.
+		First(&patient, "id = ?", id).Error
+
+	if err != nil {
+		return nil, err
 	}
 
 	return &patient, nil
@@ -433,7 +456,7 @@ func (r *PatientRepository) UpdatePatientInfo(id uuid.UUID, req *entities.Patien
 }
 
 
-func (r *PatientRepository) UpdatePatientDiseases(patientID uuid.UUID, newDiseases []entities.PatientDisease, adminID *uuid.UUID) error {
+func (r *PatientRepository) UpdatePatientDiseases(patientID uuid.UUID, newDiseases []entities.Disease, adminID *uuid.UUID) error {
 	var current []databases.PatientDisease
 	if err := r.db.Where("patient_id = ? AND deleted_at IS NULL", patientID).Find(&current).Error; err != nil {
 		return fmt.Errorf("fetch existing diseases: %w", err)

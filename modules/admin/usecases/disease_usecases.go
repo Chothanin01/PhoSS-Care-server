@@ -163,7 +163,6 @@ func (u *patientGetUsecase) GetPatientVaccinesByID(patientID uuid.UUID) (*entiti
 			Fullname:  fullname,
 			Hnnumber:  patient.HnID,
 			Vaccine:   vaccineList,
-			Disease:   diseases,
 		},
 	}
 

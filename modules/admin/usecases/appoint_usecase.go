@@ -10,10 +10,14 @@ import (
 
 type appointmentUsecase struct {
 	tx entities.AppointmentTransaction
+	repo entities.AppointmentRepository
 }
 
-func NewAppointmentUsecase(tx entities.AppointmentTransaction) entities.AppointmentUsecase {
-	return &appointmentUsecase{tx: tx}
+func NewAppointmentUsecase(tx entities.AppointmentTransaction,repo entities.AppointmentRepository,) entities.AppointmentUsecase {
+	return &appointmentUsecase{
+		tx:   tx,
+		repo: repo,
+	}
 }
 
 
@@ -167,3 +171,21 @@ func (u *appointmentUsecase) UpdateAppointment(req *entities.AppointmentUpdateRe
 	return result, nil
 }
 
+func (u *appointmentUsecase) FindOngoingVaccination(patientID uuid.UUID) (*entities.VaccineFullDetail, error) {
+
+	record, err := u.repo.FindOngoingVaccination(patientID)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &entities.VaccineFullDetail{
+		VaccineID: record.VaccineID,
+		Date:      record.CreatedAt.Format("2006-01-02"),
+		Type:      record.Vaccine.Type,
+		Effect:    record.Vaccine.Effect,
+		Note:      record.Vaccine.Note,
+		Age:       record.Vaccine.Age,
+	}
+
+	return res, nil
+}

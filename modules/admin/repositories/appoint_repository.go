@@ -32,6 +32,24 @@ func (r *AppointmentRepository) FindOngoing(patientID, diseaseID uuid.UUID) (*da
 	return &appoint, err
 }
 
+func (r *AppointmentRepository) FindOngoingVaccination(patientID uuid.UUID) (*databases.VaccinationRecord, error) {
+	var record databases.VaccinationRecord
+    
+	err := r.db.
+		Joins("JOIN appoint ON appoint.id = vaccination_record.appoint_id").
+		Where("appoint.patient_id = ?", patientID).
+		Where("vaccination_record.status = ?", "ongoing").
+		Preload("Vaccine").
+		Order("vaccination_record.dose_number DESC").
+		First(&record).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &record, nil
+}
+
 func (r *AppointmentRepository) CompleteAppoint(appointID, adminID uuid.UUID) error {
     return r.db.Model(&databases.Appoint{}).
         Where("id = ? AND status = ?", appointID, "ongoing").
@@ -143,3 +161,4 @@ func (r *AppointmentRepository) UpdateHealth(appointID uuid.UUID, health *entiti
 	}
 	return err
 }
+

@@ -56,7 +56,8 @@ func (s *Server) MapHandlers() error {
 	_adminControllers.NewPatientController(adminGroup.Group("/patients"), patientUC, patientGetUC, patientUC)
 
 	appointTx := _adminRepositories.NewTransactionGorm(s.Db)
-	appointUC := _adminUsecases.NewAppointmentUsecase(appointTx)
+	appointRepo := _adminRepositories.NewAppointmentRepository(s.Db)
+	appointUC := _adminUsecases.NewAppointmentUsecase(appointTx, appointRepo)
 	_adminControllers.NewAppointmentController(adminGroup.Group("/appointments"), appointUC)
 
 	requestRepo := _adminRepositories.NewRequestGetRepository(s.Db)

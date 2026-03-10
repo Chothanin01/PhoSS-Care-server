@@ -58,15 +58,26 @@ type HealthInfo struct {
 	Sugar  int     `json:"sugar"`
 }
 
+type VaccineFullDetail struct {
+	VaccineID uuid.UUID `json:"vaccine_id"`
+	Date      string    `json:"date"`
+	Type      string    `json:"type"`
+	Effect    string    `json:"effect"`
+	Note      string    `json:"note"`
+	Age       string    `json:"age"`
+}
+
 type DiseaseRepo interface {
 	LinkPatientDiseases(patientID uuid.UUID, diseases []PatientDiseaseEntity) error
 }
 
 type DiseaseGetRepo interface {
 	GetAllDiseases() ([]Disease, error)
+	GetAllVaccines() ([]VaccineFullDetail, error)
 }
 
 type DiseaseUsecase interface {
 	GetAllDiseases() ([]Disease, error)
+	GetAllVaccines() ([]VaccineFullDetail, error)
 }
 

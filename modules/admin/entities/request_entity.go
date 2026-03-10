@@ -1,7 +1,7 @@
 package entities
 
 import (
-
+	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
 	"github.com/google/uuid"
 )
 
@@ -47,6 +47,7 @@ type RequestInfoRes struct {
 	Doctor           string     `json:"doctor,omitempty"`
 	AppointDate      string     `json:"appoint_date,omitempty"`
 	AppointTime      string     `json:"appoint_time,omitempty"`
+	DiseaseName  	 string     `json:"disease_name"`
 }
 
 type RequestStatusUpdateReq struct {
@@ -63,7 +64,7 @@ type RequestStatusUpdateRes struct {
 
 
 type RequestGetRepo interface {
-	GetRequestInfoByID(id uuid.UUID) (*RequestInfoRes, error)
+	GetRequestInfoByID(id uuid.UUID) (*databases.Request, error)
 	GetRequestsWithFilter(params RequestQueryParams) ([]RequestInfo, error)
 	CountRequestsWithFilter(params RequestQueryParams) (int64, error)
 }

@@ -187,6 +187,7 @@ type VaccinationRecord struct {
 	VaccineID  uuid.UUID
 	AppointID  uuid.UUID
 	DoseNumber int
+	VaccineDoctor string `gorm:"size:50;not null"`
 	Status     string `gorm:"size:50;not null"`
 
 	Vaccine Vaccine `gorm:"foreignKey:VaccineID"`

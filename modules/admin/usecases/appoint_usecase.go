@@ -166,3 +166,4 @@ func (u *appointmentUsecase) UpdateAppointment(req *entities.AppointmentUpdateRe
 
 	return result, nil
 }
+

@@ -36,16 +36,16 @@ func (r *RequestGetRepository) GetRequestsWithFilter(params entities.RequestQuer
 			r.status AS status,
 			p.hn_id AS hn_number,
 			CONCAT(p.title, p.first_name, ' ', p.last_name) AS patient_name,
+			r.disease_id AS disease_id,
 			COALESCE(d.name, '') AS disease_name,
 			r.description AS description,
 			r.date AS date,
-			r.time AS time,
+			r.start_time AS start_time,
+			r.end_time AS end_time,
 			r.appoint_id AS appoint_id
-			r.disease_id AS disease_id
 		`).
 		Joins("JOIN patient p ON p.id = r.patient_id").
-		Joins("LEFT JOIN appoint a ON a.id = r.appoint_id").
-		Joins("LEFT JOIN disease d ON d.id = a.disease_id").
+		Joins("LEFT JOIN disease d ON d.id = r.disease_id").
 		Order("r.created_at DESC")
 
 	if params.ReqType != "" {
@@ -62,7 +62,6 @@ func (r *RequestGetRepository) GetRequestsWithFilter(params entities.RequestQuer
 	}
 
 	err := query.
-		Order("r.created_at DESC").
 		Limit(params.Limit).
 		Offset(offset).
 		Scan(&results).Error
@@ -91,7 +90,7 @@ func (r *RequestGetRepository) GetRequestInfoByID(id uuid.UUID) (*databases.Requ
 
 	err := r.db.
 		Preload("Patient").
-		Preload("Appoint").
+		Preload("Disease").
 		Preload("Appoint.Disease").
 		First(&req, "id = ?", id).Error
 
@@ -135,7 +134,7 @@ func (r *RequestUpdateRepository) UpdateAppointForAccepted(appointID uuid.UUID, 
 	return r.db.Model(&databases.Appoint{}).
 		Where("id = ?", appointID).
 		Updates(map[string]interface{}{
-			"date":       date.Format("2005-05-05"),
+			"date":       date.Format("2005-06-02"),
 			"start_time": startTime,
 			"end_time":   endTime,
 			"delay":      true,

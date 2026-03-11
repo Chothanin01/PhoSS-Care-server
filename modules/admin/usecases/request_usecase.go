@@ -69,9 +69,7 @@ func (u *requestGetUsecase) GetRequestInfoByID(id uuid.UUID) (*entities.RequestI
 		HnNumber:    p.HnID,
 	}
 
-	if req.AppointID != uuid.Nil {
-		res.DiseaseName = req.Appoint.Disease.Name
-	}
+	res.DiseaseName = req.Disease.Name
 
 	switch req.RequestType {
 

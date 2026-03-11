@@ -210,7 +210,7 @@ type Request struct {
 	Status      string    `gorm:"size:50;not null"`
 	PatientID   uuid.UUID
 	AppointID   uuid.UUID
-	DiseaseID uuid.UUID   `json:"disease_id"`
+	DiseaseID uuid.UUID   
 	
 	Patient Patient `gorm:"foreignKey:PatientID"`
 	Appoint Appoint `gorm:"foreignKey:AppointID"`

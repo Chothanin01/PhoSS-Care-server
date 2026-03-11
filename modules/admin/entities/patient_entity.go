@@ -147,6 +147,7 @@ type PatientFullInfo struct {
 	Height      		float32            `json:"height"`
 	Nationality  		string     		   `json:"nationality"`
 	Ethnicity    		string       	   `json:"ethnicity"`
+	DOB          		string  		   `json:"dob"`          
 }
 
 type AppointInfoRes struct {

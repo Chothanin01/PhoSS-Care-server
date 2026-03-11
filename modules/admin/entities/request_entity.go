@@ -11,7 +11,8 @@ type RequestInfo struct {
 	ID           uuid.UUID  `json:"id"`
 	RequestType  string     `json:"req_type"`
 	PatientName  string     `json:"patient_name"`
-	DiseaseName  string     `json:"disease_name"`
+	DiseaseID    uuid.UUID `json:"disease_id"`
+	DiseaseName  string    `json:"disease_name"`
 	HnNumber     string     `json:"hn_number"`
 	Status       string     `json:"status"`
 	Description  string     `json:"description"`

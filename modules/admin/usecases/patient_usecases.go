@@ -282,6 +282,7 @@ func (u *patientGetUsecase) GetPatientInfoByID(id uuid.UUID) (*entities.PatientI
 		Height:      patient.Height,
 		Ethnicity:   patient.Ethnicity,
 		Nationality: patient.Nationality,
+		DOB:         patient.DOB.Format("2006-01-02"),
 	}
 
 	var kin, caretaker, medicine entities.RelativeInfo

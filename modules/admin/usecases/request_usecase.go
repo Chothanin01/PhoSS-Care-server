@@ -77,10 +77,12 @@ func (u *requestGetUsecase) GetRequestInfoByID(id uuid.UUID) (*entities.RequestI
 
 	case "appoint":
 		res.Date = req.Date.Format("2006-01-02")
-		res.Time = req.Time
+		res.StartTime = req.StartTime
+		res.EndTime = req.EndTime
 		res.Doctor = req.Appoint.Doctor
 		res.AppointDate = req.Appoint.Date.Format("2006-01-02")
-		res.AppointTime = req.Appoint.Time
+		res.AppointStartTime = req.Appoint.StartTime
+		res.AppointEndTime = req.Appoint.EndTime
 		req.AppointID = req.Appoint.ID
 
 	case "medical":
@@ -113,10 +115,14 @@ func (u *requestUpdateUsecase) UpdateRequestStatus(req *entities.RequestStatusUp
 			if request.AppointID == uuid.Nil {
 				return nil, fmt.Errorf("appointment not linked to this request")
 			}
-			if err := u.repo.UpdateAppointForAccepted(request.AppointID, adminID); err != nil {
-				return nil, fmt.Errorf("failed to update appointment: %w", err)
-			}
-			if err := u.repo.UpdateRequestStatus(req.RequestID, "accepted", "", adminID); err != nil {
+			err := u.repo.UpdateAppointForAccepted(
+				request.AppointID,
+				request.Date,
+				request.StartTime,
+				request.EndTime,
+				adminID,
+			) 
+			if err != nil {
 				return nil, fmt.Errorf("failed to update request: %w", err)
 			}
 

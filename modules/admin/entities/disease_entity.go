@@ -37,17 +37,18 @@ type DiseaseData struct {
 }
 
 type AppointmentInfo struct {
-	No 	 	int            `json:"no"`
-	Date    time.Time      `json:"date"`
-	Time    string         `json:"time"`
-	Symptom string         `json:"symptom"`
-	Note    string         `json:"note"`
-	Place   string         `json:"place"`
-	Doctor  string         `json:"doctor"`
-	Status  string         `json:"status"`
-	Letter  bool           `json:"letter"`
-	Delay   bool           `json:"delay"`
-	Health  *HealthInfo    `json:"health,omitempty"`
+	No 	 		int            `json:"no"`
+	Date    	time.Time      `json:"date"`
+	StartTime 	string 		    `json:"start_time"`
+	EndTime   	string 		   `json:"end_time"`
+	Symptom 	string         `json:"symptom"`
+	Note    	string         `json:"note"`
+	Place   	string         `json:"place"`
+	Doctor  	string         `json:"doctor"`
+	Status  	string         `json:"status"`
+	Letter  	bool           `json:"letter"`
+	Delay   	bool           `json:"delay"`
+	Health  	*HealthInfo    `json:"health,omitempty"`
 }
 
 type HealthInfo struct {
@@ -65,6 +66,15 @@ type VaccineFullDetail struct {
 	Effect    string    `json:"effect"`
 	Note      string    `json:"note"`
 	Age       string    `json:"age"`
+}
+
+type VaccinationRecordEntity struct {
+	ID        uuid.UUID
+	PatientID uuid.UUID
+	VaccineID uuid.UUID
+	AppointID uuid.UUID
+	Dose      int
+	Status    string
 }
 
 type DiseaseRepo interface {

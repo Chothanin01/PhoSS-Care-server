@@ -69,6 +69,24 @@ func (r *AppointmentRepository) DiseaseExists(diseaseID uuid.UUID) (bool, error)
     return count > 0, nil
 }
 
+func (r *AppointmentRepository) IsVaccineDisease(diseaseID uuid.UUID) (bool, error) {
+
+	var disease databases.Disease
+
+	err := r.db.
+		Where("id = ?", diseaseID).
+		First(&disease).Error
+	if err != nil {
+		return false, err
+	}
+
+	if disease.Name == "วัคซีน" {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 func (r *AppointmentRepository) CreateAppointment(e *entities.AppointmentEntity, adminID uuid.UUID) (*databases.Appoint, error) {
     var lastNo int
     err := r.db.
@@ -97,7 +115,8 @@ func (r *AppointmentRepository) CreateAppointment(e *entities.AppointmentEntity,
         Status:    e.Status,
         Purpose:   e.Purpose,
         Place:     e.Place,
-        Time:      e.Time,
+		StartTime: e.StartTime,
+        EndTime:   e.EndTime,
         Date:      parseDate,
         PatientID: e.PatientID,
         DiseaseID: e.DiseaseID,
@@ -166,3 +185,86 @@ func (r *AppointmentRepository) UpdateHealth(appointID uuid.UUID, health *entiti
 	return err
 }
 
+func (r *AppointmentRepository) CompleteVaccinationRecord(recordID uuid.UUID, adminID uuid.UUID) error {
+	return r.db.
+		Model(&databases.VaccinationRecord{}).
+		Where("id = ?", recordID).
+		Updates(map[string]interface{}{
+			"status":     "completed",
+			"updated_by": adminID,
+		}).Error
+}
+
+func (r *AppointmentRepository) UpdateVaccineDoctor(recordID uuid.UUID, doctor string, adminID uuid.UUID) error {
+	return r.db.
+		Model(&databases.VaccinationRecord{}).
+		Where("id = ?", recordID).
+		Updates(map[string]interface{}{
+			"vaccine_doctor": doctor,
+			"updated_by":     adminID,
+		}).Error
+}
+
+func (r *AppointmentRepository) CreateVaccinationRecord(vaccineID uuid.UUID, appointID uuid.UUID, dose int, doctor string, adminID uuid.UUID,) error {
+
+	record := databases.VaccinationRecord{
+		VaccineID:     vaccineID,
+		AppointID:     appointID,
+		DoseNumber:    dose,
+		VaccineDoctor: doctor,
+		Status:        "ongoing",
+		CreatedBy:     &adminID,
+		UpdatedBy:     &adminID,
+	}
+
+	return r.db.Create(&record).Error
+}
+
+func (r *AppointmentRepository) FindPatientVaccine(patientID uuid.UUID) (bool, error) {
+
+	var count int64
+
+	err := r.db.
+		Table("patient_disease pd").
+		Joins("JOIN disease d ON d.id = pd.disease_id").
+		Where("pd.patient_id = ?", patientID).
+		Where("d.name = ?", "วัคซีน").
+		Count(&count).Error
+
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
+func (r *AppointmentRepository) CheckVaccineExists(vaccineID uuid.UUID) (bool, error) {
+
+	var count int64
+
+	err := r.db.
+		Model(&databases.Vaccine{}).
+		Where("id = ?", vaccineID).
+		Count(&count).Error
+
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
+func (r *AppointmentRepository) FindVaccineDiseaseID() (uuid.UUID, error) {
+
+	var disease databases.Disease
+
+	err := r.db.
+		Where("name = ?", "วัคซีน").
+		First(&disease).Error
+
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return disease.ID, nil
+}

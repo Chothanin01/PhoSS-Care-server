@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
@@ -129,10 +130,14 @@ func (r *RequestUpdateRepository) UpdateRequestStatus(id uuid.UUID, status, desc
 		}).Error
 }
 
-func (r *RequestUpdateRepository) UpdateAppointForAccepted(appointID uuid.UUID, adminID uuid.UUID) error {
+func (r *RequestUpdateRepository) UpdateAppointForAccepted(appointID uuid.UUID, date time.Time, startTime string, endTime string, adminID uuid.UUID) error {
+
 	return r.db.Model(&databases.Appoint{}).
 		Where("id = ?", appointID).
 		Updates(map[string]interface{}{
+			"date":       date.Format("2005-05-05"),
+			"start_time": startTime,
+			"end_time":   endTime,
 			"delay":      true,
 			"status":     "ongoing",
 			"updated_by": adminID,

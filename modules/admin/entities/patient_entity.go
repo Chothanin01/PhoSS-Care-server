@@ -169,18 +169,19 @@ type AppointDisease struct {
 }
 
 type AppointmentFullInfo struct {
-	No 	 	int            `json:"no"`
-	Date    string         `json:"date"`
-	Time    string         `json:"time"`
-	Symptom string         `json:"symptom"`
-	Note    string         `json:"note"`
-	Place   string         `json:"place"`
-	Purpose string  	   `json:"purpose"`
-	Doctor  string         `json:"doctor"`
-	Officer string         `json:"officer"`
-	Status  string         `json:"status"`
-	Letter  bool           `json:"letter"`
-	Delay   bool           `json:"delay"`
+	No 	 		int            `json:"no"`
+	Date    	string         `json:"date"`
+	StartTime 	string 		   `json:"start_time"`
+	EndTime   	string 		   `json:"end_time"`
+	Symptom 	string         `json:"symptom"`
+	Note    	string         `json:"note"`
+	Place   	string         `json:"place"`
+	Purpose 	string  	   `json:"purpose"`
+	Doctor  	string         `json:"doctor"`
+	Officer 	string         `json:"officer"`
+	Status  	string         `json:"status"`
+	Letter  	bool           `json:"letter"`
+	Delay   	bool           `json:"delay"`
 }
 
 type VaccineInfoRes struct {

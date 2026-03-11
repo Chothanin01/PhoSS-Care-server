@@ -407,7 +407,8 @@ func (u *patientGetUsecase) GetPatientAppointmentsInfoByID(id uuid.UUID) (*entit
 		d.Appointments = append(d.Appointments, entities.AppointmentFullInfo{
 			No:      ap.No,
 			Date:    ap.Date.Format("2006-01-02"),
-			Time:    ap.Time,
+			StartTime: 	ap.StartTime,
+			EndTime: 	ap.EndTime,
 			Symptom: ap.Symptom,
 			Note:    note,
 			Place:   ap.Place,

@@ -22,7 +22,8 @@ type AppointmentCreateReq struct {
     Purpose string `json:"purpose"`
     Place   string `json:"place"`
     Date    string `json:"date"`
-    Time    string `json:"time"`
+    StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
 
     Symptom string `json:"symptom"`
     Note    string `json:"note"`
@@ -36,7 +37,8 @@ type AppointmentEntity struct {
 	Purpose   string
 	Place     string
 	Date      string
-	Time      string
+	StartTime string
+	EndTime   string
 	Symtom    string
 	Note      string
 	PatientID uuid.UUID
@@ -58,7 +60,8 @@ type AppointmentCreateRes struct {
 	Status  string    `json:"status"`
 	No      int       `json:"no"`
 	Date    time.Time `json:"date"`
-	Time    string    `json:"time"`
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
 	Doctor  string    `json:"doctor"`
 	Purpose string    `json:"purpose"`
 	Place   string    `json:"place"`
@@ -73,7 +76,8 @@ type AppointmentUpdateReq struct {
 	Purpose         string    `json:"purpose"`
 	Place           string    `json:"place"`
 	Date            string    `json:"date"`
-	Time            string    `json:"time"`
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
 	Health          Health    `json:"health"`
 }
 
@@ -84,18 +88,57 @@ type AppointmentUpdateRes struct {
 	Purpose string    `json:"purpose"`
 	Place   string    `json:"place"`
 	Date    string    `json:"date"`
-	Time    string    `json:"time"`
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
+}
+
+type VaccineAppointmentCreateReq struct {
+	PatientID uuid.UUID `json:"patient_id"`
+
+	OldVaccineID uuid.UUID `json:"old_vaccine_id"`
+	VaccineID    uuid.UUID `json:"vaccine_id"`
+
+	DoseNumber int `json:"dose_number"`
+	NextDoseNumber int `json:"next_dose_number"`
+
+	VaccineDoctorTitle     string `json:"vaccine_doctor_title"`
+	VaccineDoctorFirstName string `json:"vaccine_doctor_firstname"`
+	VaccineDoctorLastName  string `json:"vaccine_doctor_lastname"`
+
+	DoctorTitle     string `json:"doctor_title"`
+	DoctorFirstName string `json:"doctor_firstname"`
+	DoctorLastName  string `json:"doctor_lastname"`
+	Place  string `json:"place"`
+
+	Date string `json:"date"`
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
+}
+
+type VaccineAppointmentCreateRes struct {
+	AppointID uuid.UUID `json:"appoint_id"`
+	No        int       `json:"no"`
+	Status    string    `json:"status"`
+	Date      string    `json:"date"`
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
+	Doctor    string    `json:"doctor"`
 }
 
 type AppointmentUsecase interface {
 	CreateAppointment(req *AppointmentCreateReq, adminID uuid.UUID) (*AppointmentCreateRes, error)
 	FindOngoingVaccination(patientID uuid.UUID) (*VaccineFullDetail, error) 
+	CreateVaccineAppointment(req *VaccineAppointmentCreateReq, adminID uuid.UUID) (*VaccineAppointmentCreateRes, error)
 }
 
 type AppointmentRepository interface {
 	FindOngoing(patientID, diseaseID uuid.UUID) (*databases.Appoint, error)
 	FindByID(appointID uuid.UUID) (*databases.Appoint, error)
 	FindOngoingVaccination(patientID uuid.UUID) (*databases.VaccinationRecord, error)
+	FindPatientVaccine(patientID uuid.UUID) (bool, error)
+	CheckVaccineExists(vaccineID uuid.UUID) (bool, error)
+	FindVaccineDiseaseID() (uuid.UUID, error) 
+	IsVaccineDisease(diseaseID uuid.UUID) (bool, error)
 
 	UpdateSymptomNote(doctor string, appointID uuid.UUID, symptom string, note string, adminID uuid.UUID) error
 	CompleteAppoint(appointID uuid.UUID, adminID uuid.UUID) error
@@ -103,6 +146,10 @@ type AppointmentRepository interface {
 	CreateHealthRecord(health *Health, patientID uuid.UUID, appointID uuid.UUID, adminID uuid.UUID) error
 
 	DiseaseExists(diseaseID uuid.UUID) (bool, error)
+
+	CreateVaccinationRecord(vaccineID uuid.UUID, appointID uuid.UUID, dose int, doctor string, adminID uuid.UUID,) error
+	UpdateVaccineDoctor(recordID uuid.UUID, doctor string, adminID uuid.UUID) error
+	CompleteVaccinationRecord(recordID uuid.UUID, adminID uuid.UUID) error
 }
 
 type AppointmentTransaction interface {

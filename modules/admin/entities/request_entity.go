@@ -1,6 +1,8 @@
 package entities
 
 import (
+	"time"
+	
 	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
 	"github.com/google/uuid"
 )
@@ -13,8 +15,9 @@ type RequestInfo struct {
 	HnNumber     string     `json:"hn_number"`
 	Status       string     `json:"status"`
 	Description  string     `json:"description"`
-	Date		 string     `json:"date"`
-	Time		 string     `json:"time"`
+	Date		 time.Time  `json:"date"`
+	StartTime 	 string  	`json:"start_time"`
+	EndTime   	 string 	`json:"end_time"`
 	AppointID	 uuid.UUID  `json:"appoint_id"`
 }
 
@@ -33,21 +36,23 @@ type RequestListRes struct {
 }
 
 type RequestInfoRes struct {
-	RequestID        uuid.UUID  `json:"request_id"`
-	RequestType      string     `json:"request_type"`
-	Status           string     `json:"status"`
-	PatientID        uuid.UUID  `json:"patient_id"`
-	FullName         string     `json:"fullname"`
-	Date             string     `json:"date,omitempty"`
-	Time             string     `json:"time,omitempty"`
-	CreatedDate      string     `json:"created_date,omitempty"`
-	Description      string     `json:"description,omitempty"`
-	IDCard           string     `json:"id_card"`
-	HnNumber         string     `json:"hn_number"`
-	Doctor           string     `json:"doctor,omitempty"`
-	AppointDate      string     `json:"appoint_date,omitempty"`
-	AppointTime      string     `json:"appoint_time,omitempty"`
-	DiseaseName  	 string     `json:"disease_name"`
+	RequestID        		uuid.UUID  `json:"request_id"`
+	RequestType      		string     `json:"request_type"`
+	Status           		string     `json:"status"`
+	PatientID        		uuid.UUID  `json:"patient_id"`
+	FullName         		string     `json:"fullname"`
+	Date             		string     `json:"date,omitempty"`
+	StartTime 		 		string     `json:"start_time"`
+	EndTime   		 		string 	`json:"end_time"`
+	CreatedDate      		string     `json:"created_date,omitempty"`
+	Description      		string     `json:"description,omitempty"`
+	IDCard           		string     `json:"id_card"`
+	HnNumber         		string     `json:"hn_number"`
+	Doctor           		string     `json:"doctor,omitempty"`
+	AppointDate      	  	string     `json:"appoint_date,omitempty"`
+	AppointStartTime      	string     `json:"appoint_start_time,omitempty"`
+	AppointEndTime   		string     `json:"appoint_end_time,omitempty"`
+	DiseaseName  	 		string     `json:"disease_name"`
 }
 
 type RequestStatusUpdateReq struct {
@@ -77,7 +82,7 @@ type RequestGetUsecase interface {
 type RequestUpdateRepo interface {
 	FindRequestByID(id uuid.UUID) (*RequestInfo, error)
 	UpdateRequestStatus(id uuid.UUID, status, description string, adminID uuid.UUID) error
-	UpdateAppointForAccepted(appointID uuid.UUID, adminID uuid.UUID) error
+	UpdateAppointForAccepted(appointID uuid.UUID, date time.Time, startTime string, endTime string, adminID uuid.UUID) error 
 }
 
 type RequestUpdateUsecase interface {

@@ -71,17 +71,18 @@ func (u *patientGetUsecase) GetPatientDiseasesInfo(id uuid.UUID, diseaseID uuid.
 			}
 
 			appointments = append(appointments, entities.AppointmentInfo{
-				No:      ap.No,
-				Date:    ap.Date,
-				Time:    ap.Time,
-				Symptom: ap.Symptom,
-				Note:    ap.Note,
-				Place:   ap.Place,
-				Doctor:  ap.Doctor,
-				Status:  ap.Status,
-				Letter:  ap.Letter,
-				Delay:   ap.Delay,
-				Health:  healthPtr,
+				No:      	ap.No,
+				Date:    	ap.Date,
+				StartTime: 	ap.StartTime,
+				EndTime: 	ap.EndTime,
+				Symptom: 	ap.Symptom,
+				Note:    	ap.Note,
+				Place:   	ap.Place,
+				Doctor:  	ap.Doctor,
+				Status:  	ap.Status,
+				Letter:  	ap.Letter,
+				Delay:   	ap.Delay,
+				Health:  	healthPtr,
 			})
 		}
 	}

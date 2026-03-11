@@ -38,7 +38,8 @@ func (r *RequestGetRepository) GetRequestsWithFilter(params entities.RequestQuer
 			COALESCE(d.name, '') AS disease_name,
 			r.description AS description,
 			r.date AS date,
-			r.time AS time
+			r.time AS time,
+			r.appoint_id AS appoint_id
 		`).
 		Joins("JOIN patient p ON p.id = r.patient_id").
 		Joins("LEFT JOIN appoint a ON a.id = r.appoint_id").
@@ -83,51 +84,21 @@ func (r *RequestGetRepository) CountRequestsWithFilter(params entities.RequestQu
 	return count, err
 }
 
-func (r *RequestGetRepository) GetRequestInfoByID(id uuid.UUID) (*entities.RequestInfoRes, error) {
+func (r *RequestGetRepository) GetRequestInfoByID(id uuid.UUID) (*databases.Request, error) {
 	var req databases.Request
+
 	err := r.db.
-		Preload("Appoint.Patient").
-		Preload("Appoint").
 		Preload("Patient").
+		Preload("Appoint").
+		Preload("Appoint.Disease").
 		First(&req, "id = ?", id).Error
+
 	if err != nil {
 		return nil, err
 	}
 
-	p := req.Patient
-	fullname := p.Title + p.FirstName + " " + p.LastName
-
-	res := &entities.RequestInfoRes{
-		RequestID: req.ID,
-		RequestType: req.RequestType,
-		Status:      req.Status,
-		PatientID: 	 p.ID,
-		FullName: fullname,
-		IDCard:      p.IDCard,
-		HnNumber:    p.HnID,
-	}
-
-	switch req.RequestType {
-	case "appoint":
-		res.Date = req.Date.Format("2006-01-02")
-		res.Time = req.Time
-		res.Doctor = req.Appoint.Doctor
-		res.AppointDate = req.Appoint.Date.Format("2006-01-02")
-		res.AppointTime = req.Appoint.Time
-
-	case "medical":
-		res.CreatedDate = req.CreatedAt.Format("2006-01-02")
-		res.Description = req.Description
-		res.Doctor = req.Appoint.Doctor
-
-	case "document":
-		res.CreatedDate = req.CreatedAt.Format("2006-01-02")
-		res.Description = req.Description
-	}
-
-	return res, nil
+	return &req, nil
 }
-
 func (r *RequestUpdateRepository) FindRequestByID(id uuid.UUID) (*entities.RequestInfo, error) {
 	var req databases.Request
 	err := r.db.Preload("Appoint").First(&req, "id = ?", id).Error

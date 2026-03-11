@@ -28,7 +28,7 @@ func (j *jwtService) GenerateToken(userID string, role string, extraClaims map[s
 		"user_id": userID,
 		"role":    role,
 		"iss":     j.issuer,
-		"exp":     time.Now().Add(time.Hour * 24).Unix(),
+		"exp":     time.Now().Add(time.Hour * 72).Unix(),
 	}
 
 	for k, v := range extraClaims {

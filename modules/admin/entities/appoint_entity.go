@@ -85,11 +85,13 @@ type AppointmentUsecase interface {
 type AppointmentRepository interface {
 	FindOngoing(patientID, diseaseID uuid.UUID) (*databases.Appoint, error)
 	FindByID(appointID uuid.UUID) (*databases.Appoint, error)
+
 	UpdateAppointment(e *databases.Appoint) error
 	UpdateHealth(appointID uuid.UUID, health *Health, adminID uuid.UUID) error
 	CompleteAppoint(appointID uuid.UUID, adminID uuid.UUID) error
 	CreateAppointment(entity *AppointmentEntity, adminID uuid.UUID) (*databases.Appoint, error)
 	CreateHealthRecord(health *Health, patientID uuid.UUID, appointID uuid.UUID, adminID uuid.UUID) error
+
 	DiseaseExists(diseaseID uuid.UUID) (bool, error)
 }
 

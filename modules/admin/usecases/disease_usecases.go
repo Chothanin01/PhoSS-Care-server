@@ -8,15 +8,15 @@ import (
 	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
 )
 
-type newDiseaseUsecase struct {
+type DiseaseUsecase struct {
 	repo entities.DiseaseGetRepo
 }
 
-func NewDiseaseUsecase(repo entities.DiseaseGetRepo) *newDiseaseUsecase {
-	return &newDiseaseUsecase{repo: repo}
+func NewDiseaseUsecase(repo entities.DiseaseGetRepo) *DiseaseUsecase {
+	return &DiseaseUsecase{repo: repo}
 }
 
-func (u *newDiseaseUsecase) GetAllDiseases() ([]entities.Disease, error) {
+func (u *DiseaseUsecase) GetAllDiseases() ([]entities.Disease, error) {
 	diseases, err := u.repo.GetAllDiseases()
 	if err != nil {
 		return nil, fmt.Errorf("get all diseases: %w", err)
@@ -177,4 +177,14 @@ func (u *patientGetUsecase) GetPatientVaccinesByID(patientID uuid.UUID) (*entiti
 		Message: message,
 		Data:    data,
 	}, nil
+}
+
+func (u *DiseaseUsecase) GetAllVaccines() ([]entities.VaccineFullDetail, error) {
+
+	vaccines, err := u.repo.GetAllVaccines()
+	if err != nil {
+		return nil, fmt.Errorf("get vaccines: %w", err)
+	}
+
+	return vaccines, nil
 }

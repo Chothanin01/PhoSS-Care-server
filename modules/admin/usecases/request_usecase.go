@@ -50,7 +50,50 @@ func (u *requestGetUsecase) GetRequestsWithFilter(params entities.RequestQueryPa
 }
 
 func (u *requestGetUsecase) GetRequestInfoByID(id uuid.UUID) (*entities.RequestInfoRes, error) {
-	return u.repo.GetRequestInfoByID(id)
+
+	req, err := u.repo.GetRequestInfoByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	p := req.Patient
+	fullname := p.Title + p.FirstName + " " + p.LastName
+
+	res := &entities.RequestInfoRes{
+		RequestID:   req.ID,
+		RequestType: req.RequestType,
+		Status:      req.Status,
+		PatientID:   p.ID,
+		FullName:    fullname,
+		IDCard:      p.IDCard,
+		HnNumber:    p.HnID,
+	}
+
+	if req.AppointID != uuid.Nil {
+		res.DiseaseName = req.Appoint.Disease.Name
+	}
+
+	switch req.RequestType {
+
+	case "appoint":
+		res.Date = req.Date.Format("2006-01-02")
+		res.Time = req.Time
+		res.Doctor = req.Appoint.Doctor
+		res.AppointDate = req.Appoint.Date.Format("2006-01-02")
+		res.AppointTime = req.Appoint.Time
+		req.AppointID = req.Appoint.ID
+
+	case "medical":
+		res.CreatedDate = req.CreatedAt.Format("2006-01-02")
+		res.Description = req.Description
+		res.Doctor = req.Appoint.Doctor
+
+	case "document":
+		res.CreatedDate = req.CreatedAt.Format("2006-01-02")
+		res.Description = req.Description
+	}
+
+	return res, nil
 }
 
 func (u *requestUpdateUsecase) UpdateRequestStatus(req *entities.RequestStatusUpdateReq, adminID uuid.UUID) (*entities.RequestStatusUpdateRes, error) {

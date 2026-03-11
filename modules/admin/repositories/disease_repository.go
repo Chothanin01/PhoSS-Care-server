@@ -1,10 +1,9 @@
 package repositories
 
 import (
-
-	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
 	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -12,8 +11,8 @@ type DiseaseGetRepository struct {
 	db *gorm.DB
 }
 
-func NewDiseaseGetRepository(db *gorm.DB) *DiseaseRepository {
-	return &DiseaseRepository{db: db}
+func NewDiseaseGetRepository(db *gorm.DB) *DiseaseGetRepository {
+	return &DiseaseGetRepository{db: db}
 }
 
 type DiseaseRepository struct {
@@ -24,7 +23,7 @@ func NewDiseaseRepository(db *gorm.DB) *DiseaseRepository {
 	return &DiseaseRepository{db: db}
 }
 
-func (r *DiseaseRepository) GetAllDiseases() ([]entities.Disease, error) {
+func (r *DiseaseGetRepository) GetAllDiseases() ([]entities.Disease, error) {
 	var diseases []databases.Disease
 	if err := r.db.Find(&diseases).Error; err != nil {
 		return nil, err
@@ -79,4 +78,28 @@ func (r *PatientGetRepository) GetPatientVaccinesByID(patientID uuid.UUID) (*dat
 	}
 
 	return &patient, vaccines, nil
+}
+
+func (r *DiseaseGetRepository) GetAllVaccines() ([]entities.VaccineFullDetail, error) {
+
+	var records []databases.Vaccine
+	var result []entities.VaccineFullDetail
+
+	err := r.db.Find(&records).Error
+	if err != nil {
+		return nil, err
+	}
+
+	for _, rec := range records {
+
+		result = append(result, entities.VaccineFullDetail{
+			VaccineID: rec.ID,
+			Type:      rec.Type,
+			Effect:    rec.Effect,
+			Note:      rec.Note,
+			Age:       rec.Age,
+		})
+	}
+
+	return result, nil
 }

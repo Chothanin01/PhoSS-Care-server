@@ -14,7 +14,8 @@ type AppointmentController struct {
 func NewAppointmentController(r fiber.Router, uc entities.AppointmentUsecase) {
 	controller := &AppointmentController{usecase: uc}
 	r.Post("/", controller.CreateAppointment)
-    r.Patch("/:id", controller.UpdateAppointment)
+	r.Patch("/:id", controller.UpdateAppointment)
+
 }
 
 func (c *AppointmentController) CreateAppointment(ctx *fiber.Ctx) error {
@@ -89,3 +90,4 @@ func (c *AppointmentController) UpdateAppointment(ctx *fiber.Ctx) error {
 		"data":    res,
 	})
 }
+

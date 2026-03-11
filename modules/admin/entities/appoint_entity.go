@@ -8,18 +8,26 @@ import (
 )
 
 type AppointmentCreateReq struct {
-	PatientID       uuid.UUID `json:"patient_id"`
-	DiseaseID       uuid.UUID `json:"disease_id"`
-	DoctorTitle     string    `json:"doctor_title"`
-	DoctorFirstName string    `json:"doctor_firstname"`
-	DoctorLastName  string    `json:"doctor_lastname"`
-	Symptom         string    `json:"symptom"`
-	Note            string    `json:"note"`
-	Place           string    `json:"place"`
-	Time            string    `json:"time"`
-	Date            string    `json:"date"`
-	Purpose         string    `json:"purpose"`
-	Health          Health    `json:"health"`
+    PatientID uuid.UUID `json:"patient_id"`
+    DiseaseID uuid.UUID `json:"disease_id"`
+
+    DoctorTitle     string `json:"doctor_title"`
+    DoctorFirstName string `json:"doctor_firstname"`
+    DoctorLastName  string `json:"doctor_lastname"`
+
+    NextDoctorTitle     string `json:"next_doctor_title"`
+    NextDoctorFirstName string `json:"next_doctor_firstname"`
+    NextDoctorLastName  string `json:"next_doctor_lastname"`
+
+    Purpose string `json:"purpose"`
+    Place   string `json:"place"`
+    Date    string `json:"date"`
+    Time    string `json:"time"`
+
+    Symptom string `json:"symptom"`
+    Note    string `json:"note"`
+
+    Health Health `json:"health"`
 }
 
 type AppointmentEntity struct {
@@ -29,6 +37,8 @@ type AppointmentEntity struct {
 	Place     string
 	Date      string
 	Time      string
+	Symtom    string
+	Note      string
 	PatientID uuid.UUID
 	DiseaseID uuid.UUID
 	CreatedBy uuid.UUID
@@ -79,7 +89,6 @@ type AppointmentUpdateRes struct {
 
 type AppointmentUsecase interface {
 	CreateAppointment(req *AppointmentCreateReq, adminID uuid.UUID) (*AppointmentCreateRes, error)
-	UpdateAppointment(req *AppointmentUpdateReq, adminID uuid.UUID) (*AppointmentUpdateRes, error)
 	FindOngoingVaccination(patientID uuid.UUID) (*VaccineFullDetail, error) 
 }
 
@@ -88,8 +97,7 @@ type AppointmentRepository interface {
 	FindByID(appointID uuid.UUID) (*databases.Appoint, error)
 	FindOngoingVaccination(patientID uuid.UUID) (*databases.VaccinationRecord, error)
 
-	UpdateAppointment(e *databases.Appoint) error
-	UpdateHealth(appointID uuid.UUID, health *Health, adminID uuid.UUID) error
+	UpdateSymptomNote(doctor string, appointID uuid.UUID, symptom string, note string, adminID uuid.UUID) error
 	CompleteAppoint(appointID uuid.UUID, adminID uuid.UUID) error
 	CreateAppointment(entity *AppointmentEntity, adminID uuid.UUID) (*databases.Appoint, error)
 	CreateHealthRecord(health *Health, patientID uuid.UUID, appointID uuid.UUID, adminID uuid.UUID) error

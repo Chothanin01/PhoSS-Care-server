@@ -15,7 +15,7 @@ func NewDiseaseController(r fiber.Router, diseaseUC entities.DiseaseUsecase) {
 		DiseaseUsecase: diseaseUC,
 	}
 	r.Get("/", controller.GetAllDiseases)
-	r.Get("Vaccines", controller.GetAllVaccines)
+	r.Get("vaccines", controller.GetAllVaccines)
 }
 
 func (c *DiseaseController) GetAllDiseases(ctx *fiber.Ctx) error {

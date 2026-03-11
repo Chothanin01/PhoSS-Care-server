@@ -384,6 +384,29 @@ func (r *PatientGetRepository) GetPatientBasicInfoByID(id uuid.UUID) (*databases
 	return &patient, nil
 }
 
+func (r *PatientGetRepository) GetPatientActiveDiseasesByID(patientID uuid.UUID) ([]databases.Disease, error) {
+	var patient databases.Patient
+
+	fmt.Print("first")
+	err := r.db.
+		Preload("Diseases.Disease", "name <> ?", "วัคซีน").
+		First(&patient, "id = ?", patientID).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	var diseases []databases.Disease
+
+	for _, pd := range patient.Diseases {
+		if pd.Disease != nil {
+			diseases = append(diseases, *pd.Disease)
+		}
+	}
+
+	return diseases, nil
+}
+
 // ---------------------- UPDATE ----------------------
 
 func (r *PatientRepository) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq, adminID *uuid.UUID) (*entities.PatientUpdateRes, error) {

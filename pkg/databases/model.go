@@ -115,7 +115,8 @@ type Appoint struct {
 	BaseModel
 	No        int       `json:"no"`
 	Date      time.Time `json:"date"`
-	Time      string    `gorm:"size:13" json:"time"`
+	StartTime string `gorm:"size:5" json:"start_time"`
+	EndTime   string `gorm:"size:5" json:"end_time"`
 	Symptom   string    `json:"symptom"`
 	Note      string    `json:"note"`
 	Place     string    `json:"place"`
@@ -204,11 +205,12 @@ type Request struct {
 	RequestType string    `gorm:"size:255;not null"`
 	Description string    `json:"description"`
 	Date        time.Time `json:"date"`
-	Time        string    `gorm:"size:13" json:"time"`
+	StartTime string `gorm:"size:5" json:"start_time"`
+	EndTime   string `gorm:"size:5" json:"end_time"`
 	Status      string    `gorm:"size:50;not null"`
 	PatientID   uuid.UUID
 	AppointID   uuid.UUID
-	DiseaseID uuid.UUID   `json:"disease_id"`
+	DiseaseID uuid.UUID   
 	
 	Patient Patient `gorm:"foreignKey:PatientID"`
 	Appoint Appoint `gorm:"foreignKey:AppointID"`

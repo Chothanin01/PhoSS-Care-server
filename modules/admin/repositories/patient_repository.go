@@ -389,7 +389,7 @@ func (r *PatientGetRepository) GetPatientActiveDiseasesByID(patientID uuid.UUID)
 
 	fmt.Print("first")
 	err := r.db.
-		Preload("Diseases.Disease", "name <> ?", "วัคซีน").
+		Preload("Diseases.Disease").
 		First(&patient, "id = ?", patientID).Error
 
 	if err != nil {
@@ -406,6 +406,34 @@ func (r *PatientGetRepository) GetPatientActiveDiseasesByID(patientID uuid.UUID)
 
 	return diseases, nil
 }
+
+func (r *PatientGetRepository) GetPatientNoAppointDiseasesByID(patientID uuid.UUID) ([]databases.Disease, error) {
+	var diseases []databases.Disease
+
+	err := r.db.
+		Model(&databases.Disease{}).
+		Joins("JOIN patient_disease pd ON pd.disease_id = disease.id").
+		Where("pd.patient_id = ?", patientID).
+		Where("pd.deleted_at IS NULL").
+		Where("disease.deleted_at IS NULL").
+		Where("disease.name <> ?", "วัคซีน").
+		Where(`
+			disease.id NOT IN (
+				SELECT disease_id
+				FROM appoint
+				WHERE patient_id = ?
+				AND status IN ('ongoing','delay')
+			)
+		`, patientID).
+		Find(&diseases).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return diseases, nil
+}
+
 
 // ---------------------- UPDATE ----------------------
 

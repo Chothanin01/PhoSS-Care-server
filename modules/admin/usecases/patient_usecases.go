@@ -534,6 +534,26 @@ func (u *patientGetUsecase) GetPatientActiveDiseasesByID(patientID uuid.UUID) ([
 	return result, nil
 }
 
+func (u *patientGetUsecase) GetPatientNoAppointDiseases(patientID uuid.UUID) ([]entities.Disease, error) {
+
+	diseases, err := u.readRepo.GetPatientNoAppointDiseasesByID(patientID)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []entities.Disease
+
+	for _, d := range diseases {
+		result = append(result, entities.Disease{
+			DiseaseID: d.ID,
+			Name:      d.Name,
+		})
+	}
+
+	return result, nil
+}
+
+
 // ---------------------- UPDATE ----------------------
 
 func (u *newPatientUsecase) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq, adminID uuid.UUID) (*entities.PatientUpdateRes, error) {

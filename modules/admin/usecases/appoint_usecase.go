@@ -26,7 +26,7 @@ func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateRe
 
 	if req.PatientID == uuid.Nil || req.DiseaseID == uuid.Nil || req.DoctorTitle == "" || req.DoctorFirstName == "" ||
 	req.DoctorLastName == "" || req.NextDoctorTitle == "" || req.NextDoctorFirstName == "" || req.NextDoctorLastName == "" ||
-	req.Purpose == "" || req.Place == "" || req.Date == "" || req.Time == "" {
+	req.Purpose == "" || req.Place == "" || req.Date == "" || req.StartTime == "" || req.EndTime == "" {
 		return nil, fmt.Errorf("missing required fields")
 	}
 

@@ -355,22 +355,6 @@ func (r *PatientGetRepository) GetPatientAppointmentsInfoByID(patientID uuid.UUI
 	return &patient, nil
 }
 
-func (r *PatientGetRepository) GetPatientDiseasesByID(patientID uuid.UUID) (*databases.Patient, error) {
-	var patient databases.Patient
-
-	err := r.db.
-		Unscoped().
-		Preload("Diseases").
-		Preload("Diseases.Disease").
-		First(&patient, "id = ?", patientID).Error
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &patient, nil
-}
-
 func (r *PatientGetRepository) GetPatientBasicInfoByID(id uuid.UUID) (*databases.Patient, error) {
 	var patient databases.Patient
 
@@ -384,54 +368,48 @@ func (r *PatientGetRepository) GetPatientBasicInfoByID(id uuid.UUID) (*databases
 	return &patient, nil
 }
 
-func (r *PatientGetRepository) GetPatientActiveDiseasesByID(patientID uuid.UUID) ([]databases.Disease, error) {
-	var patient databases.Patient
 
-	fmt.Print("first")
-	err := r.db.
-		Preload("Diseases.Disease").
-		First(&patient, "id = ?", patientID).Error
-
-	if err != nil {
-		return nil, err
-	}
+func (r *PatientGetRepository) GetPatientDiseases(patientID uuid.UUID, dtype string) ([]databases.Disease, error) {
 
 	var diseases []databases.Disease
 
-	for _, pd := range patient.Diseases {
-		if pd.Disease != nil {
-			diseases = append(diseases, *pd.Disease)
-		}
-	}
-
-	return diseases, nil
-}
-
-func (r *PatientGetRepository) GetPatientNoAppointDiseasesByID(patientID uuid.UUID) ([]databases.Disease, error) {
-	var diseases []databases.Disease
-
-	err := r.db.
+	query := r.db.
 		Model(&databases.Disease{}).
 		Joins("JOIN patient_disease pd ON pd.disease_id = disease.id").
 		Where("pd.patient_id = ?", patientID).
 		Where("pd.deleted_at IS NULL").
-		Where("disease.deleted_at IS NULL").
-		Where("disease.name <> ?", "วัคซีน").
-		Where(`
-			disease.id NOT IN (
-				SELECT disease_id
-				FROM appoint
-				WHERE patient_id = ?
-				AND status IN ('ongoing','delay')
-			)
-		`, patientID).
-		Find(&diseases).Error
+		Where("disease.deleted_at IS NULL")
 
-	if err != nil {
-		return nil, err
+	switch dtype {
+
+	case "active":
+		// just active diseases
+
+	case "noappoint":
+		query = query.
+			Where("disease.name <> ?", "วัคซีน").
+			Where(`
+				disease.id NOT IN (
+					SELECT disease_id
+					FROM appoint
+					WHERE patient_id = ?
+					AND status IN ('ongoing','delay')
+				)
+			`, patientID)
+
+	case "all":
+		query = r.db.
+			Unscoped().
+			Model(&databases.Disease{}).
+			Joins("JOIN patient_disease pd ON pd.disease_id = disease.id").
+			Where("pd.patient_id = ?", patientID)
+
+	default:
+		return nil, fmt.Errorf("invalid disease type")
 	}
 
-	return diseases, nil
+	err := query.Find(&diseases).Error
+	return diseases, err
 }
 
 

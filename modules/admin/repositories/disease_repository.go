@@ -56,12 +56,8 @@ func (r *PatientGetRepository) GetPatientVaccinesByID(patientID uuid.UUID) (*dat
 	var patient databases.Patient
 
 	err := r.db.
-		Preload("Diseases", func(db *gorm.DB) *gorm.DB {
-			return db.Unscoped()
-		}).
-		Preload("Diseases.Disease", func(db *gorm.DB) *gorm.DB {
-			return db.Unscoped()
-		}).
+		Preload("Diseases").
+		Preload("Diseases.Disease").
 		First(&patient, "id = ?", patientID).Error
 	if err != nil {
 		return nil, nil, err

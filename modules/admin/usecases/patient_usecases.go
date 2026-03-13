@@ -284,14 +284,6 @@ func (u *patientGetUsecase) GetPatientInfoByID(id uuid.UUID) (*entities.PatientI
 		Nationality: patient.Nationality,
 	}
 
-	var diseases []entities.Disease
-	for _, pd := range patient.Diseases {
-		diseases = append(diseases, entities.Disease{
-			DiseaseID:   pd.DiseaseID,
-			Name: pd.Disease.Name,
-		})
-	}
-
 	var kin, caretaker, medicine entities.RelativeInfo
 	var house, nurse entities.OfficerInfo
 
@@ -367,7 +359,6 @@ func (u *patientGetUsecase) GetPatientInfoByID(id uuid.UUID) (*entities.PatientI
 		Data: []entities.PatientData{
 			{
 				Patient:  full,
-				Disease:  diseases,
 				Relative: entities.Relative{
 					Kin:       kin,
 					Caretaker: caretaker,
@@ -434,17 +425,6 @@ func (u *patientGetUsecase) GetPatientAppointmentsInfoByID(id uuid.UUID) (*entit
 		appoint = append(appoint, *d)
 	}
 
-	var diseases []entities.Disease
-
-	for _, pd := range patient.Diseases {
-		if pd.Disease != nil {
-			diseases = append(diseases, entities.Disease{
-				DiseaseID: pd.Disease.ID,
-				Name:      pd.Disease.Name,
-			})
-		}
-	}
-
 	res := &entities.AppointInfoRes{
 		Success: true,
 		Message: "Get patient appointments successfully.",
@@ -454,9 +434,80 @@ func (u *patientGetUsecase) GetPatientAppointmentsInfoByID(id uuid.UUID) (*entit
 				Fullname:  fullname,
 				Hnnumber:  patient.HnID,
 				Appointments:  appoint,
-				Diseases:  diseases,
 			},
 		},
+	}
+
+	return res, nil
+}
+
+func (u *patientGetUsecase) GetPatientDiseasesByID(id uuid.UUID) (*entities.PatientDiseaseRes, error) {
+
+	patient, err := u.readRepo.GetPatientDiseasesByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	fullname := patient.Title + patient.FirstName + " " + patient.LastName
+
+	var diseases []entities.Disease
+
+	for _, d := range patient.Diseases {
+		diseases = append(diseases, entities.Disease{
+			DiseaseID:   d.DiseaseID,
+			Name: d.Disease.Name,
+		})
+	}
+
+	res := &entities.PatientDiseaseRes{
+		PatientID: patient.ID,
+		HnNumber:  patient.HnID,
+		FullName:  fullname,
+		Diseases:  diseases,
+	}
+
+	return res, nil
+}
+
+func (u *patientGetUsecase) GetPatientBasicInfoByID(id uuid.UUID) (*entities.PatientBasicInfoRes, error) {
+
+	patient, err := u.readRepo.GetPatientBasicInfoByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	fullname := patient.Title + patient.FirstName + " " + patient.LastName
+
+	var ageYears, ageMonths, ageDays int
+
+	if !patient.DOB.IsZero() {
+		now := time.Now()
+		years := now.Year() - patient.DOB.Year()
+		months := int(now.Month()) - int(patient.DOB.Month())
+		days := now.Day() - patient.DOB.Day()
+
+		if days < 0 {
+			prevMonth := now.AddDate(0, -1, 0)
+			days += utils.DaysInMonth(prevMonth.Year(), prevMonth.Month())
+			months--
+		}
+		if months < 0 {
+			months += 12
+			years--
+		}
+
+		ageYears = years
+		ageMonths = months
+		ageDays = days
+	}
+
+	res := &entities.PatientBasicInfoRes{
+		PatientID: patient.ID,
+		FullName:  fullname,
+		HnNumber:  patient.HnID,
+		AgeYears:     ageYears,
+		AgeMonths:    ageMonths,
+		AgeDays:      ageDays,
 	}
 
 	return res, nil

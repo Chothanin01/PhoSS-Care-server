@@ -80,11 +80,13 @@ type AppointmentUpdateRes struct {
 type AppointmentUsecase interface {
 	CreateAppointment(req *AppointmentCreateReq, adminID uuid.UUID) (*AppointmentCreateRes, error)
 	UpdateAppointment(req *AppointmentUpdateReq, adminID uuid.UUID) (*AppointmentUpdateRes, error)
+	FindOngoingVaccination(patientID uuid.UUID) (*VaccineFullDetail, error) 
 }
 
 type AppointmentRepository interface {
 	FindOngoing(patientID, diseaseID uuid.UUID) (*databases.Appoint, error)
 	FindByID(appointID uuid.UUID) (*databases.Appoint, error)
+	FindOngoingVaccination(patientID uuid.UUID) (*databases.VaccinationRecord, error)
 
 	UpdateAppointment(e *databases.Appoint) error
 	UpdateHealth(appointID uuid.UUID, health *Health, adminID uuid.UUID) error

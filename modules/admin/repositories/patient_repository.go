@@ -297,9 +297,13 @@ func (r *PatientGetRepository) GetPatientDiseasesInfoByID(patientID, diseaseID u
 		Preload("Diseases").
 		Preload("Diseases.Disease").
 		Preload("Appointments", func(db *gorm.DB) *gorm.DB {
-			return db.Where("disease_id = ?", diseaseID).Order("no DESC")
+			return db.
+				Where("disease_id = ?", diseaseID).
+				Order("no DESC")
 		}).
-		Preload("Healths").
+		Preload("Healths", func(db *gorm.DB) *gorm.DB {
+			return db.Where("deleted_at IS NULL")
+		}).
 		First(&patient, "id = ?", patientID).Error
 
 	if err != nil {

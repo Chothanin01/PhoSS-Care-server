@@ -82,10 +82,14 @@ func (r *AppointmentRepository) CreateAppointment(e *entities.AppointmentEntity,
 
     No := lastNo + 1
 
-    paresDate, err := time.Parse("2006-01-02", e.Date)
-    if err != nil {
-        return nil, fmt.Errorf("parse date: %w", err)
-    }
+    var parseDate time.Time
+	if e.Date != "" {
+		d, err := time.Parse("2006-01-02", e.Date)
+		if err != nil {
+			return nil, fmt.Errorf("parse date: %w", err)
+		}
+		parseDate = d
+	}
 
     appoint := databases.Appoint{
         No:        No,
@@ -94,9 +98,11 @@ func (r *AppointmentRepository) CreateAppointment(e *entities.AppointmentEntity,
         Purpose:   e.Purpose,
         Place:     e.Place,
         Time:      e.Time,
-        Date:      paresDate,
+        Date:      parseDate,
         PatientID: e.PatientID,
         DiseaseID: e.DiseaseID,
+		Symptom: e.Symtom,
+		Note: e.Note,
         CreatedBy: &adminID,
         UpdatedBy: &adminID,
     }
@@ -131,17 +137,15 @@ func (r *AppointmentRepository) FindByID(appointID uuid.UUID) (*databases.Appoin
 	return &appoint, nil
 }
 
-func (r *AppointmentRepository) UpdateAppointment(e *databases.Appoint) error {
-	return r.db.Model(&databases.Appoint{}).
-		Where("id = ?", e.ID).
+func (r *AppointmentRepository) UpdateSymptomNote(doctor string,appointID uuid.UUID, symptom string, note string, adminID uuid.UUID) error {
+	return r.db.
+		Model(&databases.Appoint{}).
+		Where("id = ?", appointID).
 		Updates(map[string]interface{}{
-			"doctor":     e.Doctor,
-			"symptom":    e.Symptom,
-			"purpose":    e.Purpose,
-			"place":      e.Place,
-			"date":       e.Date,
-			"time":       e.Time,
-			"updated_by": e.UpdatedBy,
+			"symptom":    symptom,
+			"note":       note,
+			"doctor":     doctor,
+			"updated_by": adminID,
 		}).Error
 }
 

@@ -40,6 +40,7 @@ func (r *RequestGetRepository) GetRequestsWithFilter(params entities.RequestQuer
 			r.date AS date,
 			r.time AS time,
 			r.appoint_id AS appoint_id
+			r.disease_id AS disease_id
 		`).
 		Joins("JOIN patient p ON p.id = r.patient_id").
 		Joins("LEFT JOIN appoint a ON a.id = r.appoint_id").

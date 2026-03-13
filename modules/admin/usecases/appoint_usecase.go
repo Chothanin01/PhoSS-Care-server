@@ -2,7 +2,7 @@ package usecases
 
 import (
 	"fmt"
-
+	
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
 )
@@ -23,6 +23,12 @@ func NewAppointmentUsecase(tx entities.AppointmentTransaction,repo entities.Appo
 func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateReq, adminID uuid.UUID) (*entities.AppointmentRes, error) {
 
 	var result *entities.AppointmentRes
+
+	if req.PatientID == uuid.Nil || req.DiseaseID == uuid.Nil || req.DoctorTitle == "" || req.DoctorFirstName == "" ||
+	req.DoctorLastName == "" || req.NextDoctorTitle == "" || req.NextDoctorFirstName == "" || req.NextDoctorLastName == "" ||
+	req.Purpose == "" || req.Place == "" || req.Date == "" || req.Time == "" {
+		return nil, fmt.Errorf("missing required fields")
+	}
 
 	err := u.tx.Do(func(r entities.RepositorySet) error {
 
@@ -96,7 +102,8 @@ func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateRe
 			return err
 		}
 
-		if req.Health.Height > 0 && req.Health.Weight > 0 {
+		if req.Health.Height != 0 || req.Health.Weight != 0 ||
+			req.Health.Pulse != 0 || req.Health.Sugar != 0 {
 
 			health := &entities.Health{
 				Weight: req.Health.Weight,

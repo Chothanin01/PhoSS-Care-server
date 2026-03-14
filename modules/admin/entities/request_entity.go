@@ -44,12 +44,13 @@ type RequestInfoRes struct {
 	FullName         		string     `json:"fullname"`
 	Date             		string     `json:"date,omitempty"`
 	StartTime 		 		string     `json:"start_time"`
-	EndTime   		 		string 	`json:"end_time"`
+	EndTime   		 		string 	   `json:"end_time"`
 	CreatedDate      		string     `json:"created_date,omitempty"`
 	Description      		string     `json:"description,omitempty"`
 	IDCard           		string     `json:"id_card"`
 	HnNumber         		string     `json:"hn_number"`
 	Doctor           		string     `json:"doctor,omitempty"`
+	AppointID      	  		uuid.UUID  `json:"appoint_id,omitempty"`
 	AppointDate      	  	string     `json:"appoint_date,omitempty"`
 	AppointStartTime      	string     `json:"appoint_start_time,omitempty"`
 	AppointEndTime   		string     `json:"appoint_end_time,omitempty"`

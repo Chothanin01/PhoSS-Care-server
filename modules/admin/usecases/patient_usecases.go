@@ -443,34 +443,6 @@ func (u *patientGetUsecase) GetPatientAppointmentsInfoByID(id uuid.UUID) (*entit
 	return res, nil
 }
 
-func (u *patientGetUsecase) GetPatientDiseasesByID(id uuid.UUID) (*entities.PatientDiseaseRes, error) {
-
-	patient, err := u.readRepo.GetPatientDiseasesByID(id)
-	if err != nil {
-		return nil, err
-	}
-
-	fullname := patient.Title + patient.FirstName + " " + patient.LastName
-
-	var diseases []entities.Disease
-
-	for _, d := range patient.Diseases {
-		diseases = append(diseases, entities.Disease{
-			DiseaseID:   d.DiseaseID,
-			Name: d.Disease.Name,
-		})
-	}
-
-	res := &entities.PatientDiseaseRes{
-		PatientID: patient.ID,
-		HnNumber:  patient.HnID,
-		FullName:  fullname,
-		Diseases:  diseases,
-	}
-
-	return res, nil
-}
-
 func (u *patientGetUsecase) GetPatientBasicInfoByID(id uuid.UUID) (*entities.PatientBasicInfoRes, error) {
 
 	patient, err := u.readRepo.GetPatientBasicInfoByID(id)
@@ -515,9 +487,9 @@ func (u *patientGetUsecase) GetPatientBasicInfoByID(id uuid.UUID) (*entities.Pat
 	return res, nil
 }
 
-func (u *patientGetUsecase) GetPatientActiveDiseasesByID(patientID uuid.UUID) ([]entities.Disease, error) {
+func (u *patientGetUsecase) GetPatientDiseases(patientID uuid.UUID, dtype string) ([]entities.Disease, error) {
 
-	diseases, err := u.readRepo.GetPatientActiveDiseasesByID(patientID)
+	diseases, err := u.readRepo.GetPatientDiseases(patientID, dtype)
 	if err != nil {
 		return nil, err
 	}

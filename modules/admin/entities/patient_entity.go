@@ -242,12 +242,6 @@ type PatientUpdateRes struct {
 	Ethnicity   string    `json:"ethnicity"`
 }
 
-type PatientDiseaseRes struct {
-	PatientID uuid.UUID             `json:"patient_id"`
-	HnNumber  string                `json:"hn_number"`
-	FullName  string                `json:"fullname"`
-	Diseases  []Disease  			`json:"diseases"`
-}
 
 type PatientBasicInfoRes struct {
 	PatientID uuid.UUID `json:"patient_id"`
@@ -258,6 +252,9 @@ type PatientBasicInfoRes struct {
 	AgeDays   int       `json:"age_days"`
 }
 
+type PatientDiseaseQuery struct {
+	Type string `query:"type"`
+}
 
 type PatientUsecase interface {
 	CreateFull(req *PatientFullCreateReq, creatorID *uuid.UUID) (*PatientCreateRes, error)
@@ -284,9 +281,8 @@ type PatientGetRepo interface {
 	GetPatientDiseasesInfoByID(id uuid.UUID, diseaseID uuid.UUID) (*databases.Patient, error)
 	GetPatientAppointmentsInfoByID(id uuid.UUID) (*databases.Patient, error)
 	GetPatientVaccinesByID(id uuid.UUID) (*databases.Patient , []databases.Vaccine, error)
-	GetPatientDiseasesByID(patientID uuid.UUID) (*databases.Patient, error)
 	GetPatientBasicInfoByID(id uuid.UUID) (*databases.Patient, error)
-	GetPatientActiveDiseasesByID(patientID uuid.UUID) ([]databases.Disease, error)
+	GetPatientDiseases(patientID uuid.UUID, dtype string) ([]databases.Disease, error)
 }
 
 type PatientGetUsecase interface {
@@ -296,9 +292,8 @@ type PatientGetUsecase interface {
 	GetPatientDiseasesInfo(id uuid.UUID, diseaseID uuid.UUID) (*DiseaseInfoRes, error)
 	GetPatientAppointmentsInfoByID(id uuid.UUID) (*AppointInfoRes, error)
 	GetPatientVaccinesByID(patientID uuid.UUID) (*VaccineInfoRes, error)
-	GetPatientDiseasesByID(id uuid.UUID) (*PatientDiseaseRes, error) 
 	GetPatientBasicInfoByID(id uuid.UUID) (*PatientBasicInfoRes, error)
-	GetPatientActiveDiseasesByID(patientID uuid.UUID) ([]Disease, error)
+	GetPatientDiseases(patientID uuid.UUID, dtype string) ([]Disease, error)
 }
 
 type PatientUpdateRepo interface {

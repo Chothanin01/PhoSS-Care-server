@@ -51,38 +51,31 @@ func (u *patientGetUsecase) GetPatientDiseasesInfo(id uuid.UUID, diseaseID uuid.
 			Sugar:  h.Sugar,
 		}
 	}
-	var diseases []entities.Disease
 
-	for _, pd := range patient.Diseases {
-		if pd.Disease != nil {
-			diseases = append(diseases, entities.Disease{
-				DiseaseID: pd.Disease.ID,
-				Name:      pd.Disease.Name,
-			})
-		}
-	}
 
-	var appointments []entities.AppointmentInfo
+	appointments := []entities.AppointmentInfo{}
+
 	for _, ap := range patient.Appointments {
-		if ap.DiseaseID == diseaseID && ap.Status == "Completed" {
+		if ap.Status == "completed" {
+
 			var healthPtr *entities.HealthInfo
 			if h, ok := healthMap[ap.ID]; ok {
 				healthPtr = &h
 			}
 
 			appointments = append(appointments, entities.AppointmentInfo{
-				No:      	ap.No,
-				Date:    	ap.Date,
-				StartTime: 	ap.StartTime,
-				EndTime: 	ap.EndTime,
-				Symptom: 	ap.Symptom,
-				Note:    	ap.Note,
-				Place:   	ap.Place,
-				Doctor:  	ap.Doctor,
-				Status:  	ap.Status,
-				Letter:  	ap.Letter,
-				Delay:   	ap.Delay,
-				Health:  	healthPtr,
+				No:        ap.No,
+				Date:      ap.Date,
+				StartTime: ap.StartTime,
+				EndTime:   ap.EndTime,
+				Symptom:   ap.Symptom,
+				Note:      ap.Note,
+				Place:     ap.Place,
+				Doctor:    ap.Doctor,
+				Status:    ap.Status,
+				Letter:    ap.Letter,
+				Delay:     ap.Delay,
+				Health:    healthPtr,
 			})
 		}
 	}
@@ -94,7 +87,6 @@ func (u *patientGetUsecase) GetPatientDiseasesInfo(id uuid.UUID, diseaseID uuid.
 			DiseaseID:   diseaseID,
 			DiseaseName: diseaseName,
 			Appointment: appointments,
-			Disease: diseases,
 		},
 	}
 

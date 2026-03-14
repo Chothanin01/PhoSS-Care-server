@@ -29,7 +29,6 @@ func NewPatientController(r fiber.Router, createUC entities.PatientUsecase, getU
 	r.Get("/:id/info", controller.GetPatientBasicInfo)
 	r.Get("/:id/appointments", controller.GetPatientAppointmentsInfo)
 	r.Get("/:id/diseases" , controller.GetPatientDiseases)
-	r.Get("/:id/diseases/active" , controller.GetPatientActiveDiseases)
 	r.Get("/:id/vaccines", controller.GetPatientVaccines)
 	r.Get("/:id/:disease_id", controller.GetPatientDiseaseInfo)
 	r.Patch("/:id", controller.UpdatePatient)
@@ -230,33 +229,6 @@ func (c *PatientController) GetPatientVaccines(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(res)
 }
 
-func (c *PatientController) GetPatientDiseases(ctx *fiber.Ctx) error {
-
-	idParam := ctx.Params("id")
-
-	patientID, err := uuid.Parse(idParam)
-	if err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"success": false,
-			"message": "invalid patient id",
-		})
-	}
-
-	data, err := c.PatientGetUsecase.GetPatientDiseasesByID(patientID)
-	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false,
-			"message": err.Error(),
-		})
-	}
-
-	return ctx.JSON(fiber.Map{
-		"success": true,
-		"message": "Get patient diseases successfully.",
-		"data":    data,
-	})
-}
-
 func (c *PatientController) GetPatientBasicInfo(ctx *fiber.Ctx) error {
 
 	idParam := ctx.Params("id")
@@ -283,7 +255,7 @@ func (c *PatientController) GetPatientBasicInfo(ctx *fiber.Ctx) error {
 	})
 }
 
-func (c *PatientController) GetPatientActiveDiseases(ctx *fiber.Ctx) error {
+func (c *PatientController) GetPatientDiseases(ctx *fiber.Ctx) error {
 
 	patientID, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
@@ -293,7 +265,9 @@ func (c *PatientController) GetPatientActiveDiseases(ctx *fiber.Ctx) error {
 		})
 	}
 
-	diseases, err := c.PatientGetUsecase.GetPatientActiveDiseasesByID(patientID)
+	dtype := ctx.Query("type", "active")
+
+	diseases, err := c.PatientGetUsecase.GetPatientDiseases(patientID, dtype)
 	if err != nil {
 		return ctx.Status(500).JSON(fiber.Map{
 			"success": false,
@@ -303,7 +277,7 @@ func (c *PatientController) GetPatientActiveDiseases(ctx *fiber.Ctx) error {
 
 	return ctx.JSON(fiber.Map{
 		"success": true,
-		"message": "Get patient active disease successfully.",
+		"message": "Get patient diseases successfully.",
 		"data": diseases,
 	})
 }

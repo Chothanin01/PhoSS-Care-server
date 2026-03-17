@@ -321,7 +321,7 @@ func (r *PatientGetRepository) GetPatientAppointmentsInfoByID(patientID uuid.UUI
 			return db.Where("status IN ?", []string{"ongoing", "delay"}).Order("no DESC")
 		}).
 		Preload("Appointments.Disease").
-		Preload("Appointments.Creator.Admin").
+		Preload("Appointments.CreatedByUser").
 		First(&patient, "id = ?", patientID).Error
 	if err != nil {
 		return nil, err
@@ -344,6 +344,22 @@ func (r *PatientGetRepository) GetPatientAppointmentsInfoByID(patientID uuid.UUI
 	}
 
 	return &patient, nil
+}
+
+func (r *PatientGetRepository) GetFullNameByUserID(userID uuid.UUID) (string, error) {
+	var admin databases.Admin
+
+	err := r.db.
+		Where("user_id = ?", userID).
+		First(&admin).Error
+
+	if err != nil {
+		return "", err
+	}
+
+	fullname := fmt.Sprintf("%s%s %s", admin.Title, admin.FirstName, admin.LastName)
+
+	return fullname, nil
 }
 
 func (r *PatientGetRepository) GetPatientBasicInfoByID(id uuid.UUID) (*databases.Patient, error) {

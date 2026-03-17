@@ -382,7 +382,7 @@ func (u *patientGetUsecase) GetPatientAppointmentsInfoByID(id uuid.UUID) (*entit
 	}
 
 	fullname := fmt.Sprintf("%s%s %s", patient.Title, patient.FirstName, patient.LastName)
-	officerFullname := fmt.Sprintf("%s%s %s", patient.Title, patient.FirstName, patient.LastName)
+	officerFullname, err := u.readRepo.GetFullNameByUserID(*patient.CreatedBy)
 
 	appointMap := make(map[uuid.UUID]*entities.AppointDisease)
 	for _, ap := range patient.Appointments {

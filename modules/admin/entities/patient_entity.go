@@ -281,6 +281,7 @@ type PatientGetRepo interface {
 	GetPatientInfoByID(id uuid.UUID) (*databases.Patient, error)
 	GetPatientDiseasesInfoByID(id uuid.UUID, diseaseID uuid.UUID) (*databases.Patient, error)
 	GetPatientAppointmentsInfoByID(id uuid.UUID) (*databases.Patient, error)
+	GetFullNameByUserID(userID uuid.UUID) (string, error)
 	GetPatientVaccinesByID(id uuid.UUID) (*databases.Patient , []databases.Vaccine, error)
 	GetPatientBasicInfoByID(id uuid.UUID) (*databases.Patient, error)
 	GetPatientDiseases(patientID uuid.UUID, dtype string) ([]databases.Disease, error)

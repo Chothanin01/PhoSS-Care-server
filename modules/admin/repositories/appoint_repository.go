@@ -140,12 +140,29 @@ func (r *AppointmentRepository) CreateHealthRecord(health *entities.Health, pati
         BMI:       health.BMI,
         Pulse:     health.Pulse,
         Sugar:     health.Sugar,
+		Pressure:  health.Pressure,
         PatientID: patientID,
         AppointID: appointID,
         CreatedBy: &adminID,
         UpdatedBy: &adminID,
     }
-	return r.db.Create(&healthRecord).Error
+	if err := r.db.Create(&healthRecord).Error; err != nil {
+		return  err
+	}
+
+	return r.UpdatePatientHealth(patientID, health.Weight, health.Height, adminID)
+
+}
+
+func (r *AppointmentRepository) UpdatePatientHealth(patientID uuid.UUID, weight float64, height int, adminID uuid.UUID) error {
+
+	return r.db.Model(&databases.Patient{}).
+		Where("id = ?", patientID).
+		Updates(map[string]interface{}{
+			"weight":     weight,
+			"height":     height,
+			"updated_by": adminID,
+		}).Error
 }
 
 func (r *AppointmentRepository) FindByID(appointID uuid.UUID) (*databases.Appoint, error) {
@@ -182,6 +199,7 @@ func (r *AppointmentRepository) UpdateHealth(appointID uuid.UUID, health *entiti
 			"bmi":        health.BMI,
 			"pulse":      health.Pulse,
 			"sugar":      health.Sugar,
+			"pressure":   health.Pressure,
 			"updated_by": adminID,
 		}).Error
 	}
@@ -208,7 +226,7 @@ func (r *AppointmentRepository) UpdateVaccineDoctor(recordID uuid.UUID, doctor s
 		}).Error
 }
 
-func (r *AppointmentRepository) CreateVaccinationRecord(vaccineID uuid.UUID, appointID uuid.UUID, dose int, doctor string, adminID uuid.UUID,) (error) {
+func (r *AppointmentRepository) CreateVaccinationRecord(vaccineID uuid.UUID, appointID uuid.UUID, dose int, doctor string, adminID uuid.UUID) (error) {
 
 	record := databases.VaccinationRecord{
 		VaccineID:     vaccineID,

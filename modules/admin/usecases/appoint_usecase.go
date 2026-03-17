@@ -110,6 +110,7 @@ func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateRe
 				Height: req.Health.Height,
 				BMI:    req.Health.BMI,
 				Pulse:  req.Health.Pulse,
+				Pressure: req.Health.Pressure,
 				Sugar:  req.Health.Sugar,
 			}
 
@@ -152,6 +153,7 @@ func (u *appointmentUsecase) FindOngoingVaccination(patientID uuid.UUID) (*entit
 
 	res := &entities.VaccineFullDetail{
 		VaccineID: record.VaccineID,
+		Name:      record.Vaccine.Name,
 		Date:      record.CreatedAt.Format("2006-01-02"),
 		Type:      record.Vaccine.Type,
 		Effect:    record.Vaccine.Effect,
@@ -166,10 +168,10 @@ func (u *appointmentUsecase) CreateVaccineAppointment(req *entities.VaccineAppoi
 
 	var result *entities.VaccineAppointmentRes
 
-	if req.PatientID == uuid.Nil || req.VaccineID == uuid.Nil || req.DoseNumber == 0 || req.NextDoseNumber == 0 ||
+	if req.PatientID == uuid.Nil || req.VaccineID == uuid.Nil || req.DoseNumber == 0 || 
 	req.VaccineDoctorTitle == "" || req.VaccineDoctorFirstName == "" || req.VaccineDoctorLastName == "" ||
 	req.DoctorTitle == "" || req.DoctorFirstName == "" || req.DoctorLastName == "" || req.Place == "" ||
-	req.Date == "" || req.StartTime == "" || req.EndTime == "" {
+	req.NextDate == "" || req.StartTime == "" || req.EndTime == "" {
 		return nil, fmt.Errorf("missing required fields for vaccine appointment")
 	}
 
@@ -215,6 +217,7 @@ func (u *appointmentUsecase) CreateVaccineAppointment(req *entities.VaccineAppoi
 		vaccineDoctor := req.VaccineDoctorTitle + req.VaccineDoctorFirstName + " " + req.VaccineDoctorLastName
 		doctor := req.DoctorTitle + req.DoctorFirstName + " " + req.DoctorLastName
 		
+		
 		if err == nil {
 
 			err = repo.UpdateVaccineDoctor(lastRecord.ID, vaccineDoctor, adminID)
@@ -234,6 +237,7 @@ func (u *appointmentUsecase) CreateVaccineAppointment(req *entities.VaccineAppoi
 				Status:    "completed",
 				DiseaseID: vaccineDiseaseID,
 				PatientID: req.PatientID,
+				Date: 	   req.Date,
 				CreatedBy: adminID,
 				UpdatedBy: adminID,
 			}
@@ -275,10 +279,20 @@ func (u *appointmentUsecase) CreateVaccineAppointment(req *entities.VaccineAppoi
 			return err
 		}
 
+		maxDose, err := repo.FindMaxDose(req.PatientID, req.VaccineID)
+		if err != nil {
+			return err
+		}
+
+		nextDose := maxDose + 1
+		if maxDose == 0 {
+			nextDose = 1
+		}
+
 		err = repo.CreateVaccinationRecord(
 			req.VaccineID,
 			saved.ID,
-			req.NextDoseNumber,
+			nextDose,
 			doctor,
 			adminID,
 		)
@@ -286,7 +300,7 @@ func (u *appointmentUsecase) CreateVaccineAppointment(req *entities.VaccineAppoi
 		if err != nil {
 			return err
 		}
-
+		
 		result = &entities.VaccineAppointmentRes{
 			AppointID: saved.ID,
 			No:        saved.No,

@@ -170,6 +170,7 @@ type AppointDisease struct {
 }
 
 type AppointmentFullInfo struct {
+	ID 			uuid.UUID      `json:"id"`
 	No 	 		int            `json:"no"`
 	Date    	string         `json:"date"`
 	StartTime 	string 		   `json:"start_time"`

@@ -32,6 +32,7 @@ type AppointmentCreateReq struct {
 }
 
 type AppointmentEntity struct {
+	ID 		  uuid.UUID
 	Doctor    string
 	Status    string
 	Purpose   string
@@ -48,11 +49,12 @@ type AppointmentEntity struct {
 }
 
 type Health struct {
-	Weight float64 `json:"weight"`
-	Height int     `json:"height"`
-	Pulse  int     `json:"pulse"`
-	Sugar  int     `json:"sugar"`
-	BMI    float64 `json:"bmi"`
+	Weight 		float64 	`json:"weight"`
+	Height 		int     	`json:"height"`
+	Pulse  		int     	`json:"pulse"`
+	Sugar  		int     	`json:"sugar"`
+	BMI    		float64 	`json:"bmi"`
+	Pressure 	int     	`json:"pressure"`
 }
 
 type AppointmentRes struct {
@@ -89,7 +91,6 @@ type VaccineAppointmentCreateReq struct {
 	VaccineID    uuid.UUID `json:"vaccine_id"`
 
 	DoseNumber int `json:"dose_number"`
-	NextDoseNumber int `json:"next_dose_number"`
 
 	VaccineDoctorTitle     string `json:"vaccine_doctor_title"`
 	VaccineDoctorFirstName string `json:"vaccine_doctor_firstname"`
@@ -101,6 +102,8 @@ type VaccineAppointmentCreateReq struct {
 	Place  string `json:"place"`
 
 	Date string `json:"date"`
+	NextDate string `json:"next_date"`
+	
 	StartTime string `json:"start_time"`
 	EndTime   string `json:"end_time"`
 }
@@ -108,10 +111,11 @@ type VaccineAppointmentCreateReq struct {
 type VaccineAppointmentRes struct {
 	AppointID uuid.UUID `json:"appoint_id"`
 	No        int       `json:"no"`
+	Name      string    `json:"name"`
 	Status    string    `json:"status"`
 	Date      string    `json:"date"`
-	StartTime string `json:"start_time"`
-	EndTime   string `json:"end_time"`
+	StartTime string 	`json:"start_time"`
+	EndTime   string 	`json:"end_time"`
 	Doctor    string    `json:"doctor"`
 }
 
@@ -159,12 +163,13 @@ type AppointmentRepository interface {
 
 	DiseaseExists(diseaseID uuid.UUID) (bool, error)
 
-	CreateVaccinationRecord(vaccineID uuid.UUID, appointID uuid.UUID, dose int, doctor string, adminID uuid.UUID,) error
+	CreateVaccinationRecord(vaccineID uuid.UUID, appointID uuid.UUID, dose int, doctor string, adminID uuid.UUID) error
 	UpdateVaccineDoctor(recordID uuid.UUID, doctor string, adminID uuid.UUID) error
 	CompleteVaccinationRecord(recordID uuid.UUID, adminID uuid.UUID) error
 
 	UpdateAppointment( appointID uuid.UUID, purpose string, place string, date string, startTime string, endTime string, doctor string, adminID uuid.UUID) (*databases.Appoint, error)
 	UpdateVaccineAppointment(appointID uuid.UUID, place string, date string, start string, end string, doctor string, adminID uuid.UUID) (*databases.Appoint, error)
+	UpdatePatientHealth(patientID uuid.UUID, weight float64, height int, adminID uuid.UUID) error
 }
 
 type AppointmentTransaction interface {

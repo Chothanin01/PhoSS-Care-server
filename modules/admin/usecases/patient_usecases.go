@@ -3,7 +3,6 @@ package usecases
 import (
 	"fmt"
 	"time"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
@@ -383,6 +382,7 @@ func (u *patientGetUsecase) GetPatientAppointmentsInfoByID(id uuid.UUID) (*entit
 	}
 
 	fullname := fmt.Sprintf("%s%s %s", patient.Title, patient.FirstName, patient.LastName)
+	officerFullname := fmt.Sprintf("%s%s %s", patient.Title, patient.FirstName, patient.LastName)
 
 	appointMap := make(map[uuid.UUID]*entities.AppointDisease)
 	for _, ap := range patient.Appointments {
@@ -397,28 +397,21 @@ func (u *patientGetUsecase) GetPatientAppointmentsInfoByID(id uuid.UUID) (*entit
 			d = appointMap[ap.DiseaseID]
 		}
 
-		note := ap.Note
-		officer := ""
-		if strings.Contains(ap.Note, "|OFFICER:") {
-			parts := strings.SplitN(ap.Note, "|OFFICER:", 2)
-			note = parts[0]
-			officer = parts[1]
-		}
-
 		d.Appointments = append(d.Appointments, entities.AppointmentFullInfo{
+			ID:      ap.ID,
 			No:      ap.No,
 			Date:    ap.Date.Format("2006-01-02"),
 			StartTime: 	ap.StartTime,
 			EndTime: 	ap.EndTime,
 			Symptom: ap.Symptom,
-			Note:    note,
+			Note:    ap.Note,
 			Place:   ap.Place,
 			Purpose: ap.Purpose,
 			Doctor:  ap.Doctor,
 			Status:  ap.Status,
 			Letter:  ap.Letter,
 			Delay:   ap.Delay,
-			Officer: officer,
+			Officer: officerFullname,
 		})
 	}
 

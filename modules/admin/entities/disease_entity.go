@@ -60,6 +60,7 @@ type HealthInfo struct {
 
 type VaccineFullDetail struct {
 	VaccineID uuid.UUID `json:"vaccine_id"`
+	Name 	  string    `json:"name"`
 	Date      string    `json:"date"`
 	Type      string    `json:"type"`
 	Effect    string    `json:"effect"`

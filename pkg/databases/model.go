@@ -82,6 +82,7 @@ type Health struct {
 	BMI       float64   `gorm:"type:decimal(5,2);not null" json:"bmi"`
 	Pulse     int       `json:"pulse"`
 	Sugar     int       `json:"sugar"`
+	Pressure  int       `json:"pressure"`
 	PatientID uuid.UUID `json:"patient_id"`
 	AppointID uuid.UUID `json:"appoint_id"`
 

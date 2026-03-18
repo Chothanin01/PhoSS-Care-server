@@ -30,7 +30,7 @@ func (s *Server) SetupMiddleware() {
 	s.App.Use(cors.New(cors.Config{
 		AllowOrigins: "http://localhost:3000",
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
-		AllowMethods: "GET, POST, PUT, DELETE, OPTIONS",
+		AllowMethods: "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 		AllowCredentials: true,
 	}))
 }

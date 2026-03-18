@@ -301,9 +301,7 @@ func (r *PatientGetRepository) GetPatientDiseasesInfoByID(patientID, diseaseID u
 				Where("disease_id = ?", diseaseID).
 				Order("no DESC")
 		}).
-		Preload("Healths", func(db *gorm.DB) *gorm.DB {
-			return db.Where("deleted_at IS NULL")
-		}).
+		Preload("Healths").
 		First(&patient, "id = ?", patientID).Error
 
 	if err != nil {
@@ -323,6 +321,7 @@ func (r *PatientGetRepository) GetPatientAppointmentsInfoByID(patientID uuid.UUI
 			return db.Where("status IN ?", []string{"ongoing", "delay"}).Order("no DESC")
 		}).
 		Preload("Appointments.Disease").
+		Preload("Appointments.CreatedByUser").
 		First(&patient, "id = ?", patientID).Error
 	if err != nil {
 		return nil, err
@@ -344,19 +343,23 @@ func (r *PatientGetRepository) GetPatientAppointmentsInfoByID(patientID uuid.UUI
 		return nil, err
 	}
 
-	adminMap := map[uuid.UUID]string{}
-	for _, a := range admins {
-		adminMap[a.UserID] = fmt.Sprintf("%s%s %s", a.Title, a.FirstName, a.LastName)
-	}
-
-	for i := range patient.Appointments {
-		if patient.Appointments[i].CreatedBy != nil {
-			officer := adminMap[*patient.Appointments[i].CreatedBy]
-			patient.Appointments[i].Note = fmt.Sprintf("%s|OFFICER:%s", patient.Appointments[i].Note, officer)
-		}
-	}
-
 	return &patient, nil
+}
+
+func (r *PatientGetRepository) GetFullNameByUserID(userID uuid.UUID) (string, error) {
+	var admin databases.Admin
+
+	err := r.db.
+		Where("user_id = ?", userID).
+		First(&admin).Error
+
+	if err != nil {
+		return "", err
+	}
+
+	fullname := fmt.Sprintf("%s%s %s", admin.Title, admin.FirstName, admin.LastName)
+
+	return fullname, nil
 }
 
 func (r *PatientGetRepository) GetPatientBasicInfoByID(id uuid.UUID) (*databases.Patient, error) {

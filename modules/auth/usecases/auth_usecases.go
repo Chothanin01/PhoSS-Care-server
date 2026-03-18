@@ -24,9 +24,14 @@ func (u *authUsecase) Login(req *entities.LoginRequest) (*entities.LoginResponse
 	if err != nil {
 		return nil, errors.New("invalid username or password")
 	}
+	
 
 	if !u.passSvc.Compare(user.Password, req.Password) {
 		return nil, errors.New("invalid username or password")
+	}
+
+	if user.Role != u.role {
+		return nil, errors.New("invalid endpoint for this user role")
 	}
 
 	extraClaims := map[string]interface{}{}

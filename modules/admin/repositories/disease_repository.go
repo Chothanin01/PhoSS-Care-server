@@ -90,6 +90,7 @@ func (r *DiseaseGetRepository) GetAllVaccines() ([]entities.VaccineFullDetail, e
 
 		result = append(result, entities.VaccineFullDetail{
 			VaccineID: rec.ID,
+			Name:      rec.Name,
 			Type:      rec.Type,
 			Effect:    rec.Effect,
 			Note:      rec.Note,

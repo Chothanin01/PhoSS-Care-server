@@ -6,7 +6,7 @@ import (
 )
 
 type JWTService interface {
-	GenerateToken(userID string, role string, extraClaims map[string]interface{}) (string, error)
+	GenerateToken(userID string, role string, role_id string, extraClaims map[string]interface{}) (string, error)
 	ValidateToken(token string) (*jwt.Token, error)
 	GetSecret() string
 }
@@ -23,9 +23,10 @@ func NewJWTService(secret, issuer string) JWTService {
 	}
 }
 
-func (j *jwtService) GenerateToken(userID string, role string, extraClaims map[string]interface{}) (string, error) {
+func (j *jwtService) GenerateToken(userID string, role string, role_id string, extraClaims map[string]interface{}) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID,
+		"role_id": role_id,
 		"role":    role,
 		"iss":     j.issuer,
 		"exp":     time.Now().Add(time.Hour * 72).Unix(),

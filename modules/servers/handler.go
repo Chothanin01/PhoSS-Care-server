@@ -77,9 +77,13 @@ func (s *Server) MapHandlers() error {
 	// ------------------ PATIENT MODULES ------------------
 	patientGroup := v1.Group("patient", patientAuth)
 
-	patientGetRepo := _patientRepositories.NewPatientGetRepository(s.Db)
-	patientGetUC := _patientUsecases.NewPatientGetUsecase(patientGetRepo)
+	patientGetRepo := _patientRepositories.NewGetPatientRepository(s.Db)
+	patientGetUC := _patientUsecases.NewGetPatientUsecase(patientGetRepo)
 	_patientControllers.NewPatientController(patientGroup, patientGetUC)
+
+	patientAppointRepo := _patientRepositories.NewGetAppointmentRepository(s.Db)
+	patientAppointUC := _patientUsecases.NewAppointmentUsecase(patientAppointRepo)
+	_patientControllers.NewAppointmentController(patientGroup.Group("/appointments"), patientAppointUC)
 
 
 	// ------------------ 404 HANDLER ------------------

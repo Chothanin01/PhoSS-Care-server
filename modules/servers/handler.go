@@ -39,11 +39,11 @@ func (s *Server) MapHandlers() error {
 	_authControllers.NewAuthController(authGroup.Group("/patient"), patientAuthUC)
 
 	// Role-based JWT middleware
-	// adminAuth := utils.NewJWTMiddleware(jwtAdmin, "admin")
+	adminAuth := utils.NewJWTMiddleware(jwtAdmin, "admin")
 	patientAuth := utils.NewJWTMiddleware(jwtPatient, "patient")
 
 	// ------------------ ADMIN MODULES ------------------
-	adminGroup := v1.Group("/admins")
+	adminGroup := v1.Group("/admins", adminAuth)
 
 	adminRepo := _adminRepositories.NewAdminRepository(s.Db)
 	adminUsecase := _adminUsecases.NewAdminUsecase(adminRepo, passSvc)

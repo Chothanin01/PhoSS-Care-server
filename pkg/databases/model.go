@@ -67,27 +67,6 @@ type Patient struct {
 	Relatives    []Relative       `json:"relatives"`
 	Appointments []Appoint        `gorm:"foreignKey:PatientID;references:ID" json:"appointments"`
 	Diseases     []PatientDisease `json:"diseases"`
-	Healths      []Health         `json:"healths"`
-
-	CreatedBy     *uuid.UUID
-	UpdatedBy     *uuid.UUID
-	CreatedByUser *User `gorm:"foreignKey:CreatedBy;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-	UpdatedByUser *User `gorm:"foreignKey:UpdatedBy;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-}
-
-type Health struct {
-	BaseModel
-	Weight    float64   `gorm:"type:decimal(5,2);not null" json:"weight"`
-	Height    int       `gorm:"not null" json:"height"`
-	BMI       float64   `gorm:"type:decimal(5,2);not null" json:"bmi"`
-	Pulse     int       `json:"pulse"`
-	Sugar     int       `json:"sugar"`
-	Pressure  int       `json:"pressure"`
-	PatientID uuid.UUID `json:"patient_id"`
-	AppointID uuid.UUID `json:"appoint_id"`
-
-	Patient Patient `gorm:"foreignKey:PatientID"`
-	Appoint Appoint `gorm:"foreignKey:AppointID"`
 
 	CreatedBy     *uuid.UUID
 	UpdatedBy     *uuid.UUID
@@ -126,6 +105,9 @@ type Appoint struct {
 	Purpose   string    `json:"purpose"`
 	Letter    bool      `json:"letter"`
 	Delay     bool      `json:"delay"`
+
+	Health Health `gorm:"type:jsonb" json:"health"`
+
 	PatientID uuid.UUID `json:"patient_id"`
 	DiseaseID uuid.UUID `json:"disease_id"`
 
@@ -134,7 +116,6 @@ type Appoint struct {
 
 	Vaccinations []VaccinationRecord `json:"vaccinations"`
 	Requests     []Request           `json:"requests"`
-	Healths      []Health            `json:"healths"`
 
 	CreatedBy     *uuid.UUID
 	UpdatedBy     *uuid.UUID
@@ -271,6 +252,31 @@ var (
 	_ driver.Valuer = (*Address)(nil)
 	_ sql.Scanner   = (*Address)(nil)
 )
+
+type Health struct {
+	Weight   float64 `json:"weight"`
+	Height   int     `json:"height"`
+	BMI      float64 `json:"bmi"`
+	Pulse    int     `json:"pulse"`
+	Sugar    int     `json:"sugar"`
+	Pressure int     `json:"pressure"`
+}
+
+func (h Health) Value() (driver.Value, error) {
+	return json.Marshal(h)
+}
+
+func (h *Health) Scan(value interface{}) error {
+	if value == nil {
+		*h = Health{}
+		return nil
+	}
+	bytes, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("type assertion to []byte failed")
+	}
+	return json.Unmarshal(bytes, h)
+}
 
 func (b *BaseModel) BeforeCreate(tx *gorm.DB) error {
 	loc, _ := time.LoadLocation("Asia/Bangkok")

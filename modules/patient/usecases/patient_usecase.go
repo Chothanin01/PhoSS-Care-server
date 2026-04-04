@@ -132,3 +132,110 @@ func (u *GetPatientUsecase) GetPatientAppointment(patientID uuid.UUID) (*entitie
 	}, nil
 
 }
+
+func (u *GetPatientUsecase) GetPatientFullInfo(userID uuid.UUID) (*entities.PatientInfoRes, error) {
+    patient, err := u.readRepo.GetPatientFullInfo(userID)
+    if err != nil {
+        return nil, err
+    }
+
+    addr := patient.Address
+    formattedAddress := fmt.Sprintf("%s หมู่ %s ซอย %s ถนน %s ตำบล %s อำเภอ %s จังหวัด %s %s",
+        addr.HouseNumber, addr.VillageNumber, addr.Alley, addr.Road,
+        addr.SubDistrict, addr.District, addr.Province, addr.ZipCode)
+    
+	now := time.Now()
+    dob := patient.DOB
+    years := now.Year() - dob.Year()
+    months := int(now.Month()) - int(dob.Month())
+    days := now.Day() - dob.Day()
+
+    if days < 0 {
+        months--
+    }
+    if months < 0 {
+        years--
+        months += 12
+    }
+
+    var weight, height float32
+    if len(patient.Appointments) > 0 {
+        latest := patient.Appointments[0]
+        weight = float32(latest.Health.Weight)
+        height = float32(latest.Health.Height)
+    } else {
+		weight = patient.Weight
+        height = patient.Height
+    }
+
+    var relWrapper entities.RelativeWrapper
+    var offWrapper entities.OfficerWrapper
+
+    for _, r := range patient.Relatives {
+        
+        fullname := fmt.Sprintf("%s%s %s", r.Title, r.FirstName, r.LastName)
+        
+        switch r.Role {
+        case "kin":
+            relWrapper.Kin = &entities.RelativeDetail{
+                Fullname:    fullname,
+                PhoneNumber: r.PhoneNumber,
+                Role:        r.Role,
+                Address:     fmt.Sprintf("%s หมู่ %s ซอย %s ถนน %s ตำบล %s อำเภอ %s จังหวัด %s %s",
+								addr.HouseNumber, addr.VillageNumber, addr.Alley, addr.Road,
+								addr.SubDistrict, addr.District, addr.Province, addr.ZipCode), 
+            }
+        case "caretaker":
+            relWrapper.Caretaker = &entities.RelativeDetail{
+                Fullname:    fullname,
+                PhoneNumber: r.PhoneNumber,
+                Role:        r.Role,
+                Address:     fmt.Sprintf("%s หมู่ %s ซอย %s ถนน %s ตำบล %s อำเภอ %s จังหวัด %s %s",
+								addr.HouseNumber, addr.VillageNumber, addr.Alley, addr.Road,
+								addr.SubDistrict, addr.District, addr.Province, addr.ZipCode),
+            }
+        case "medicine":
+            relWrapper.Medicine = &entities.RelativeDetail{
+                Fullname:    fullname,
+                PhoneNumber: r.PhoneNumber,
+                Role:        r.Role,
+                Address:     fmt.Sprintf("%s หมู่ %s ซอย %s ถนน %s ตำบล %s อำเภอ %s จังหวัด %s %s",
+								addr.HouseNumber, addr.VillageNumber, addr.Alley, addr.Road,
+								addr.SubDistrict, addr.District, addr.Province, addr.ZipCode),
+            }
+        case "house":
+            offWrapper.House = &entities.OfficerDetail{
+                Fullname: fullname,
+                Role:     r.Role,
+            }
+        case "nurse":
+            offWrapper.Nurse = &entities.OfficerDetail{
+                Fullname: fullname,
+                Role:     r.Role,
+            }
+        }
+    }
+
+    return &entities.PatientInfoRes{
+        Patient: entities.PatientDetail{
+			Fullname:    fmt.Sprintf("%s%s %s", patient.Title, patient.FirstName, patient.LastName),
+        	Sex:         patient.Sex,
+			IDCard:      patient.IDCard,
+			HnNumber:    patient.HnID,
+			Rights:      patient.Rights,
+			AgeYears:    years,
+			AgeMonths:   months,
+			AgeDays:     days,
+			Allergy:     patient.Allergy,
+			PhoneNumber: patient.PhoneNumber,
+			Address:     formattedAddress,
+			Weight:      weight,
+			Height:      height,
+			Nationality: patient.Nationality,
+			Ethnicity:   patient.Ethnicity,
+			DOB:         patient.DOB.Format("2006-01-02"),
+		},
+		Relative: relWrapper,
+        Officer:  offWrapper,
+    }, nil
+}

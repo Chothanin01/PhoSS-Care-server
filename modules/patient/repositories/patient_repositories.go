@@ -43,3 +43,16 @@ func (r *GetPatientRepository) GetPatientAppointment(patientID uuid.UUID) ([]dat
 
 	return appoint, nil
 }
+
+func (r *GetPatientRepository) GetPatientFullInfo(userID uuid.UUID) (*databases.Patient, error) {
+    var patient databases.Patient
+    err := r.db.
+        Preload("Relatives").
+        Preload("Appointments", func(db *gorm.DB) *gorm.DB {
+            return db.Order("date DESC, created_at DESC")
+        }).
+        Where("user_id = ?", userID).
+        First(&patient).Error
+    
+    return &patient, err
+}

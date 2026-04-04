@@ -16,6 +16,7 @@ func NewPatientController(r fiber.Router, uc entities.GetPatientUsecase) {
 	controller := &PatientController{GetUsecase: uc}
 	r.Get("/basicinfo", controller.GetPatientBasicInfo)
 	r.Get("/appointment", controller.GetPatientAppointment)
+	r.Get("/fullinfo", controller.GetPatientFullInfo)
 }
 
 func (c *PatientController) GetPatientBasicInfo(ctx *fiber.Ctx) error {
@@ -94,4 +95,45 @@ func (c *PatientController) GetPatientAppointment(ctx *fiber.Ctx) error {
 		"success": true,
 		"data":    data,
 	})
+}
+
+func (c *PatientController) GetPatientFullInfo(ctx *fiber.Ctx) error {
+    claims, ok := ctx.Locals("user").(jwt.MapClaims)
+    if !ok {
+        return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+            "success": false,
+            "message": "unauthorized access",
+        })
+    }
+
+    userIDStr, ok := claims["user_id"].(string)
+    if !ok {
+        return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+            "success": false,
+            "message": "invalid token claims: user_id missing",
+        })
+    }
+
+    userID, err := uuid.Parse(userIDStr)
+    if err != nil {
+        return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "success": false,
+            "message": "invalid user format",
+        })
+    }
+
+    data, err := c.GetUsecase.GetPatientFullInfo(userID)
+    if err != nil {
+        return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+            "success": false,
+            "message": err.Error(),
+        })
+    }
+
+    // 4. Response
+    return ctx.JSON(fiber.Map{
+        "success": true,
+        "message": "Get patient full info successfully.",
+        "data":    data,
+    })
 }

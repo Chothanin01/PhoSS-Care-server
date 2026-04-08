@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/chothanin01/PhoSS-Care-server/modules/patients/entities"
+	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
 	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -51,10 +51,14 @@ func (t *TransactionGorm) Do(fn func(entities.RepositorySet) error) error {
 			PatientRepo:  NewPatientRepository(tx),
 			RelativeRepo: NewRelativeRepository(tx),
 			DiseaseRepo:  NewDiseaseRepository(tx),
+			PateintUpdateRepo: NewPatientRepository(tx),
+			AppointmentRepo: NewAppointmentRepository(tx),
 		}
 		return fn(repos)
 	})
 }
+
+// ---------------------- CREATE ----------------------
 
 func (r *PatientRepository) GenerateNextHnID() (string, error) {
 	var lastHn string
@@ -87,12 +91,11 @@ func (r *PatientRepository) GenerateNextHnID() (string, error) {
 	return nextHn, nil
 }
 
-func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userID uuid.UUID) (*entities.PatientCreateRes, error) {
+func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userID uuid.UUID, creatorID *uuid.UUID) (*entities.PatientCreateRes, error) {
 	dob, err := time.Parse("2006-01-02", req.Dob)
 	if err != nil {
 		return nil, fmt.Errorf("invalid dob format: %v", err)
 	}
-
 
 	patient := databases.Patient{
 		Title:       req.Title,
@@ -120,36 +123,39 @@ func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userI
 		},
 		Allergy:   req.Allergy,
 		UserID:    userID,
-		CreatedBy: req.CreatedBy,
-		UpdatedBy: req.CreatedBy,
+		CreatedBy: creatorID,
+		UpdatedBy: creatorID,
 	}
 
 	if err := r.db.Create(&patient).Error; err != nil {
 		return nil, err
 	}
-	fmt.Println("Creating patient at:", time.Now())
-	fmt.Printf("Patient.CreatedAt before insert: %v\n", patient.CreatedAt)
-
 
 	for _, d := range req.Diseases {
-	var disease databases.Disease
-	if err := r.db.First(&disease, "id = ?", d.DiseaseID).Error; err != nil {
-		return nil, fmt.Errorf("disease not found: %v", d.DiseaseID)
-	}
+		var exists bool
+		if err := r.db.
+			Model(&databases.Disease{}).
+			Select("count(*) > 0").
+			Where("id = ?", d.DiseaseID).
+			Find(&exists).Error; err != nil {
+			return nil, fmt.Errorf("check disease: %w", err)
+		}
+		fmt.Print("check disease")
+		if !exists {
+			return nil, fmt.Errorf("disease not found: %v", d.DiseaseID)
+		}
 
-	link := databases.PatientDisease{
-		PatientID: patient.ID,
-		DiseaseID: d.DiseaseID,
-		CreatedBy: req.CreatedBy,
-		UpdatedBy: req.CreatedBy,
-	}
-	if err := r.db.
-		Session(&gorm.Session{FullSaveAssociations: false}).
-		Create(&link).Error; err != nil {
-		return nil, err
+		link := databases.PatientDisease{
+			PatientID: patient.ID,
+			DiseaseID: d.DiseaseID,
+			CreatedBy: creatorID,
+			UpdatedBy: creatorID,
+		}
+
+		if err := r.db.Omit("Disease", "Patient").Create(&link).Error; err != nil {
+			return nil, fmt.Errorf("create link: %w", err)
 		}
 	}
-
 
 	return &entities.PatientCreateRes{
 		Id:          patient.ID,
@@ -157,6 +163,7 @@ func (r *PatientRepository) CreateWithUser(req *entities.PatientCreateReq, userI
 		LastName:    patient.LastName,
 		HnID:        patient.HnID,
 		IDCard:      patient.IDCard,
+		Sex:		 patient.Sex,
 		PhoneNumber: patient.PhoneNumber,
 		Rights:      patient.Rights,
 		Nationality: patient.Nationality,
@@ -176,6 +183,8 @@ func (r *UserRepository) Create(username, password, role string) (*databases.Use
 	}
 	return user, nil
 }
+
+// ---------------------- GET ----------------------
 
 func (r *PatientGetRepository) GetPatients(page, limit int) ([]databases.Patient, error) {
 	var patients []databases.Patient
@@ -269,6 +278,7 @@ func (r *PatientGetRepository) CountPatientsWithFilter(req entities.PatientQuery
 func (r *PatientGetRepository) GetPatientInfoByID(id uuid.UUID) (*databases.Patient, error) {
 	var patient databases.Patient
 	err := r.db.
+		Preload("Diseases").
 		Preload("Diseases.Disease").
 		Preload("Relatives").
 		First(&patient, "id = ?", id).Error
@@ -284,9 +294,12 @@ func (r *PatientGetRepository) GetPatientDiseasesInfoByID(patientID, diseaseID u
 	var patient databases.Patient
 
 	err := r.db.
-		Preload("Diseases.Disease", "id = ?", diseaseID).
+		Preload("Diseases").
+		Preload("Diseases.Disease").
 		Preload("Appointments", func(db *gorm.DB) *gorm.DB {
-			return db.Where("disease_id = ?", diseaseID).Order("no DESC")
+			return db.
+				Where("disease_id = ?", diseaseID).
+				Order("no DESC")
 		}).
 		Preload("Healths").
 		First(&patient, "id = ?", patientID).Error
@@ -298,21 +311,223 @@ func (r *PatientGetRepository) GetPatientDiseasesInfoByID(patientID, diseaseID u
 	return &patient, nil
 }
 
-func (r *PatientGetRepository) GetPatientAppointmentsByID(patientID uuid.UUID) (*databases.Patient, error) {
+func (r *PatientGetRepository) GetPatientAppointmentsInfoByID(patientID uuid.UUID) (*databases.Patient, error) {
 	var patient databases.Patient
 
 	err := r.db.
+		Preload("Diseases").
+		Preload("Diseases.Disease").
 		Preload("Appointments", func(db *gorm.DB) *gorm.DB {
-			return db.
-				Where("status IN ?", []string{"Ongoing", "Delay"}).
-				Order("no DESC")
+			return db.Where("status IN ?", []string{"ongoing", "delay"}).Order("no DESC")
 		}).
 		Preload("Appointments.Disease").
+		Preload("Appointments.CreatedByUser").
 		First(&patient, "id = ?", patientID).Error
+	if err != nil {
+		return nil, err
+	}
+
+	adminIDs := []uuid.UUID{}
+	for _, ap := range patient.Appointments {
+		if ap.CreatedBy != nil {
+			adminIDs = append(adminIDs, *ap.CreatedBy)
+		}
+	}
+
+	if len(adminIDs) == 0 {
+		return &patient, nil
+	}
+
+	var admins []databases.Admin
+	if err := r.db.Where("user_id IN ?", adminIDs).Find(&admins).Error; err != nil {
+		return nil, err
+	}
+
+	return &patient, nil
+}
+
+func (r *PatientGetRepository) GetFullNameByUserID(userID uuid.UUID) (string, error) {
+	var admin databases.Admin
+
+	err := r.db.
+		Where("user_id = ?", userID).
+		First(&admin).Error
+
+	if err != nil {
+		return "", err
+	}
+
+	fullname := fmt.Sprintf("%s%s %s", admin.Title, admin.FirstName, admin.LastName)
+
+	return fullname, nil
+}
+
+func (r *PatientGetRepository) GetPatientBasicInfoByID(id uuid.UUID) (*databases.Patient, error) {
+	var patient databases.Patient
+
+	err := r.db.
+		First(&patient, "id = ?", id).Error
 
 	if err != nil {
 		return nil, err
 	}
 
 	return &patient, nil
+}
+
+
+func (r *PatientGetRepository) GetPatientDiseases(patientID uuid.UUID, dtype string) ([]databases.Disease, error) {
+
+	var diseases []databases.Disease
+
+	query := r.db.
+		Model(&databases.Disease{}).
+		Joins("JOIN patient_disease pd ON pd.disease_id = disease.id").
+		Where("pd.patient_id = ?", patientID).
+		Where("pd.deleted_at IS NULL").
+		Where("disease.deleted_at IS NULL")
+
+	switch dtype {
+
+	case "active":
+		// just active diseases
+
+	case "noappoint":
+		query = query.
+			Where("disease.name <> ?", "วัคซีน").
+			Where(`
+				disease.id NOT IN (
+					SELECT disease_id
+					FROM appoint
+					WHERE patient_id = ?
+					AND status IN ('ongoing','delay')
+				)
+			`, patientID)
+
+	case "all":
+		query = r.db.
+			Unscoped().
+			Model(&databases.Disease{}).
+			Joins("JOIN patient_disease pd ON pd.disease_id = disease.id").
+			Where("pd.patient_id = ?", patientID)
+
+	default:
+		return nil, fmt.Errorf("invalid disease type")
+	}
+
+	err := query.Find(&diseases).Error
+	return diseases, err
+}
+
+
+// ---------------------- UPDATE ----------------------
+
+func (r *PatientRepository) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq, adminID *uuid.UUID) (*entities.PatientUpdateRes, error) {
+	var patient databases.Patient
+	if err := r.db.First(&patient, "id = ?", id).Error; err != nil {
+		return nil, fmt.Errorf("patient not found: %w", err)
+	}
+
+	var dob time.Time
+	if req.DOB != "" {
+		parsedDOB, err := time.Parse("2006-01-02", req.DOB)
+		if err != nil {
+			return nil, fmt.Errorf("invalid dob format: %v", err)
+		}
+		dob = parsedDOB
+	}
+
+	if req.IDCard != "" && req.IDCard != patient.IDCard {
+		var exists bool
+		r.db.Model(&databases.User{}).
+			Where("username = ? AND id <> ?", req.IDCard, patient.UserID).
+			Select("count(*) > 0").
+			Find(&exists)
+		if exists {
+			return nil, fmt.Errorf("ID card already used by another user")
+		}
+	}
+
+	patient.Title = req.Title
+	patient.FirstName = req.FirstName
+	patient.LastName = req.LastName
+	patient.Sex = req.Sex
+	if !dob.IsZero() {
+		patient.DOB = dob
+	}
+	patient.Weight = req.Weight
+	patient.Height = req.Height
+	patient.IDCard = req.IDCard
+	patient.Rights = req.Rights
+	patient.Nationality = req.Nationality
+	patient.Ethnicity = req.Ethnicity
+	patient.PhoneNumber = req.PhoneNumber
+	patient.UpdatedBy = adminID
+	patient.Address = databases.Address{
+		HouseNumber:   req.Address.HouseNumber,
+		VillageNumber: req.Address.VillageNumber,
+		Alley:         req.Address.Alley,
+		Road:          req.Address.Road,
+		SubDistrict:   req.Address.SubDistrict,
+		District:      req.Address.District,
+		Province:      req.Address.Province,
+		ZipCode:       req.Address.ZipCode,
+	}
+
+	if err := r.db.Save(&patient).Error; err != nil {
+		return nil, fmt.Errorf("update patient info: %w", err)
+	}
+
+	res := &entities.PatientUpdateRes{
+		ID:          patient.ID,
+		Fullname:    fmt.Sprintf("%s%s %s", patient.Title, patient.FirstName, patient.LastName),
+		HnNumber:    patient.HnID,
+		IDCard:      patient.IDCard,
+		PhoneNumber: patient.PhoneNumber,
+		Rights:      patient.Rights,
+		Nationality: patient.Nationality,
+		Ethnicity:   patient.Ethnicity,
+	}
+	return res, nil
+}
+
+
+func (r *PatientRepository) UpdatePatientDiseases(patientID uuid.UUID, newDiseases []entities.Disease, adminID *uuid.UUID) error {
+	var current []databases.PatientDisease
+	if err := r.db.Where("patient_id = ? AND deleted_at IS NULL", patientID).Find(&current).Error; err != nil {
+		return fmt.Errorf("fetch existing diseases: %w", err)
+	}
+
+	currentMap := map[uuid.UUID]bool{}
+	for _, d := range current {
+		currentMap[d.DiseaseID] = true
+	}
+	newMap := map[uuid.UUID]bool{}
+	for _, d := range newDiseases {
+		newMap[d.DiseaseID] = true
+	}
+
+	for _, d := range current {
+		if !newMap[d.DiseaseID] {
+			if err := r.db.Where("id = ?", d.ID).Delete(&databases.PatientDisease{}).Error; err != nil {
+				return fmt.Errorf("delete old disease: %w", err)
+			}
+		}
+	}
+
+	for _, d := range newDiseases {
+		if !currentMap[d.DiseaseID] {
+			pd := databases.PatientDisease{
+				PatientID: patientID,
+				DiseaseID: d.DiseaseID,
+				CreatedBy: adminID,
+				UpdatedBy: adminID,
+			}
+			if err := r.db.Create(&pd).Error; err != nil {
+				return fmt.Errorf("add new disease: %w", err)
+			}
+		}
+	}
+
+	return nil
 }

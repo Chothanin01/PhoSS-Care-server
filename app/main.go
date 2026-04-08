@@ -21,8 +21,6 @@ func main() {
 		log.Fatal("Failed to connect to database:", err)
 	}
 
-	databases.MigrateAllIfEmpty(db)
-
 	server := servers.NewServer(appconfig, db)
 	server.Start()
 }

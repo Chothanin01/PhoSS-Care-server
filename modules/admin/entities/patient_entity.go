@@ -10,6 +10,8 @@ type RepositorySet struct {
 	PatientRepo  PatientCreateRepo
 	RelativeRepo RelativeCreateRepo
 	DiseaseRepo  DiseaseRepo
+	PateintUpdateRepo PatientUpdateRepo
+	AppointmentRepo AppointmentRepository
 }
 
 type PatientFullCreateReq struct {
@@ -66,9 +68,8 @@ type PatientCreateReq struct {
 	Height	     float32    `json:"height"`
 	Address      Address `json:"address"`
 	Allergy      string     `json:"allergy"`
-	Diseases     []PatientDiseaseEntity `json:"diseases"`
+	Diseases     []Disease `json:"diseases"`
 	UserID       uuid.UUID  `json:"user_id"`
-	CreatedBy    uuid.UUID  `json:"created_by"`
 }
 
 type PatientCreateRes struct {
@@ -126,7 +127,6 @@ type PatientInfoRes struct {
 
 type PatientData struct {
 	Patient  PatientFullInfo      `json:"patient"`
-	Disease  []Disease        `json:"disease"`
 	Relative Relative     `json:"relative"`
 	Officer  Officer     `json:"officer"`
 }
@@ -145,6 +145,9 @@ type PatientFullInfo struct {
 	Address     		Address            `json:"address"`
 	Weight      		float32            `json:"weight"`
 	Height      		float32            `json:"height"`
+	Nationality  		string     		   `json:"nationality"`
+	Ethnicity    		string       	   `json:"ethnicity"`
+	DOB          		string  		   `json:"dob"`          
 }
 
 type AppointInfoRes struct {
@@ -154,10 +157,10 @@ type AppointInfoRes struct {
 }
 
 type AppointData struct {
-	PatientID    uuid.UUID       `json:"patient_id"`
-	Fullname     string          `json:"fullname"`
-	Hnnumber     string          `json:"hnnumber"`
-	Diseases  []AppointDisease  `json:"diseases"` 
+	PatientID     uuid.UUID          `json:"patient_id"`
+	Fullname      string             `json:"fullname"`
+	Hnnumber      string             `json:"hnnumber"`
+	Appointments  []AppointDisease   `json:"appointments"`
 }
 
 type AppointDisease struct {
@@ -167,21 +170,95 @@ type AppointDisease struct {
 }
 
 type AppointmentFullInfo struct {
-	No 	 	int            `json:"no"`
-	Date    string         `json:"date"`
-	Time    string         `json:"time"`
-	Symptom string         `json:"symptom"`
-	Note    string         `json:"note"`
-	Place   string         `json:"place"`
-	Doctor  string         `json:"doctor"`
-	Status  string         `json:"status"`
-	Letter  bool           `json:"letter"`
-	Delay   bool           `json:"delay"`
+	ID 			uuid.UUID      `json:"id"`
+	No 	 		int            `json:"no"`
+	Date    	string         `json:"date"`
+	StartTime 	string 		   `json:"start_time"`
+	EndTime   	string 		   `json:"end_time"`
+	Symptom 	string         `json:"symptom"`
+	Note    	string         `json:"note"`
+	Place   	string         `json:"place"`
+	Purpose 	string  	   `json:"purpose"`
+	Doctor  	string         `json:"doctor"`
+	Officer 	string         `json:"officer"`
+	Status  	string         `json:"status"`
+	Letter  	bool           `json:"letter"`
+	Delay   	bool           `json:"delay"`
+}
+
+type VaccineInfoRes struct {
+	Success     bool           		`json:"success"`
+	Message     string         		`json:"message"`
+	Data        []VaccineData   	`json:"data"`
+}
+
+type VaccineData struct {
+	PatientID     uuid.UUID          `json:"patient_id"`
+	Fullname      string             `json:"fullname"`
+	Hnnumber      string             `json:"hnnumber"`
+	Vaccine       []Vaccine          `json:"vaccine"`
+}
+
+type Vaccine struct {
+	VaccineID   uuid.UUID `json:"vaccine_id"`
+	VaccineName		string    `json:"name"`
+	Vaccine     []VaccineFullInfo   `json:"vaccine"`
+}
+
+type VaccineFullInfo struct {
+	RecordID    uuid.UUID `json:"record_id"`
+	Date         string    `json:"date"`
+	Type         string    `json:"type"`
+	Effect       string    `json:"effect"`
+	Note         string    `json:"note"`
+	Status       string    `json:"status"`
+	Age          string    `json:"age"`
+}
+
+type PatientUpdateReq struct {
+	Title        string  `json:"title"`
+	FirstName    string  `json:"firstname"`
+	LastName     string  `json:"lastname"`
+	Sex          string  `json:"sex"`
+	DOB          string  `json:"dob"`
+	Weight       float32 `json:"weight"`
+	Height       float32 `json:"height"`
+	IDCard       string  `json:"idcard"`
+	Rights       string  `json:"rights"`
+	Nationality  string  `json:"nationality"`
+	Ethnicity    string  `json:"ethnicity"`
+	PhoneNumber  string  `json:"phonenumber"`
+	Address      Address `json:"address"`
+	Diseases     []Disease `json:"diseases"`
+}
+
+type PatientUpdateRes struct {
+	ID          uuid.UUID `json:"id"`
+	Fullname    string    `json:"fullname"`
+	HnNumber    string    `json:"hnnumber"`
+	IDCard      string    `json:"idcard"`
+	PhoneNumber string    `json:"phonenumber"`
+	Rights      string    `json:"rights"`
+	Nationality string    `json:"nationality"`
+	Ethnicity   string    `json:"ethnicity"`
 }
 
 
+type PatientBasicInfoRes struct {
+	PatientID uuid.UUID `json:"patient_id"`
+	FullName  string    `json:"fullname"`
+	HnNumber  string    `json:"hn_number"`
+	AgeYears  int       `json:"age_years"`
+	AgeMonths int       `json:"age_months"`
+	AgeDays   int       `json:"age_days"`
+}
+
+type PatientDiseaseQuery struct {
+	Type string `query:"type"`
+}
+
 type PatientUsecase interface {
-	CreateFull(req *PatientFullCreateReq) (*PatientCreateRes, error)
+	CreateFull(req *PatientFullCreateReq, creatorID *uuid.UUID) (*PatientCreateRes, error)
 }
 
 type Transaction interface {
@@ -192,7 +269,7 @@ type UserRepository interface {
 }
 
 type PatientCreateRepo interface {
-	CreateWithUser(req *PatientCreateReq, userID uuid.UUID) (*PatientCreateRes, error)
+	CreateWithUser(req *PatientCreateReq, userID uuid.UUID, adminID *uuid.UUID) (*PatientCreateRes, error)
 	GenerateNextHnID() (string, error)
 }
 
@@ -203,7 +280,11 @@ type PatientGetRepo interface {
 	CountPatientsWithFilter(req PatientQueryParams) (int64, error)
 	GetPatientInfoByID(id uuid.UUID) (*databases.Patient, error)
 	GetPatientDiseasesInfoByID(id uuid.UUID, diseaseID uuid.UUID) (*databases.Patient, error)
-	GetPatientAppointmentsByID(id uuid.UUID) (*databases.Patient, error)
+	GetPatientAppointmentsInfoByID(id uuid.UUID) (*databases.Patient, error)
+	GetFullNameByUserID(userID uuid.UUID) (string, error)
+	GetPatientVaccinesByID(id uuid.UUID) (*databases.Patient , []databases.Vaccine, error)
+	GetPatientBasicInfoByID(id uuid.UUID) (*databases.Patient, error)
+	GetPatientDiseases(patientID uuid.UUID, dtype string) ([]databases.Disease, error)
 }
 
 type PatientGetUsecase interface {
@@ -211,5 +292,17 @@ type PatientGetUsecase interface {
 	GetPatientListWithFilter(req PatientQueryParams) (*PatientListRes, error)
 	GetPatientInfoByID(id uuid.UUID) (*PatientInfoRes, error)
 	GetPatientDiseasesInfo(id uuid.UUID, diseaseID uuid.UUID) (*DiseaseInfoRes, error)
-	GetPatientAppointmentsByID(id uuid.UUID) (*AppointInfoRes, error)
+	GetPatientAppointmentsInfoByID(id uuid.UUID) (*AppointInfoRes, error)
+	GetPatientVaccinesByID(patientID uuid.UUID) (*VaccineInfoRes, error)
+	GetPatientBasicInfoByID(id uuid.UUID) (*PatientBasicInfoRes, error)
+	GetPatientDiseases(patientID uuid.UUID, dtype string) ([]Disease, error)
+}
+
+type PatientUpdateRepo interface {
+	UpdatePatientInfo(id uuid.UUID, req *PatientUpdateReq, adminID *uuid.UUID) (*PatientUpdateRes, error)
+	UpdatePatientDiseases(patientID uuid.UUID, newDiseases []Disease, adminID *uuid.UUID) error
+}
+
+type PatientUpdateUsecase interface {
+	UpdatePatientInfo(id uuid.UUID, req *PatientUpdateReq, adminID uuid.UUID) (*PatientUpdateRes, error)
 }

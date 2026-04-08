@@ -31,40 +31,48 @@ func SetupDatabaseConnection(cfg *configs.Config) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to set timezone: %w", err)
 	}
 
-	fmt.Println("Database connection established successfully (Timezone: Asia/Bangkok)")
+	fmt.Println("Database connection established successfully.")
+	
+	passwordSvc := utils.NewPasswordService()
+	if err := SeedSuperAdmin(db, passwordSvc); err != nil {
+		log.Fatalf("Failed to seed superadmin: %v", err)
+	}
+
+	if err := SeedDiseases(db); err != nil {
+		log.Fatalf("Failed to seed diseases: %v", err)
+	} 
+
+	if err := MigrateAll(db); err != nil {
+		log.Fatalf("Failed to migrate database: %v", err)
+	}
+
 	return db, nil
 }
 
-func MigrateAllIfEmpty(db *gorm.DB) {
-	var tableCount int64
-	err := db.Raw("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'").Scan(&tableCount).Error
-	if err != nil {
-		log.Fatalf("Failed to check existing tables: %v", err)
-	}
+func MigrateAll(db *gorm.DB) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+	
+		if err := tx.AutoMigrate(&User{}, &Admin{}); err != nil {
+			return fmt.Errorf("migrate user/admin failed: %w", err)
+		}
 
-	if tableCount > 0 {
-		fmt.Println("Tables already exist — skipping migration.")
-		return
-	}
+		if err := tx.AutoMigrate(&Patient{}, &Disease{}, &PatientDisease{}); err != nil {
+			return fmt.Errorf("migrate patient/disease failed: %w", err)
+		}
 
-	fmt.Println("No tables found. Running initial migrations...")
+		if err := tx.AutoMigrate(&Appoint{}, &Health{}, &Relative{}); err != nil {
+			return fmt.Errorf("migrate appointment-related failed: %w", err)
+		}
 
-	if err := db.AutoMigrate(
-		&User{},
-		&Admin{},
-		&Patient{},
-		&Health{},
-		&Relative{},
-		&Appoint{},
-		&Disease{},
-		&PatientDisease{},
-		&Request{},
-		&Vaccine{},
-		&VaccinationRecord{},
-		&Notification{},
-	); err != nil {
-		log.Fatalf("Migration failed: %v", err)
-	}
+		if err := tx.AutoMigrate(&Vaccine{}, &VaccinationRecord{}); err != nil {
+			return fmt.Errorf("migrate vaccine failed: %w", err)
+		}
 
-	fmt.Println("All tables created successfully.")
+		if err := tx.AutoMigrate(&Request{}, &Notification{}); err != nil {
+			return fmt.Errorf("migrate request/notification failed: %w", err)
+		}
+
+		return nil
+	})
 }
+

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/chothanin01/PhoSS-Care-server/modules/patients/entities"
+	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
 	"github.com/chothanin01/PhoSS-Care-server/pkg/utils"
 )
 
@@ -27,17 +27,18 @@ func NewPatientUsecase(tx entities.Transaction, passwordSvc PasswordService) *ne
 	}
 }
 
-func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq) (*entities.PatientCreateRes, error) {
+func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq, creatorID *uuid.UUID) (*entities.PatientCreateRes, error) {
 	var res *entities.PatientCreateRes
-	
+
 	p := req.Patient
 	if p.FirstName == "" || p.LastName == "" ||
 		p.Sex == "" || p.Title == "" ||
 		p.DOB == "" || p.IDCard == "" ||
 		p.Nationality == "" || p.Ethnicity == "" ||
+		p.Rights == "" || p.Weight <= 0 || p.Height <= 0 ||
 		p.PhoneNumber == "" ||
-		p.Address.HouseNumber == "" || p.Address.SubDistrict == "" || 
-		p.Address.District == "" || p.Address.Province == "" || 
+		p.Address.HouseNumber == "" || p.Address.SubDistrict == "" ||
+		p.Address.District == "" || p.Address.Province == "" ||
 		p.Address.ZipCode == "" || len(p.Diseases) == 0 ||
 		(req.Relative.Kin.FirstName == "" && req.Relative.Kin.LastName == "") {
 		return nil, fmt.Errorf("missing required patient information")
@@ -53,7 +54,6 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq) (*ent
 
 	err := u.tx.Do(func(r entities.RepositorySet) error {
 		nextHnID, err := r.PatientRepo.GenerateNextHnID()
-
 		if err != nil {
 			return fmt.Errorf("generate HN ID: %w", err)
 		}
@@ -62,61 +62,46 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq) (*ent
 		if err != nil {
 			return fmt.Errorf("hash HNID: %w", err)
 		}
-	
-		user, err := r.UserRepo.Create(req.Patient.IDCard, hashedPass, "patient")
-		
-		fmt.Print(req)
+
+		user, err := r.UserRepo.Create(p.IDCard, hashedPass, "patient")
 		if err != nil {
 			return fmt.Errorf("create user: %w", err)
 		}
 
 		patientReq := &entities.PatientCreateReq{
-			Title:       req.Patient.Title,
-			FirstName:   req.Patient.FirstName,
-			LastName:    req.Patient.LastName,
-			Sex:         req.Patient.Sex,
-			Dob:         req.Patient.DOB,
+			Title:       p.Title,
+			FirstName:   p.FirstName,
+			LastName:    p.LastName,
+			Sex:         p.Sex,
+			Dob:         p.DOB,
 			HnID:        nextHnID,
-			IDCard:      req.Patient.IDCard,
-			Nationality: req.Patient.Nationality,
-			Ethnicity:   req.Patient.Ethnicity,
-			PhoneNumber: req.Patient.PhoneNumber,
-			Address:     req.Patient.Address,
-			Allergy:     req.Patient.Allergy,
-			Rights:      req.Patient.Rights,
-			Weight:      req.Patient.Weight,
-			Height:      req.Patient.Height,
+			IDCard:      p.IDCard,
+			Nationality: p.Nationality,
+			Ethnicity:   p.Ethnicity,
+			PhoneNumber: p.PhoneNumber,
+			Address:     p.Address,
+			Allergy:     p.Allergy,
+			Rights:      p.Rights,
+			Weight:      p.Weight,
+			Height:      p.Height,
 			UserID:      user.ID,
-			CreatedBy:   req.CreatedBy,
+			Diseases:    p.Diseases,
 		}
 
-		res, err = r.PatientRepo.CreateWithUser(patientReq, user.ID)
+		res, err = r.PatientRepo.CreateWithUser(patientReq, user.ID, creatorID)
 		if err != nil {
 			return fmt.Errorf("create patient: %w", err)
 		}
 
-		if len(req.Patient.Diseases) > 0 {
-			diseases := make([]entities.PatientDiseaseEntity, 0, len(req.Patient.Diseases))
-			for _, d := range req.Patient.Diseases {
-				diseases = append(diseases, entities.PatientDiseaseEntity{
-					DiseaseID: d.DiseaseID,
-					Name:      d.Name,
-				})
-			}
-			if err := r.DiseaseRepo.LinkPatientDiseases(res.Id, diseases); err != nil {
-				return fmt.Errorf("link diseases: %w", err)
-			}
-		}
-
 		relatives := []entities.RelativeEntity{
-			makeRelative(req.Relative.Kin, "kin", res.Id, req.CreatedBy),
-			makeRelative(req.Relative.Caretaker, "caretaker", res.Id, req.CreatedBy),
-			makeRelative(req.Relative.Medicine, "medicine", res.Id, req.CreatedBy),
-			makeRelative(req.Officer.House, "house", res.Id, req.CreatedBy),
-			makeRelative(req.Officer.Nurse, "nurse", res.Id, req.CreatedBy),
+			makeRelative(req.Relative.Kin, "kin", res.Id, creatorID),
+			makeRelative(req.Relative.Caretaker, "caretaker", res.Id, creatorID),
+			makeRelative(req.Relative.Medicine, "medicine", res.Id, creatorID),
+			makeRelative(req.Officer.House, "house", res.Id, creatorID),
+			makeRelative(req.Officer.Nurse, "nurse", res.Id, creatorID),
 		}
 
-		if err := r.RelativeRepo.Create(relatives); err != nil {
+		if err := r.RelativeRepo.Create(relatives, *creatorID); err != nil {
 			return fmt.Errorf("create relatives: %w", err)
 		}
 
@@ -126,11 +111,12 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq) (*ent
 	if err != nil {
 		return nil, err
 	}
+
 	return res, nil
 }
 
 
-func makeRelative(d entities.RelativeCreate, role string, pid uuid.UUID, creator uuid.UUID) entities.RelativeEntity {
+func makeRelative(d entities.RelativeCreate, role string, pid uuid.UUID, creator *uuid.UUID) entities.RelativeEntity {
 	return entities.RelativeEntity{
 		Title:       d.Title,
 		FirstName:   d.FirstName,
@@ -293,14 +279,9 @@ func (u *patientGetUsecase) GetPatientInfoByID(id uuid.UUID) (*entities.PatientI
 		Address:     addr,
 		Weight:      patient.Weight,
 		Height:      patient.Height,
-	}
-
-	var diseases []entities.Disease
-	for _, pd := range patient.Diseases {
-		diseases = append(diseases, entities.Disease{
-			DiseaseID:   pd.DiseaseID,
-			Name: pd.Disease.Name,
-		})
+		Ethnicity:   patient.Ethnicity,
+		Nationality: patient.Nationality,
+		DOB:         patient.DOB.Format("2006-01-02"),
 	}
 
 	var kin, caretaker, medicine entities.RelativeInfo
@@ -378,7 +359,6 @@ func (u *patientGetUsecase) GetPatientInfoByID(id uuid.UUID) (*entities.PatientI
 		Data: []entities.PatientData{
 			{
 				Patient:  full,
-				Disease:  diseases,
 				Relative: entities.Relative{
 					Kin:       kin,
 					Caretaker: caretaker,
@@ -395,48 +375,49 @@ func (u *patientGetUsecase) GetPatientInfoByID(id uuid.UUID) (*entities.PatientI
 	return res, nil
 }
 
-func (u *patientGetUsecase) GetPatientAppointmentsByID(id uuid.UUID) (*entities.AppointInfoRes, error) {
-	patient, err := u.readRepo.GetPatientAppointmentsByID(id)
+func (u *patientGetUsecase) GetPatientAppointmentsInfoByID(id uuid.UUID) (*entities.AppointInfoRes, error) {
+	patient, err := u.readRepo.GetPatientAppointmentsInfoByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("get patient appointments: %w", err)
 	}
 
 	fullname := fmt.Sprintf("%s%s %s", patient.Title, patient.FirstName, patient.LastName)
+	officerFullname, err := u.readRepo.GetFullNameByUserID(*patient.CreatedBy)
 
-	diseaseMap := make(map[uuid.UUID]*entities.AppointDisease)
+	appointMap := make(map[uuid.UUID]*entities.AppointDisease)
 	for _, ap := range patient.Appointments {
-		// only ongoing or delay
-		if ap.Status != "Ongoing" && ap.Status != "Delay" {
-			continue
-		}
 
-		d, ok := diseaseMap[ap.DiseaseID]
+		d, ok := appointMap[ap.DiseaseID]
 		if !ok {
-			diseaseMap[ap.DiseaseID] = &entities.AppointDisease{
+			appointMap[ap.DiseaseID] = &entities.AppointDisease{
 				DiseaseID:   ap.Disease.ID,
 				DiseaseName: ap.Disease.Name,
 				Appointments: []entities.AppointmentFullInfo{},
 			}
-			d = diseaseMap[ap.DiseaseID]
+			d = appointMap[ap.DiseaseID]
 		}
 
 		d.Appointments = append(d.Appointments, entities.AppointmentFullInfo{
+			ID:      ap.ID,
 			No:      ap.No,
 			Date:    ap.Date.Format("2006-01-02"),
-			Time:    ap.Time,
+			StartTime: 	ap.StartTime,
+			EndTime: 	ap.EndTime,
 			Symptom: ap.Symptom,
 			Note:    ap.Note,
 			Place:   ap.Place,
+			Purpose: ap.Purpose,
 			Doctor:  ap.Doctor,
 			Status:  ap.Status,
 			Letter:  ap.Letter,
 			Delay:   ap.Delay,
+			Officer: officerFullname,
 		})
 	}
 
-	var diseases []entities.AppointDisease
-	for _, d := range diseaseMap {
-		diseases = append(diseases, *d)
+	var appoint []entities.AppointDisease
+	for _, d := range appointMap {
+		appoint = append(appoint, *d)
 	}
 
 	res := &entities.AppointInfoRes{
@@ -447,7 +428,7 @@ func (u *patientGetUsecase) GetPatientAppointmentsByID(id uuid.UUID) (*entities.
 				PatientID: patient.ID,
 				Fullname:  fullname,
 				Hnnumber:  patient.HnID,
-				Diseases:  diseases,
+				Appointments:  appoint,
 			},
 		},
 	}
@@ -455,4 +436,99 @@ func (u *patientGetUsecase) GetPatientAppointmentsByID(id uuid.UUID) (*entities.
 	return res, nil
 }
 
-// ---------------------- EDIT ----------------------
+func (u *patientGetUsecase) GetPatientBasicInfoByID(id uuid.UUID) (*entities.PatientBasicInfoRes, error) {
+
+	patient, err := u.readRepo.GetPatientBasicInfoByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	fullname := patient.Title + patient.FirstName + " " + patient.LastName
+
+	var ageYears, ageMonths, ageDays int
+
+	if !patient.DOB.IsZero() {
+		now := time.Now()
+		years := now.Year() - patient.DOB.Year()
+		months := int(now.Month()) - int(patient.DOB.Month())
+		days := now.Day() - patient.DOB.Day()
+
+		if days < 0 {
+			prevMonth := now.AddDate(0, -1, 0)
+			days += utils.DaysInMonth(prevMonth.Year(), prevMonth.Month())
+			months--
+		}
+		if months < 0 {
+			months += 12
+			years--
+		}
+
+		ageYears = years
+		ageMonths = months
+		ageDays = days
+	}
+
+	res := &entities.PatientBasicInfoRes{
+		PatientID: patient.ID,
+		FullName:  fullname,
+		HnNumber:  patient.HnID,
+		AgeYears:     ageYears,
+		AgeMonths:    ageMonths,
+		AgeDays:      ageDays,
+	}
+
+	return res, nil
+}
+
+func (u *patientGetUsecase) GetPatientDiseases(patientID uuid.UUID, dtype string) ([]entities.Disease, error) {
+
+	diseases, err := u.readRepo.GetPatientDiseases(patientID, dtype)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []entities.Disease
+
+	for _, d := range diseases {
+		result = append(result, entities.Disease{
+			DiseaseID: d.ID,
+			Name:      d.Name,
+		})
+	}
+
+	return result, nil
+}
+
+// ---------------------- UPDATE ----------------------
+
+func (u *newPatientUsecase) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq, adminID uuid.UUID) (*entities.PatientUpdateRes, error) {
+	if req.FirstName == "" || req.LastName == "" ||
+		req.Sex == "" || req.Title == "" || req.DOB == "" ||
+		req.IDCard == "" || req.Rights == "" ||
+		req.Nationality == "" || req.Ethnicity == "" ||
+		req.PhoneNumber == "" ||
+		req.Address.HouseNumber == "" || req.Address.SubDistrict == "" ||
+		req.Address.District == "" || req.Address.Province == "" || req.Address.ZipCode == "" {
+		return nil, fmt.Errorf("missing required patient information")
+	}
+
+	var res *entities.PatientUpdateRes
+	err := u.tx.Do(func(r entities.RepositorySet) error {
+		updated, err := r.PateintUpdateRepo.UpdatePatientInfo(id, req, &adminID)
+		if err != nil {
+			return fmt.Errorf("update patient info: %w", err)
+		}
+		if len(req.Diseases) > 0 {
+			if err := r.PateintUpdateRepo.UpdatePatientDiseases(id, req.Diseases, &adminID); err != nil {
+				return fmt.Errorf("update diseases: %w", err)
+			}
+		}
+
+		res = updated
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}

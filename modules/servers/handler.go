@@ -81,9 +81,13 @@ func (s *Server) MapHandlers() error {
 	patientGetUC := _patientUsecases.NewGetPatientUsecase(patientGetRepo)
 	_patientControllers.NewPatientController(patientGroup, patientGetUC)
 
-	patientAppointRepo := _patientRepositories.NewGetAppointmentRepository(s.Db)
-	patientAppointUC := _patientUsecases.NewAppointmentUsecase(patientAppointRepo)
-	_patientControllers.NewAppointmentController(patientGroup.Group("/appointments"), patientAppointUC)
+	patientQueryAppointRepo := _patientRepositories.NewAppointmentQueryRepository(s.Db)
+	patientQueryAppointUC := _patientUsecases.NewAppointmentQueryUsecase(patientQueryAppointRepo)
+
+	patientAppointCommandRepo := _patientRepositories.NewAppointmentCommandRepo(s.Db)
+	patientAppointCommandUC := _patientUsecases.NewAppointmentCommandUsecase(patientAppointCommandRepo)
+	
+	_patientControllers.NewAppointmentController(patientGroup.Group("/appointments"), patientQueryAppointUC, patientAppointCommandUC)
 
 
 	// ------------------ 404 HANDLER ------------------

@@ -48,15 +48,23 @@ type AppointmentDelayReq struct {
 	Description string   `json:"description"`
 }
 
+type DiseaseScheduleEntity struct {
+	DiseaseID     uuid.UUID `json:"disease_id"`
+	DiseaseName   string    `json:"disease_name"`
+	AvailableDays []string  `json:"available_days"` 
+}
+
 type AppointmentQueryRepo interface {
+	CheckPatientHasDisease(patientID uuid.UUID, diseaseID uuid.UUID) (bool, error)
     GetAppointmentDetail(patientID uuid.UUID, diseaseID uuid.UUID) (*databases.Appoint, *databases.Admin, error)
-    
+	GetScheduleByDisease(diseaseID uuid.UUID) (*DiseaseScheduleEntity, error)
     ListPatientAppointments(patientID uuid.UUID) ([]databases.Appoint, error)
+
 }
 
 type AppointmentQueryUsecase interface {
     GetAppointmentDetail(patientID uuid.UUID, diseaseID uuid.UUID) (*AppointmentEntity, error)
-
+	GetScheduleByDisease(patientID uuid.UUID, diseaseID uuid.UUID) (*DiseaseScheduleEntity, error)
 	ListPatientAppointments(patientID uuid.UUID) (*PatientAppointment, error)
 }
 

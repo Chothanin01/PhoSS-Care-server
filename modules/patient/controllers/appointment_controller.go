@@ -20,6 +20,7 @@ func NewAppointmentController(r fiber.Router, Queryuc entities.AppointmentQueryU
 	}
 	
 	r.Get("/appointment", controller.ListPatientAppointments)
+	r.Get("/schedule/:disease_id", controller.GetDiseaseSchedule)
 	r.Get("/:disease_id", controller.GetAppointmentDetail)
 	r.Post("/delay", controller.CreateDelayRequest)
 }
@@ -119,5 +120,44 @@ func (c *AppointmentController) CreateDelayRequest(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"success": true,
 		"message": "delay request submitted successfully",
+	})
+}
+
+func (c *AppointmentController) GetDiseaseSchedule(ctx *fiber.Ctx) error {
+	claims, ok := ctx.Locals("user").(jwt.MapClaims)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "unauthorized access"})
+	}
+
+	patientIDStr, ok := claims["role_id"].(string)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "invalid token claims"})
+	}
+
+	patientID, err := uuid.Parse(patientIDStr)
+	if err != nil {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "invalid patient ID in token"})
+	}
+
+	diseaseIDStr := ctx.Params("disease_id")
+	diseaseID, err := uuid.Parse(diseaseIDStr)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"message": "invalid disease ID format",
+		})
+	}
+
+	data, err := c.QueryUC.GetScheduleByDisease(patientID, diseaseID)
+	if err != nil {
+		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"success": false,
+			"message": err.Error(),
+		})
+	}
+
+	return ctx.JSON(fiber.Map{
+		"success": true,
+		"data":    data,
 	})
 }

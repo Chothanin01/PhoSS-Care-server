@@ -26,6 +26,14 @@ func NewAppointmentCommandUsecase(repo entities.AppointmentCommandRepo) entities
 }
 
 func (u *AppointmentQueryUsecase) GetAppointmentDetail(patientID uuid.UUID, diseaseID uuid.UUID) (*entities.AppointmentEntity, error) {
+	hasDisease, err := u.readRepo.CheckPatientHasDisease(patientID, diseaseID)
+	if err != nil {
+		return nil, fmt.Errorf("error verifying patient medical records: %w", err)
+	}
+	if !hasDisease {
+		return nil, fmt.Errorf("patient did not registered with this disease")
+	}
+
 	appointDB, adminDB, err := u.readRepo.GetAppointmentDetail(patientID, diseaseID)
 	if err != nil {
 		return nil, err
@@ -128,7 +136,6 @@ func (u *AppointmentQueryUsecase) ListPatientAppointments(patientID uuid.UUID) (
 }
 
 func (u *appointmentCommandUsecase) SubmitDelayRequest(userID uuid.UUID, patientID uuid.UUID, payload *entities.AppointmentDelayReq) error {
-	
 	exists, err := u.repo.CheckAppointmentExists(payload.AppointID, patientID)
 	if err != nil {
 		return fmt.Errorf("error verifying appointment: %w", err)
@@ -156,4 +163,25 @@ func (u *appointmentCommandUsecase) SubmitDelayRequest(userID uuid.UUID, patient
 	}
 
 	return u.repo.SaveDelayRequest(domainReq)
+}
+
+func (u *AppointmentQueryUsecase) GetScheduleByDisease(patientID uuid.UUID, diseaseID uuid.UUID) (*entities.DiseaseScheduleEntity, error) {
+	if diseaseID == uuid.Nil {
+		return nil, fmt.Errorf("disease ID is required")
+	}
+
+	// hasDisease, err := u.readRepo.CheckPatientHasDisease(patientID, diseaseID)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("error verifying patient medical records: %w", err)
+	// }
+	// if !hasDisease {
+	// 	return nil, fmt.Errorf("patient did not registered with this disease")
+	// }
+
+	schedule, err := u.readRepo.GetScheduleByDisease(diseaseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get calendar schedule: %w", err)
+	}
+
+	return schedule, nil
 }

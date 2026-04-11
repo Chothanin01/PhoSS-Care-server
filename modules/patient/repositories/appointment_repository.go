@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"errors"
+
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
 	"github.com/chothanin01/PhoSS-Care-server/modules/patient/entities"
@@ -89,4 +91,38 @@ func (r *appointmentCommandRepo) SaveDelayRequest(req *entities.DelayRequestEnti
 	}
 
 	return r.db.Create(dbModel).Error
+}
+
+func (r *appointmentQueryRepository) CheckPatientHasDisease(patientID uuid.UUID, diseaseID uuid.UUID) (bool, error) {
+	var count int64
+	
+	err := r.db.Table("patient_disease").
+		Where("patient_id = ? AND disease_id = ?", patientID, diseaseID).
+		Count(&count).Error
+
+	if err != nil {
+		return false, err
+	}
+	
+	return count > 0, nil 
+}
+
+func (r *appointmentQueryRepository) GetScheduleByDisease(diseaseID uuid.UUID) (*entities.DiseaseScheduleEntity, error) {
+	var dbDisease databases.Disease
+
+	err := r.db.Where("id = ?", diseaseID).First(&dbDisease).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("disease not found")
+		}
+		return nil, err
+	}
+
+	domainSchedule := &entities.DiseaseScheduleEntity{
+		DiseaseID:     dbDisease.ID,
+		DiseaseName:   dbDisease.Name,
+		AvailableDays: dbDisease.AvailableDays, 
+	}
+
+	return domainSchedule, nil
 }

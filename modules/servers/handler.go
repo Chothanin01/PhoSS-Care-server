@@ -81,7 +81,7 @@ func (s *Server) MapHandlers() error {
 	patientGetUC := _patientUsecases.NewGetPatientUsecase(patientGetRepo)
 	_patientControllers.NewPatientController(patientGroup, patientGetUC)
 
-	patientQueryAppointRepo := _patientRepositories.NewAppointmentQueryRepository(s.Db)
+	patientQueryAppointRepo := _patientRepositories.NewappointmentQueryRepo(s.Db)
 	patientQueryAppointUC := _patientUsecases.NewAppointmentQueryUsecase(patientQueryAppointRepo)
 
 	patientAppointCommandRepo := _patientRepositories.NewAppointmentCommandRepo(s.Db)

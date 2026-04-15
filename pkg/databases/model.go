@@ -23,6 +23,9 @@ type User struct {
 	Username string `gorm:"size:255;not null;unique" json:"username"`
 	Password string `gorm:"size:255;not null" json:"password"`
 	Role     string `gorm:"size:50;not null" json:"role"`
+
+	Admin    *Admin `gorm:"foreignKey:UserID;references:ID" json:"admin,omitempty"`
+	Patient  *Patient `gorm:"foreignKey:UserID;references:ID" json:"patient,omitempty"`
 }
 
 func (User) TableName() string { return "users" }
@@ -102,6 +105,7 @@ type Appoint struct {
 	Place     string    `json:"place"`
 	Doctor    string    `json:"doctor"`
 	Status    string    `json:"status"`
+	ColorStatus string  `json:"color_status"`
 	Purpose   string    `json:"purpose"`
 	Letter    bool      `json:"letter"`
 	Delay     bool      `json:"delay"`

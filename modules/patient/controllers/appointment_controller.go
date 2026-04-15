@@ -19,7 +19,9 @@ func NewAppointmentController(r fiber.Router, Queryuc entities.AppointmentQueryU
 		CommandUC: Commanduc,
 	}
 	
-	r.Get("/appointment", controller.ListPatientAppointments)
+	r.Get("/", controller.ListPatientAppointments)
+	r.Get("/history/:disease_id", controller.GetDiseaseHistory)
+	r.Get("/history/detail/:appoint_id", controller.GetHistoryDetail)
 	r.Get("/schedule/:disease_id", controller.GetDiseaseSchedule)
 	r.Get("/:disease_id", controller.GetAppointmentDetail)
 	r.Post("/delay", controller.CreateDelayRequest)
@@ -151,6 +153,73 @@ func (c *AppointmentController) GetDiseaseSchedule(ctx *fiber.Ctx) error {
 	data, err := c.QueryUC.GetScheduleByDisease(patientID, diseaseID)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"success": false,
+			"message": err.Error(),
+		})
+	}
+
+	return ctx.JSON(fiber.Map{
+		"success": true,
+		"data":    data,
+	})
+}
+
+func (c *AppointmentController) GetDiseaseHistory(ctx *fiber.Ctx) error {
+	
+	claims, ok := ctx.Locals("user").(jwt.MapClaims)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "unauthorized"})
+	}
+	patientID, _ := uuid.Parse(claims["role_id"].(string))
+
+	diseaseID, err := uuid.Parse(ctx.Params("disease_id"))
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid disease ID"})
+	}
+
+	page := ctx.QueryInt("page", 1)
+
+	data, err := c.QueryUC.GetDiseaseHistory(patientID, diseaseID, page)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"message": err.Error(),
+		})
+	}
+
+	return ctx.JSON(fiber.Map{
+		"success": true,
+		"data":    data,
+	})
+}
+
+func (c *AppointmentController) GetHistoryDetail(ctx *fiber.Ctx) error {
+	
+	claims, ok := ctx.Locals("user").(jwt.MapClaims)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "unauthorized"})
+	}
+	patientID, _ := uuid.Parse(claims["role_id"].(string))
+
+	appointIDStr := ctx.Params("appoint_id")
+	appointID, err := uuid.Parse(appointIDStr)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"message": "invalid appointment ID format",
+		})
+	}
+
+	data, err := c.QueryUC.GetHistoryDetail(appointID, patientID)
+	if err != nil {
+		if err.Error() == "failed to fetch appointment details: appointment not found or access denied" {
+			return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"success": false,
+				"message": "appointment not found",
+			})
+		}
+
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
 			"message": err.Error(),
 		})

@@ -54,18 +54,62 @@ type DiseaseScheduleEntity struct {
 	AvailableDays []string  `json:"available_days"` 
 }
 
+type HistoryAppointEntity struct {
+	AppointID   uuid.UUID `json:"appoint_id"`
+	No          int       `json:"no"`
+	Date        string    `json:"date"`
+	Note        string    `json:"note"`
+	ColorStatus string    `json:"color_status"` 
+	DoctorName  string    `json:"doctor"`
+}
+
+type DiseaseHistoryResponse struct {
+	TotalPages   int                 `json:"total_pages"`
+	CurrentPage  int                 `json:"current_page"`
+	Appointments []HistoryAppointEntity `json:"appointments"`
+}
+
+type HealthEntity struct {
+	Pulse    int     `json:"pulse"`
+	Pressure int     `json:"pressure"`
+	Height   int     `json:"height"`
+	Weight   float64 `json:"weight"`
+	BMI      float64 `json:"bmi"`
+}
+
+type HistoryDetailEntity struct {
+	AppointID   uuid.UUID    `json:"appoint_id"`
+	No          int          `json:"no"`
+	Date        string       `json:"date"`
+	Note        string       `json:"note"`
+	ColorStatus string       `json:"color_status"`
+	Doctor      string       `json:"doctor"`
+	Purpose     string       `json:"purpose"`
+	Symptom     string       `json:"symptom"`
+	Health      HealthEntity `json:"health"`
+	NextAppointID *uuid.UUID `json:"next_appoint_id"`
+	PrevAppointID *uuid.UUID `json:"prev_appoint_id"`
+}
+
 type AppointmentQueryRepo interface {
 	CheckPatientHasDisease(patientID uuid.UUID, diseaseID uuid.UUID) (bool, error)
     GetAppointmentDetail(patientID uuid.UUID, diseaseID uuid.UUID) (*databases.Appoint, *databases.Admin, error)
 	GetScheduleByDisease(diseaseID uuid.UUID) (*DiseaseScheduleEntity, error)
     ListPatientAppointments(patientID uuid.UUID) ([]databases.Appoint, error)
 
+	CountDiseaseHistory(patientID uuid.UUID, diseaseID uuid.UUID) (int64, error)
+	GetDiseaseHistory(patientID uuid.UUID, diseaseID uuid.UUID, limit int, offset int) ([]HistoryAppointEntity, error)
+	GetHistoryDetail(appointID uuid.UUID, patientID uuid.UUID) (*HistoryDetailEntity, error)
 }
+
 
 type AppointmentQueryUsecase interface {
     GetAppointmentDetail(patientID uuid.UUID, diseaseID uuid.UUID) (*AppointmentEntity, error)
 	GetScheduleByDisease(patientID uuid.UUID, diseaseID uuid.UUID) (*DiseaseScheduleEntity, error)
 	ListPatientAppointments(patientID uuid.UUID) (*PatientAppointment, error)
+
+	GetDiseaseHistory(patientID uuid.UUID, diseaseID uuid.UUID, page int) (*DiseaseHistoryResponse, error)
+	GetHistoryDetail(appointID uuid.UUID, patientID uuid.UUID) (*HistoryDetailEntity, error)
 }
 
 type AppointmentCommandRepo interface {

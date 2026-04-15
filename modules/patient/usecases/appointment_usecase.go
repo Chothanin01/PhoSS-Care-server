@@ -3,6 +3,7 @@ package usecases
 import (
 	"fmt"
 	"time"
+	"math"
 
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/modules/patient/entities"
@@ -170,13 +171,13 @@ func (u *AppointmentQueryUsecase) GetScheduleByDisease(patientID uuid.UUID, dise
 		return nil, fmt.Errorf("disease ID is required")
 	}
 
-	// hasDisease, err := u.readRepo.CheckPatientHasDisease(patientID, diseaseID)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("error verifying patient medical records: %w", err)
-	// }
-	// if !hasDisease {
-	// 	return nil, fmt.Errorf("patient did not registered with this disease")
-	// }
+	hasDisease, err := u.readRepo.CheckPatientHasDisease(patientID, diseaseID)
+	if err != nil {
+		return nil, fmt.Errorf("error verifying patient medical records: %w", err)
+	}
+	if !hasDisease {
+		return nil, fmt.Errorf("patient did not registered with this disease")
+	}
 
 	schedule, err := u.readRepo.GetScheduleByDisease(diseaseID)
 	if err != nil {
@@ -184,4 +185,43 @@ func (u *AppointmentQueryUsecase) GetScheduleByDisease(patientID uuid.UUID, dise
 	}
 
 	return schedule, nil
+}
+
+func (u *AppointmentQueryUsecase) GetDiseaseHistory(patientID uuid.UUID, diseaseID uuid.UUID, page int) (*entities.DiseaseHistoryResponse, error) {
+	if page < 1 {
+		page = 1
+	}
+	limit := 10
+	offset := (page - 1) * limit
+
+	totalRows, err := u.readRepo.CountDiseaseHistory(patientID, diseaseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count history: %w", err)
+	}
+
+	totalPages := int(math.Ceil(float64(totalRows) / float64(limit)))
+
+	appointments, err := u.readRepo.GetDiseaseHistory(patientID, diseaseID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch history: %w", err)
+	}
+
+	return &entities.DiseaseHistoryResponse{
+		TotalPages:   totalPages,
+		CurrentPage:  page,
+		Appointments: appointments, 
+	}, nil
+}
+
+func (u *AppointmentQueryUsecase) GetHistoryDetail(appointID uuid.UUID, patientID uuid.UUID) (*entities.HistoryDetailEntity, error) {
+	if appointID == uuid.Nil {
+		return nil, fmt.Errorf("appointment ID is required")
+	}
+
+	detail, err := u.readRepo.GetHistoryDetail(appointID, patientID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch appointment details: %w", err)
+	}
+
+	return detail, nil
 }

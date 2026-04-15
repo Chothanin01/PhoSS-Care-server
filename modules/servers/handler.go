@@ -89,6 +89,15 @@ func (s *Server) MapHandlers() error {
 	
 	_patientControllers.NewAppointmentController(patientGroup.Group("/appointments"), patientQueryAppointUC, patientAppointCommandUC)
 
+	patientRequestCommandRepo := _patientRepositories.NewRequestCommandRepo(s.Db)
+	patientRequestCommandUC := _patientUsecases.NewRequestCommandUsecase(patientRequestCommandRepo)
+
+	patientRequestQueryRepo := _patientRepositories.NewRequestQueryRepo(s.Db)
+	patientRequestQueryUC := _patientUsecases.NewRequestQueryUsecase(patientRequestQueryRepo)
+
+	_patientControllers.NewRequestCommandController(patientGroup.Group("/requests"), patientRequestCommandUC, patientRequestQueryUC)
+
+
 
 	// ------------------ 404 HANDLER ------------------
 	s.App.Use(func(c *fiber.Ctx) error {

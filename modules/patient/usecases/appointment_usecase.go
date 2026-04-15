@@ -151,15 +151,15 @@ func (u *appointmentCommandUsecase) SubmitDelayRequest(userID uuid.UUID, patient
 	}
 
 	domainReq := &entities.DelayRequestEntity{
-		RequestType: "delay",
+		RequestType: "appoint",
 		Description: "Patient requested to delay appointment",
 		Date:        parsedDate,
 		StartTime:   payload.StartTime,
 		EndTime:     payload.EndTime,
 		Status:      "pending",
 		PatientID:   patientID,
-		AppointID:   payload.AppointID,
-		DiseaseID:   payload.DiseaseID,
+		AppointID:   &payload.AppointID,
+		DiseaseID:   &payload.DiseaseID,
 		CreatedBy:   userID,
 	}
 

@@ -34,8 +34,8 @@ type DelayRequestEntity struct {
 	EndTime     string
 	Status      string
 	PatientID   uuid.UUID
-	AppointID   uuid.UUID
-	DiseaseID   uuid.UUID
+	AppointID   *uuid.UUID
+	DiseaseID   *uuid.UUID
 	CreatedBy   uuid.UUID
 }
 

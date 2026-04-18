@@ -86,12 +86,10 @@ type OfficerDetail struct {
 
 type GetPatientRepo interface {
 	GetPatientBasicInfo(patientID uuid.UUID) (*databases.Patient, error)
-	GetPatientAppointment(patientID uuid.UUID) ([]databases.Appoint, error)
 	GetPatientFullInfo(userID uuid.UUID) (*databases.Patient, error)
 }
 
 type GetPatientUsecase interface {
 	GetPatientBasicInfo(patientID uuid.UUID) (*PatientBasicInfoRes, error)
-	GetPatientAppointment(patientID uuid.UUID) (*PatientAppointment, error)
 	GetPatientFullInfo(userID uuid.UUID) (*PatientInfoRes, error)
 }

@@ -112,9 +112,7 @@ func (r *RequestUpdateRepository) FindRequestByID(id uuid.UUID) (*entities.Reque
 		RequestType: req.RequestType,
 		Status:      req.Status,
 		Description: req.Description,
-	}
-	if req.AppointID != uuid.Nil {
-		detail.AppointID = req.AppointID
+		AppointID:   *req.AppointID,
 	}
 	return detail, nil
 }

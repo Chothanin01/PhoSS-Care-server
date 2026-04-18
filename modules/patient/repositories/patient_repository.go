@@ -27,22 +27,7 @@ func (r *GetPatientRepository) GetPatientBasicInfo(patientID uuid.UUID) (*databa
 	return &patient, nil
 }
 
-func (r *GetPatientRepository) GetPatientAppointment(patientID uuid.UUID) ([]databases.Appoint, error) {
-	var appoint []databases.Appoint
 
-	err := r.db.
-		Preload("Disease").
-		Preload("Patient").
-    	Where("patient_id = ? AND status IN ?", patientID, []string{"ongoing", "dalay"}).
-    	Find(&appoint).
-		Error
-
-	if err != nil {
-		return nil,err
-	}
-
-	return appoint, nil
-}
 
 func (r *GetPatientRepository) GetPatientFullInfo(userID uuid.UUID) (*databases.Patient, error) {
     var patient databases.Patient

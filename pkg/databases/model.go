@@ -23,6 +23,9 @@ type User struct {
 	Username string `gorm:"size:255;not null;unique" json:"username"`
 	Password string `gorm:"size:255;not null" json:"password"`
 	Role     string `gorm:"size:50;not null" json:"role"`
+
+	Admin    *Admin `gorm:"foreignKey:UserID;references:ID" json:"admin,omitempty"`
+	Patient  *Patient `gorm:"foreignKey:UserID;references:ID" json:"patient,omitempty"`
 }
 
 func (User) TableName() string { return "users" }
@@ -102,6 +105,7 @@ type Appoint struct {
 	Place     string    `json:"place"`
 	Doctor    string    `json:"doctor"`
 	Status    string    `json:"status"`
+	ColorStatus string  `json:"color_status"`
 	Purpose   string    `json:"purpose"`
 	Letter    bool      `json:"letter"`
 	Delay     bool      `json:"delay"`
@@ -125,7 +129,8 @@ type Appoint struct {
 
 type Disease struct {
 	BaseModel
-	Name     string           `gorm:"size:255;not null" json:"name"`
+	Name     		string           `gorm:"size:255;not null" json:"name"`
+	AvailableDays 	StringArray		 `gorm:"size:15" json:"available_days"`
 	Patients []PatientDisease `json:"patients"`
 
 	CreatedBy     *uuid.UUID
@@ -191,8 +196,8 @@ type Request struct {
 	EndTime   string `gorm:"size:5" json:"end_time"`
 	Status      string    `gorm:"size:50;not null"`
 	PatientID   uuid.UUID
-	AppointID   uuid.UUID
-	DiseaseID uuid.UUID   
+	AppointID   *uuid.UUID
+	DiseaseID 	*uuid.UUID   
 	
 	Patient Patient `gorm:"foreignKey:PatientID"`
 	Appoint Appoint `gorm:"foreignKey:AppointID"`
@@ -292,3 +297,26 @@ func (b *BaseModel) BeforeUpdate(tx *gorm.DB) error {
 	return nil
 }
 
+type StringArray []string
+
+func (a StringArray) Value() (driver.Value, error) {
+	if len(a) == 0 {
+		return "[]", nil
+	}
+	return json.Marshal(a)
+}
+
+func (a *StringArray) Scan(value interface{}) error {
+	if value == nil {
+		*a = StringArray{}
+		return nil
+	}
+	switch v := value.(type) {
+	case []byte:
+		return json.Unmarshal(v, a)
+	case string:
+		return json.Unmarshal([]byte(v), a)
+	default:
+		return fmt.Errorf("unsupported type %T for StringArray", value)
+	}
+}

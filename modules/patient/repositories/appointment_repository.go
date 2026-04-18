@@ -1,0 +1,257 @@
+package repositories
+
+import (
+	"errors"
+
+	"github.com/google/uuid"
+	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
+	"github.com/chothanin01/PhoSS-Care-server/modules/patient/entities"
+	"gorm.io/gorm"	
+)
+
+type appointmentQueryRepo struct {
+	db *gorm.DB
+}
+
+func NewappointmentQueryRepo(db *gorm.DB) *appointmentQueryRepo {
+	return &appointmentQueryRepo{db: db}
+}
+
+type appointmentCommandRepo struct {
+	db *gorm.DB
+}
+
+func NewAppointmentCommandRepo(db *gorm.DB) *appointmentCommandRepo {
+	return &appointmentCommandRepo{db: db}
+}
+
+func (r *appointmentQueryRepo) GetAppointmentDetail(patientID uuid.UUID, diseaseID uuid.UUID) (*databases.Appoint, *databases.Admin, error) {
+	var appoint databases.Appoint
+	var admin databases.Admin
+
+	err := r.db.
+		Preload("Disease").
+        Where("patient_id = ? AND disease_id = ? AND status IN ?", patientID, diseaseID, []string{"ongoing", "delay"}).
+        First(&appoint).Error
+    if err != nil {
+        return nil, nil, err
+    }
+	
+	if appoint.CreatedBy != nil {
+        err = r.db.Where("user_id = ?", *appoint.CreatedBy).First(&admin).Error
+        if err != nil {
+            return &appoint, nil, nil 
+        }
+    }
+
+	return &appoint, &admin, nil
+}
+
+func (r *appointmentQueryRepo) ListPatientAppointments(patientID uuid.UUID) ([]databases.Appoint, error) {
+	var appoint []databases.Appoint
+
+	err := r.db.
+		Preload("Disease").
+		Preload("Patient").
+    	Where("patient_id = ? AND status IN ?", patientID, []string{"ongoing", "dalay"}).
+    	Find(&appoint).
+		Error
+
+	if err != nil {
+		return nil,err
+	}
+
+	return appoint, nil
+}
+
+func (r *appointmentCommandRepo) CheckAppointmentExists(appointID uuid.UUID, patientID uuid.UUID) (bool, error) {
+	var count int64
+	err := r.db.Model(&databases.Appoint{}).
+		Where("id = ? AND patient_id = ?", appointID, patientID).
+		Count(&count).Error
+
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func (r *appointmentCommandRepo) SaveDelayRequest(req *entities.DelayRequestEntity) error {
+	dbModel := &databases.Request{
+		RequestType: req.RequestType,
+		Description: req.Description,
+		Date:        req.Date,
+		StartTime:   req.StartTime,
+		EndTime:     req.EndTime,
+		Status:      req.Status,
+		PatientID:   req.PatientID,
+		AppointID:   req.AppointID,
+		DiseaseID:   req.DiseaseID,
+		CreatedBy:   &req.CreatedBy,
+	}
+
+	return r.db.Create(dbModel).Error
+}
+
+func (r *appointmentQueryRepo) CheckPatientHasDisease(patientID uuid.UUID, diseaseID uuid.UUID) (bool, error) {
+	var count int64
+	
+	err := r.db.Table("patient_disease").
+		Where("patient_id = ? AND disease_id = ?", patientID, diseaseID).
+		Count(&count).Error
+
+	if err != nil {
+		return false, err
+	}
+	
+	return count > 0, nil 
+}
+
+func (r *appointmentQueryRepo) GetScheduleByDisease(diseaseID uuid.UUID) (*entities.DiseaseScheduleEntity, error) {
+	var dbDisease databases.Disease
+
+	err := r.db.Where("id = ?", diseaseID).First(&dbDisease).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("disease not found")
+		}
+		return nil, err
+	}
+
+	domainSchedule := &entities.DiseaseScheduleEntity{
+		DiseaseID:     dbDisease.ID,
+		DiseaseName:   dbDisease.Name,
+		AvailableDays: dbDisease.AvailableDays, 
+	}
+
+	return domainSchedule, nil
+}
+
+func (r *appointmentQueryRepo) CountDiseaseHistory(patientID uuid.UUID, diseaseID uuid.UUID) (int64, error) {
+	var count int64
+	err := r.db.Model(&databases.Appoint{}).
+		Where("patient_id = ? AND disease_id = ?", patientID, diseaseID).
+		Count(&count).Error
+	return count, err
+}
+
+func (r *appointmentQueryRepo) GetDiseaseHistory(patientID uuid.UUID, diseaseID uuid.UUID, limit int, offset int) ([]entities.HistoryAppointEntity, error) {
+	var dbAppoints []databases.Appoint
+
+	err := r.db.
+		Preload("CreatedByUser.Admin").
+		Where("patient_id = ? AND disease_id = ?", patientID, diseaseID).
+		Order("date DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&dbAppoints).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	domainAppoints := make([]entities.HistoryAppointEntity, len(dbAppoints))
+
+	for i, app := range dbAppoints {
+		doctorName := "Unknown"
+		if app.Doctor != "" {
+			doctorName = app.Doctor
+		} else if app.CreatedByUser != nil && app.CreatedByUser.Admin != nil && app.CreatedByUser.Admin.FirstName != "" {
+			admin := app.CreatedByUser.Admin
+			doctorName = admin.Title + admin.FirstName + " " + admin.LastName
+		}
+
+		color := app.ColorStatus
+		if color == "" {
+			color = "green" 
+		}
+
+		domainAppoints[i] = entities.HistoryAppointEntity{
+			AppointID:   app.ID,
+			No:          app.No,
+			Date:        app.Date.Format("2006-01-02"),
+			Note:        app.Note,
+			ColorStatus: color,
+			DoctorName:  doctorName,
+		}
+	}
+
+	return domainAppoints, nil
+}
+
+func (r *appointmentQueryRepo) GetHistoryDetail(appointID uuid.UUID, patientID uuid.UUID) (*entities.HistoryDetailEntity, error) {
+	var app databases.Appoint
+
+	err := r.db.
+		Preload("CreatedByUser.Admin").
+		Where("id = ? AND patient_id = ?", appointID, patientID).
+		First(&app).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("appointment not found or access denied")
+		}
+		return nil, err
+	}
+
+	var prevApps []databases.Appoint
+	var prevID *uuid.UUID
+	r.db.Select("id").
+		Where("patient_id = ? AND disease_id = ? AND (date < ? OR (date = ? AND start_time < ?))", 
+			patientID, app.DiseaseID, app.Date, app.Date, app.StartTime).
+		Order("date DESC, start_time DESC"). 
+		Limit(1).
+		Find(&prevApps)
+
+	if len(prevApps) > 0 {
+		prevID = &prevApps[0].ID
+	}
+
+	var nextApps []databases.Appoint
+	var nextID *uuid.UUID
+	r.db.Select("id").
+		Where("patient_id = ? AND disease_id = ? AND (date > ? OR (date = ? AND start_time > ?))", 
+			patientID, app.DiseaseID, app.Date, app.Date, app.StartTime).
+		Order("date ASC, start_time ASC").
+		Limit(1).
+		Find(&nextApps)
+
+	if len(nextApps) > 0 {
+		nextID = &nextApps[0].ID
+	}
+
+	doctorName := "Unknown Doctor"
+	if app.Doctor != "" {
+		doctorName = app.Doctor
+	} else if app.CreatedByUser != nil && app.CreatedByUser.Admin != nil && app.CreatedByUser.Admin.FirstName != "" {
+		admin := app.CreatedByUser.Admin
+		doctorName = admin.Title + admin.FirstName + " " + admin.LastName
+	}  
+
+	color := app.ColorStatus
+	if color == "" {
+		color = "none"
+	}
+
+	detail := &entities.HistoryDetailEntity{
+		AppointID:   app.ID,
+		No:          app.No,
+		Date:        app.Date.Format("2006-01-02"),
+		Note:        app.Note,
+		ColorStatus: color,
+		Doctor:      doctorName,
+		Purpose:     app.Purpose,
+		Symptom:     app.Symptom,
+		Health: entities.HealthEntity{
+			Pulse:    app.Health.Pulse,
+			Pressure: app.Health.Pressure,
+			Height:   app.Health.Height,
+			Weight:   app.Health.Weight,
+			BMI:      app.Health.BMI,
+		},
+		NextAppointID: nextID,
+		PrevAppointID: prevID,
+	}
+
+	return detail, nil
+}

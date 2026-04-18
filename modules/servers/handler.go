@@ -39,11 +39,11 @@ func (s *Server) MapHandlers() error {
 	_authControllers.NewAuthController(authGroup.Group("/patient"), patientAuthUC)
 
 	// Role-based JWT middleware
-	// adminAuth := utils.NewJWTMiddleware(jwtAdmin, "admin")
+	adminAuth := utils.NewJWTMiddleware(jwtAdmin, "admin")
 	patientAuth := utils.NewJWTMiddleware(jwtPatient, "patient")
 
 	// ------------------ ADMIN MODULES ------------------
-	adminGroup := v1.Group("/admins")
+	adminGroup := v1.Group("/admins", adminAuth)
 
 	adminRepo := _adminRepositories.NewAdminRepository(s.Db)
 	adminUsecase := _adminUsecases.NewAdminUsecase(adminRepo, passSvc)
@@ -77,9 +77,13 @@ func (s *Server) MapHandlers() error {
 	// ------------------ PATIENT MODULES ------------------
 	patientGroup := v1.Group("patient", patientAuth)
 
-	patientGetRepo := _patientRepositories.NewPatientGetRepository(s.Db)
-	patientGetUC := _patientUsecases.NewPatientGetUsecase(patientGetRepo)
+	patientGetRepo := _patientRepositories.NewGetPatientRepository(s.Db)
+	patientGetUC := _patientUsecases.NewGetPatientUsecase(patientGetRepo)
 	_patientControllers.NewPatientController(patientGroup, patientGetUC)
+
+	patientAppointRepo := _patientRepositories.NewGetAppointmentRepository(s.Db)
+	patientAppointUC := _patientUsecases.NewAppointmentUsecase(patientAppointRepo)
+	_patientControllers.NewAppointmentController(patientGroup.Group("/appointments"), patientAppointUC)
 
 
 	// ------------------ 404 HANDLER ------------------

@@ -29,6 +29,7 @@ type TokenClaims struct {
 type AuthRepository interface {
 	GetByUsername(username string) (*User, error)
 	GetPatientDiseases(userID uuid.UUID) ([]map[string]interface{}, error)
+	GetRoleID(userID uuid.UUID, role string) (uuid.UUID, error)
 }
 
 type AuthUsecase interface {

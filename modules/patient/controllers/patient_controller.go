@@ -1,28 +1,42 @@
 package controllers
 
 import (
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
+
 	"github.com/chothanin01/PhoSS-Care-server/modules/patient/entities"
+	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 type PatientController struct {
-	GetUsecase entities.PatientGetUsecase
+	GetUsecase entities.GetPatientUsecase
 }
 
-func NewPatientController(r fiber.Router, uc entities.PatientGetUsecase) {
+func NewPatientController(r fiber.Router, uc entities.GetPatientUsecase) {
 	controller := &PatientController{GetUsecase: uc}
 	r.Get("/basicinfo", controller.GetPatientBasicInfo)
+	r.Get("/appointment", controller.GetPatientAppointment)
+	r.Get("/fullinfo", controller.GetPatientFullInfo)
 }
 
 func (c *PatientController) GetPatientBasicInfo(ctx *fiber.Ctx) error {
+	claims, ok := ctx.Locals("user").(jwt.MapClaims)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"success": false,
+			"message": "unauthorized access",
+		})
+	}
 
-	claims := ctx.Locals("user").(jwt.MapClaims)
+	patientIDStr, ok := claims["role_id"].(string)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"success": false,
+			"message": "invalid token claims",
+		})
+	}
 
-	userIDStr := claims["user_id"].(string)
-
-	userID, err := uuid.Parse(userIDStr)
+	patientID, err := uuid.Parse(patientIDStr)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
@@ -30,7 +44,7 @@ func (c *PatientController) GetPatientBasicInfo(ctx *fiber.Ctx) error {
 		})
 	}
 
-	data, err := c.GetUsecase.GetPatientBasicInfo(userID)
+	data, err := c.GetUsecase.GetPatientBasicInfo(patientID)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
@@ -40,6 +54,86 @@ func (c *PatientController) GetPatientBasicInfo(ctx *fiber.Ctx) error {
 
 	return ctx.JSON(fiber.Map{
 		"success": true,
-		"data": data,
+		"data":    data,
 	})
+}
+
+func (c *PatientController) GetPatientAppointment(ctx *fiber.Ctx) error {
+	claims, ok := ctx.Locals("user").(jwt.MapClaims)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"success": false,
+			"message": "unauthorized access",
+		})
+	}
+
+	patientIDStr, ok := claims["role_id"].(string)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"success": false,
+			"message": "invalid token claims",
+		})
+	}
+
+	patientID, err := uuid.Parse(patientIDStr)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"message": "invalid user id",
+		})
+	}
+
+	data, err := c.GetUsecase.GetPatientAppointment(patientID)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"message": err.Error(),
+		})
+	}
+
+	return ctx.JSON(fiber.Map{
+		"success": true,
+		"data":    data,
+	})
+}
+
+func (c *PatientController) GetPatientFullInfo(ctx *fiber.Ctx) error {
+    claims, ok := ctx.Locals("user").(jwt.MapClaims)
+    if !ok {
+        return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+            "success": false,
+            "message": "unauthorized access",
+        })
+    }
+
+    userIDStr, ok := claims["user_id"].(string)
+    if !ok {
+        return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+            "success": false,
+            "message": "invalid token claims: user_id missing",
+        })
+    }
+
+    userID, err := uuid.Parse(userIDStr)
+    if err != nil {
+        return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "success": false,
+            "message": "invalid user format",
+        })
+    }
+
+    data, err := c.GetUsecase.GetPatientFullInfo(userID)
+    if err != nil {
+        return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+            "success": false,
+            "message": err.Error(),
+        })
+    }
+
+    // 4. Response
+    return ctx.JSON(fiber.Map{
+        "success": true,
+        "message": "Get patient full info successfully.",
+        "data":    data,
+    })
 }

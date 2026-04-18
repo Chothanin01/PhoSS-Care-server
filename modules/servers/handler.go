@@ -97,7 +97,13 @@ func (s *Server) MapHandlers() error {
 
 	_patientControllers.NewRequestCommandController(patientGroup.Group("/requests"), patientRequestCommandUC, patientRequestQueryUC)
 
+	patientNotiCommandRepo := _patientRepositories.NewNotificationCommandRepo(s.Db)
+	patientNotiCommandUC := _patientUsecases.NewNotificationCommandUsecase(patientNotiCommandRepo)
+	
+	patientNotiQueryRepo := _patientRepositories.NewNotificationQueryRepo(s.Db)
+	patientNotiQueryUC := _patientUsecases.NewNotificationQueryUsecase(patientNotiQueryRepo)
 
+	_patientControllers.NewNotificationController(patientGroup.Group("/noti"), patientNotiQueryUC, patientNotiCommandUC)
 
 	// ------------------ 404 HANDLER ------------------
 	s.App.Use(func(c *fiber.Ctx) error {

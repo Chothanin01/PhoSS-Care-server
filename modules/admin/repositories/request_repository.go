@@ -117,26 +117,79 @@ func (r *RequestUpdateRepository) FindRequestByID(id uuid.UUID) (*entities.Reque
 	return detail, nil
 }
 
-func (r *RequestUpdateRepository) UpdateRequestStatus(id uuid.UUID, status, description string, adminID uuid.UUID) error {
-	return r.db.Model(&databases.Request{}).
+func (r *RequestUpdateRepository) UpdateRequestStatus(id uuid.UUID, status, description string, adminID uuid.UUID, noti entities.NotificationEntity) error {
+	
+	tx := r.db.Begin()
+
+	if err := tx.Model(&databases.Request{}).
 		Where("id = ?", id).
 		Updates(map[string]interface{}{
 			"status":      status,
 			"description": description,
 			"updated_by":  adminID,
-		}).Error
+		}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	dbNoti := databases.Notification{
+		Header:    noti.Header,
+		Body:      noti.Body,
+		PatientID: noti.PatientID,
+		RequestID: noti.RequestID,
+		AppointID: noti.AppointID,
+		CreatedBy: &noti.CreatedBy,
+	}
+
+	if err := tx.Create(&dbNoti).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
 }
 
-func (r *RequestUpdateRepository) UpdateAppointForAccepted(appointID uuid.UUID, date time.Time, startTime string, endTime string, adminID uuid.UUID) error {
+func (r *RequestUpdateRepository) UpdateAppointForAccepted(requestID uuid.UUID, appointID uuid.UUID, date time.Time, startTime string, endTime string, adminID uuid.UUID, noti entities.NotificationEntity) error {
+	
+	tx := r.db.Begin()
 
-	return r.db.Model(&databases.Appoint{}).
+	if err := tx.Model(&databases.Appoint{}).
 		Where("id = ?", appointID).
 		Updates(map[string]interface{}{
-			"date":       date.Format("2005-06-02"),
+			"date":       date, 
 			"start_time": startTime,
 			"end_time":   endTime,
 			"delay":      true,
-			"status":     "ongoing",
+			"status":     "ongoing", 
 			"updated_by": adminID,
-		}).Error
+		}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Model(&databases.Request{}).
+		Where("id = ?", requestID).
+		Updates(map[string]interface{}{
+			"status":     "accepted",
+			"updated_by": adminID,
+		}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	dbNoti := databases.Notification{
+		Header:    noti.Header,
+		Body:      noti.Body,
+		PatientID: noti.PatientID,
+		RequestID: noti.RequestID,
+		AppointID: noti.AppointID,
+		CreatedBy: &noti.CreatedBy,
+	}
+
+	if err := tx.Create(&dbNoti).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
 }

@@ -20,6 +20,7 @@ type RequestInfo struct {
 	StartTime 	 string  	`json:"start_time"`
 	EndTime   	 string 	`json:"end_time"`
 	AppointID	 uuid.UUID  `json:"appoint_id"`
+	PatientID    uuid.UUID  `json:"patient_id"`
 }
 
 type RequestQueryParams struct {
@@ -69,6 +70,14 @@ type RequestStatusUpdateRes struct {
 	Status      string    `json:"status"`
 }
 
+type NotificationEntity struct {
+	Header    string
+	Body      string
+	PatientID uuid.UUID
+	CreatedBy uuid.UUID
+	RequestID *uuid.UUID 
+	AppointID *uuid.UUID
+}
 
 type RequestGetRepo interface {
 	GetRequestInfoByID(id uuid.UUID) (*databases.Request, error)
@@ -83,8 +92,8 @@ type RequestGetUsecase interface {
 
 type RequestUpdateRepo interface {
 	FindRequestByID(id uuid.UUID) (*RequestInfo, error)
-	UpdateRequestStatus(id uuid.UUID, status, description string, adminID uuid.UUID) error
-	UpdateAppointForAccepted(appointID uuid.UUID, date time.Time, startTime string, endTime string, adminID uuid.UUID) error 
+	UpdateRequestStatus(id uuid.UUID, status, description string, adminID uuid.UUID, noti NotificationEntity) error
+	UpdateAppointForAccepted(requestID uuid.UUID, appointID uuid.UUID, date time.Time, startTime string, endTime string, adminID uuid.UUID, noti NotificationEntity) error 
 }
 
 type RequestUpdateUsecase interface {

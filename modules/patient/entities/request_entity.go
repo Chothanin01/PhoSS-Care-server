@@ -47,7 +47,7 @@ type RequestCommandRepo interface {
 	GetLatestAppointID(patientID uuid.UUID, diseaseID uuid.UUID) (*uuid.UUID, error)
 	GetDiseaseName(diseaseID uuid.UUID) (string, error)
 	
-	SaveMultipleRequests(reqs []RequestEntity) error
+	SaveMultipleRequests(reqs []RequestEntity, notis []NotificationEntity) error
 }
 
 type RequestCommandUsecase interface {

@@ -105,6 +105,11 @@ func (s *Server) MapHandlers() error {
 
 	_patientControllers.NewNotificationController(patientGroup.Group("/noti"), patientNotiQueryUC, patientNotiCommandUC)
 
+	patientVaccineQueryRepo := _patientRepositories.NewVaccineQueryRepo(s.Db)
+	patientVaccineQueryUC := _patientUsecases.NewVaccineQueryUsecase(patientVaccineQueryRepo)
+
+	_patientControllers.NewVaccineQueryController(patientGroup.Group("/vaccine"), patientVaccineQueryUC)
+	
 	// ------------------ 404 HANDLER ------------------
 	s.App.Use(func(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{

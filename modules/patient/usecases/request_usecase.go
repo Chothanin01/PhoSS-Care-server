@@ -136,3 +136,20 @@ func (u *requestQueryUsecase) GetAvailableDocumentOptions(patientID uuid.UUID) (
 
 	return options, nil
 }
+
+func (u *vaccineQueryUsecase) GetVaccineDetail(patientID uuid.UUID, vaccineID uuid.UUID) (*entities.VaccineDetailEntity, error) {
+	
+	if patientID == uuid.Nil {
+		return nil, fmt.Errorf("patient ID is required")
+	}
+	if vaccineID == uuid.Nil {
+		return nil, fmt.Errorf("vaccine ID is required")
+	}
+
+	detail, err := u.repo.GetVaccineDetail(patientID, vaccineID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch vaccine details: %w", err)
+	}
+
+	return detail, nil
+}

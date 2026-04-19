@@ -42,6 +42,7 @@ type AppointmentEntity struct {
 	EndTime   string
 	Symptom   string
 	Note      string
+	ColorStatus string
 	Health    Health
 	PatientID uuid.UUID
 	DiseaseID uuid.UUID
@@ -68,6 +69,7 @@ type AppointmentRes struct {
 	Doctor  string    `json:"doctor"`
 	Purpose string    `json:"purpose"`
 	Place   string    `json:"place"`
+	ColorStatus string `json:"color_status"`
 }
 
 type AppointmentUpdateReq struct {

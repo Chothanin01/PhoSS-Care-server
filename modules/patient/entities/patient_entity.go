@@ -1,9 +1,15 @@
 package entities
 
 import (
-
+	"errors"
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/pkg/databases" 
+)
+
+var (
+	ErrNotFound      = errors.New("resource not found")
+	ErrUnauthorized  = errors.New("unauthorized action")
+	ErrInternalError = errors.New("internal system error")
 )
 
 type PatientBasicInfoRes struct {
@@ -84,12 +90,21 @@ type OfficerDetail struct {
     Role     string `json:"role"`
 }
 
+type DiseaseItem struct {
+	DiseaseID uuid.UUID `json:"disease_id"`
+	Name      string    `json:"name"`
+}
+
 type GetPatientRepo interface {
 	GetPatientBasicInfo(patientID uuid.UUID) (*databases.Patient, error)
 	GetPatientFullInfo(userID uuid.UUID) (*databases.Patient, error)
+
+	GetPatientDiseases(patientID uuid.UUID) ([]DiseaseItem, error)
 }
 
 type GetPatientUsecase interface {
 	GetPatientBasicInfo(patientID uuid.UUID) (*PatientBasicInfoRes, error)
 	GetPatientFullInfo(userID uuid.UUID) (*PatientInfoRes, error)
+
+	GetPatientDiseases(patientID uuid.UUID) ([]DiseaseItem, error)
 }

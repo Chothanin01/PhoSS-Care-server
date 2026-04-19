@@ -25,7 +25,8 @@ func NewAppointmentController(r fiber.Router, Queryuc entities.AppointmentQueryU
 	r.Get("/schedule/:disease_id", controller.GetDiseaseSchedule)
 	r.Get("/:disease_id", controller.GetAppointmentDetail)
 	r.Post("/delay", controller.CreateDelayRequest)
-}
+	r.Patch("/:appoint_id/canceldelay", controller.CancelDelayRequest)
+	}
 
 func (c *AppointmentController) GetAppointmentDetail(ctx *fiber.Ctx) error {
 
@@ -228,5 +229,37 @@ func (c *AppointmentController) GetHistoryDetail(ctx *fiber.Ctx) error {
 	return ctx.JSON(fiber.Map{
 		"success": true,
 		"data":    data,
+	})
+}
+
+func (c *AppointmentController) CancelDelayRequest(ctx *fiber.Ctx) error {
+	
+	claims, ok := ctx.Locals("user").(jwt.MapClaims)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"success": false, "message": "unauthorized"})
+	}
+	
+	patientID, err := uuid.Parse(claims["role_id"].(string))
+	if err != nil {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"success": false, "message": "invalid token"})
+	}
+
+	appointID, err := uuid.Parse(ctx.Params("appoint_id"))
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"success": false, "message": "invalid appointment ID format"})
+	}
+
+	err = c.CommandUC.CancelDelayRequest(appointID, patientID)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"message": err.Error(),
+		})
+	}
+
+	// 4. Return Success
+	return ctx.JSON(fiber.Map{
+		"success": true,
+		"message": "Delay request has been canceled successfully",
 	})
 }

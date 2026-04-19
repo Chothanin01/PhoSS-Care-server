@@ -2,9 +2,10 @@ package usecases
 
 import (
 	"fmt"
-	
-	"github.com/google/uuid"
+
 	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
+	"github.com/chothanin01/PhoSS-Care-server/pkg/utils"
+	"github.com/google/uuid"
 )
 
 type appointmentUsecase struct {
@@ -78,6 +79,8 @@ func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateRe
 
         nextDoctor := req.NextDoctorTitle + req.NextDoctorFirstName + " " + req.NextDoctorLastName
 
+		colorStatus := utils.CalculateColorStatus(float64(req.Health.Sugar), float64(req.Health.Pressure))
+
         newAppoint := &entities.AppointmentEntity{
             Doctor:    nextDoctor,
             Status:    "ongoing",
@@ -88,6 +91,7 @@ func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateRe
             Date:      req.Date,
             PatientID: req.PatientID,
             DiseaseID: req.DiseaseID,
+			ColorStatus: colorStatus,
             CreatedBy: adminID,
             UpdatedBy: adminID,
             Health: entities.Health{

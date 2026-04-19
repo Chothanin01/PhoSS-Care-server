@@ -16,6 +16,7 @@ func NewPatientController(r fiber.Router, uc entities.GetPatientUsecase) {
 	controller := &PatientController{GetUsecase: uc}
 	r.Get("/basicinfo", controller.GetPatientBasicInfo)
 	r.Get("/fullinfo", controller.GetPatientFullInfo)
+	r.Get("/diseases", controller.GetPatientDiseases)
 }
 
 func (c *PatientController) GetPatientBasicInfo(ctx *fiber.Ctx) error {
@@ -96,4 +97,31 @@ func (c *PatientController) GetPatientFullInfo(ctx *fiber.Ctx) error {
         "message": "Get patient full info successfully.",
         "data":    data,
     })
+}
+
+
+func (c *PatientController) GetPatientDiseases(ctx *fiber.Ctx) error {
+	
+	claims, ok := ctx.Locals("user").(jwt.MapClaims)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"success": false, "message": "unauthorized"})
+	}
+	
+	patientID, err := uuid.Parse(claims["role_id"].(string))
+	if err != nil {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"success": false, "message": "invalid token payload"})
+	}
+
+	diseases, err := c.GetUsecase.GetPatientDiseases(patientID)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"message": err.Error(),
+		})
+	}
+
+	return ctx.JSON(fiber.Map{
+		"success": true,
+		"data":    diseases,
+	})
 }

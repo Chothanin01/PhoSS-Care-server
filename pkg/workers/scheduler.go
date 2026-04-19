@@ -20,6 +20,13 @@ func StartCronJobs(db *gorm.DB) {
 		log.Fatalf("Failed to setup appointment reminder job: %v", err)
 	}
 
+	_, err = c.AddFunc("0 15 * * *", func() {
+		RunOverdueAppointmentWorker(db)
+	})
+	if err != nil {
+		log.Fatalf("Failed to setup overdue appointment job: %v", err)
+	}
+
 	c.Start()
 	fmt.Println("Background Cron scheduler started successfully.")
 }

@@ -234,6 +234,17 @@ func (r *PatientGetRepository) GetPatientsWithFilter(req entities.PatientQueryPa
 		}
 	}
 
+	if req.Overdue != nil {
+		if *req.Overdue {
+			query = query.Where("EXISTS (SELECT 1 FROM appoint a WHERE a.patient_id = patient.id AND a.status = ?)", "overdue")
+		} else {
+			query = query.Where("NOT EXISTS (SELECT 1 FROM appoint a WHERE a.patient_id = patient.id AND a.status = ?)", "overdue")
+		}
+	}
+
+	query = query.Order("EXISTS (SELECT 1 FROM appoint a WHERE a.patient_id = patient.id AND a.status = 'overdue') DESC")
+	query = query.Order("patient.id ASC")
+
 	err := query.Offset(offset).Limit(req.Limit).Find(&patients).Error
 	return patients, err
 }

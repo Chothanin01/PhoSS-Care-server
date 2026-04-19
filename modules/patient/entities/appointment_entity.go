@@ -115,9 +115,13 @@ type AppointmentQueryUsecase interface {
 type AppointmentCommandRepo interface {
 	CheckAppointmentExists(appointID uuid.UUID, patientID uuid.UUID) (bool, error)
 	SaveDelayRequest(req *DelayRequestEntity) error
+
+	CancelDelayRequest(appointID uuid.UUID, patientID uuid.UUID) error
 }
 
 type AppointmentCommandUsecase interface {
     SubmitDelayRequest(userID uuid.UUID, patientID uuid.UUID, payload *AppointmentDelayReq) error
+
+	CancelDelayRequest(appointID uuid.UUID, patientID uuid.UUID) error
     
 }

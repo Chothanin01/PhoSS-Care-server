@@ -59,3 +59,4 @@ func (u *authUsecase) Login(req *entities.LoginRequest) (*entities.LoginResponse
         UserID: user.ID,
     }, nil
 }
+

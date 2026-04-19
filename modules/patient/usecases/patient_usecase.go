@@ -167,3 +167,21 @@ func (u *GetPatientUsecase) GetPatientFullInfo(userID uuid.UUID) (*entities.Pati
         Officer:  offWrapper,
     }, nil
 }
+
+func (u *GetPatientUsecase) GetPatientDiseases(patientID uuid.UUID) ([]entities.DiseaseItem, error) {
+	
+	if patientID == uuid.Nil {
+		return nil, fmt.Errorf("patient ID is required")
+	}
+
+    diseases, err := u.readRepo.GetPatientDiseases(patientID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch patient diseases: %w", err)
+	}
+
+	if diseases == nil {
+		diseases = make([]entities.DiseaseItem, 0)
+	}
+
+	return diseases, nil
+}

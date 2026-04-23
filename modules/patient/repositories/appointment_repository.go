@@ -90,7 +90,22 @@ func (r *appointmentCommandRepo) SaveDelayRequest(req *entities.DelayRequestEnti
 		CreatedBy:   &req.CreatedBy,
 	}
 
-	return r.db.Create(dbModel).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		
+		if err := tx.Create(dbModel).Error; err != nil {
+			return err
+		}
+
+		err := tx.Model(&databases.Appoint{}).
+			Where("id = ? AND patient_id = ?", req.AppointID, req.PatientID).
+			Update("status", "delay").Error
+
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
 func (r *appointmentQueryRepo) CheckPatientHasDisease(patientID uuid.UUID, diseaseID uuid.UUID) (bool, error) {
@@ -254,4 +269,31 @@ func (r *appointmentQueryRepo) GetHistoryDetail(appointID uuid.UUID, patientID u
 	}
 
 	return detail, nil
+}
+
+func (r *appointmentCommandRepo) CancelDelayRequest(appointID uuid.UUID, patientID uuid.UUID) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		
+		result := tx.Model(&databases.Request{}).
+			Where("appoint_id = ? AND patient_id = ? AND request_type = ? AND status = ?", 
+				appointID, patientID, "appoint", "pending").
+			Update("status", "canceled")
+
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return entities.ErrNotFound
+		}
+
+		err := tx.Model(&databases.Appoint{}).
+			Where("id = ? AND patient_id = ?", appointID, patientID).
+			Update("status", "ongoing").Error
+
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 }

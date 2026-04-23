@@ -213,12 +213,18 @@ type Request struct {
 
 type Notification struct {
 	BaseModel
-	Name      string    `gorm:"size:255;not null"`
-	Status    string    `gorm:"size:50;not null"`
-	Note      string    `json:"note"`
-	RequestID uuid.UUID `json:"request_id"`
+	Header    string     `gorm:"size:255;not null" json:"header"` 
+	Body      string     `gorm:"type:text;not null" json:"body"`  
+	IsRead    bool       `gorm:"default:false" json:"is_read"`    
+	
+	PatientID uuid.UUID  `json:"patient_id"`                      
+	
+	RequestID *uuid.UUID `json:"request_id,omitempty"` 
+	AppointID *uuid.UUID `json:"appoint_id,omitempty"`
 
+	Patient Patient `gorm:"foreignKey:PatientID"`
 	Request Request `gorm:"foreignKey:RequestID"`
+	Appoint Appoint `gorm:"foreignKey:AppointID"`
 
 	CreatedBy     *uuid.UUID
 	UpdatedBy     *uuid.UUID

@@ -67,6 +67,7 @@ func (u *patientGetUsecase) GetPatientDiseasesInfo(id uuid.UUID, diseaseID uuid.
 				Letter:    ap.Letter,
 				Delay:     ap.Delay,
 				Health:    healthPtr, 
+				ColorStatus: ap.ColorStatus,
 			})
 		}
 	}

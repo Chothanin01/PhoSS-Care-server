@@ -49,10 +49,11 @@ func (r *requestCommandRepo) GetDiseaseName(diseaseID uuid.UUID) (string, error)
 	return disease.Name, nil
 }
 
-func (r *requestCommandRepo) SaveMultipleRequests(reqs []entities.RequestEntity) error {
+func (r *requestCommandRepo) SaveMultipleRequests(reqs []entities.RequestEntity, notis []entities.NotificationEntity) error {
+
+	tx := r.db.Begin()
 
 	dbModels := make([]databases.Request, len(reqs))
-
 	for i, req := range reqs {
 		dbModels[i] = databases.Request{
 			RequestType: req.RequestType,
@@ -65,8 +66,31 @@ func (r *requestCommandRepo) SaveMultipleRequests(reqs []entities.RequestEntity)
 			DiseaseID:   req.DiseaseID,
 		}
 	}
+	if err := tx.Create(&dbModels).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
 
-	return r.db.Create(&dbModels).Error
+	dbNotis := make([]databases.Notification, len(notis))
+	for i, noti := range notis {
+		dbNotis[i] = databases.Notification{
+			Header:    noti.Header,
+			Body:      noti.Body,
+			PatientID: noti.PatientID,
+			CreatedBy: &noti.CreatedBy,
+			
+			RequestID: &dbModels[i].ID, 
+		}
+	}
+
+	if len(dbNotis) > 0 {
+		if err := tx.Create(&dbNotis).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit().Error
 }
 
 func (r *requestQueryRepo) CheckHasAnyAppointment(patientID uuid.UUID) (bool, error) {

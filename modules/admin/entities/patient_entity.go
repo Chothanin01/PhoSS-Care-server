@@ -115,6 +115,7 @@ type PatientQueryParams struct {
 	Search   string   `query:"search"`
 	Diseases []string `query:"disease"`
 	Appoint  *bool    `query:"appoint"`
+	Overdue  *bool    `query:"overdue"`
 	Page     int      `query:"page"`
 	Limit    int      `query:"limit"`
 }
@@ -184,6 +185,7 @@ type AppointmentFullInfo struct {
 	Status  	string         `json:"status"`
 	Letter  	bool           `json:"letter"`
 	Delay   	bool           `json:"delay"`
+	ColorStatus string 		   `json:"color_status"`
 }
 
 type VaccineInfoRes struct {

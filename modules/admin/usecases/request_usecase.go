@@ -98,6 +98,7 @@ func (u *requestGetUsecase) GetRequestInfoByID(id uuid.UUID) (*entities.RequestI
 }
 
 func (u *requestUpdateUsecase) UpdateRequestStatus(req *entities.RequestStatusUpdateReq, adminID uuid.UUID) (*entities.RequestStatusUpdateRes, error) {
+	
 	request, err := u.repo.FindRequestByID(req.RequestID)
 	if err != nil {
 		return nil, fmt.Errorf("request not found: %w", err)
@@ -107,20 +108,33 @@ func (u *requestUpdateUsecase) UpdateRequestStatus(req *entities.RequestStatusUp
 		return nil, fmt.Errorf("cannot update request with status '%s'", request.Status)
 	}
 
+	var noti entities.NotificationEntity
+	noti.PatientID = request.PatientID
+	noti.CreatedBy = adminID
+	noti.RequestID = &req.RequestID 
+
 	switch request.RequestType {
 	case "appoint":
+		noti.Header = "การเลื่อนนัด"
+		noti.AppointID = &request.AppointID 
+
 		switch req.Status {
 		case "accepted":
 			if request.AppointID == uuid.Nil {
 				return nil, fmt.Errorf("appointment not linked to this request")
 			}
+			
+			noti.Body = "ระบบได้ยืนยันการเลื่อนนัดของคุณแล้ว"
+
 			err := u.repo.UpdateAppointForAccepted(
+				req.RequestID,
 				request.AppointID,
 				request.Date,
 				request.StartTime,
 				request.EndTime,
 				adminID,
-			) 
+				noti,
+			)
 			if err != nil {
 				return nil, fmt.Errorf("failed to update request: %w", err)
 			}
@@ -129,7 +143,10 @@ func (u *requestUpdateUsecase) UpdateRequestStatus(req *entities.RequestStatusUp
 			if req.Description == "" {
 				return nil, fmt.Errorf("description is required when declining")
 			}
-			if err := u.repo.UpdateRequestStatus(req.RequestID, "declined", req.Description, adminID); err != nil {
+			
+			noti.Body = "ระบบได้ปฏิเสธการเลื่อนนัดของคุณกรุณาเลื่อนนัดใหม่อีกครั้ง"
+
+			if err := u.repo.UpdateRequestStatus(req.RequestID, "declined", req.Description, adminID, noti); err != nil {
 				return nil, fmt.Errorf("failed to update request: %w", err)
 			}
 
@@ -141,7 +158,16 @@ func (u *requestUpdateUsecase) UpdateRequestStatus(req *entities.RequestStatusUp
 		if req.Status != "accepted" {
 			return nil, fmt.Errorf("only 'accepted' status allowed for %s requests", request.RequestType)
 		}
-		if err := u.repo.UpdateRequestStatus(req.RequestID, "accepted", request.Description, adminID); err != nil {
+
+		if request.RequestType == "medical" {
+			noti.Header = "ใบรับรองแพทย์"
+		} else {
+			noti.Header = "เอกสารรับรอง"
+		}
+		
+		noti.Body = "โรงพยาบาลได้เตรียมเอกสารของคุณเเล้ว"
+
+		if err := u.repo.UpdateRequestStatus(req.RequestID, "accepted", request.Description, adminID, noti); err != nil {
 			return nil, fmt.Errorf("failed to update request: %w", err)
 		}
 

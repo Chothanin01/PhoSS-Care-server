@@ -225,3 +225,23 @@ func (u *AppointmentQueryUsecase) GetHistoryDetail(appointID uuid.UUID, patientI
 
 	return detail, nil
 }
+
+func (u *appointmentCommandUsecase) CancelDelayRequest(appointID uuid.UUID, patientID uuid.UUID) error {
+	if appointID == uuid.Nil {
+		return fmt.Errorf("appointment ID is required")
+	}
+	if patientID == uuid.Nil {
+		return fmt.Errorf("patient ID is required")
+	}
+
+	err := u.repo.CancelDelayRequest(appointID, patientID)
+	if err != nil {
+		
+		if err == entities.ErrNotFound {
+			return fmt.Errorf("delay request not found, or it has already been processed")
+		}
+		return fmt.Errorf("failed to cancel request: %w", err)
+	}
+
+	return nil
+}

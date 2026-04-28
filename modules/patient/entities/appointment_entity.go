@@ -75,6 +75,7 @@ type HealthEntity struct {
 	Height   int     `json:"height"`
 	Weight   float64 `json:"weight"`
 	BMI      float64 `json:"bmi"`
+	Sugar    int     `json:"sugar"`
 }
 
 type HistoryDetailEntity struct {

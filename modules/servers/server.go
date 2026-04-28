@@ -28,7 +28,7 @@ func NewServer(cfg *configs.Config, db *gorm.DB) *Server {
 
 func (s *Server) SetupMiddleware() {
 	s.App.Use(cors.New(cors.Config{
-		AllowOrigins: "http://localhost:3000",
+		AllowOrigins: "http://localhost:3000, http://localhost:8080, http://localhost:8081",
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 		AllowMethods: "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 		AllowCredentials: true,

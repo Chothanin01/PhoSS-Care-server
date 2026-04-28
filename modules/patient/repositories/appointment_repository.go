@@ -263,6 +263,7 @@ func (r *appointmentQueryRepo) GetHistoryDetail(appointID uuid.UUID, patientID u
 			Height:   app.Health.Height,
 			Weight:   app.Health.Weight,
 			BMI:      app.Health.BMI,
+			Sugar:    app.Health.Sugar,
 		},
 		NextAppointID: nextID,
 		PrevAppointID: prevID,

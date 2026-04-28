@@ -10,12 +10,12 @@ import (
 	"github.com/chothanin01/PhoSS-Care-server/pkg/utils"
 )
 
-type AppointmentQueryUsecase struct {
+type appointmentQueryUsecase struct {
 	readRepo entities.AppointmentQueryRepo
 }
 
 func NewAppointmentQueryUsecase(readRepo entities.AppointmentQueryRepo) entities.AppointmentQueryUsecase {
-	return &AppointmentQueryUsecase{readRepo: readRepo}
+	return &appointmentQueryUsecase{readRepo: readRepo}
 }
 
 type appointmentCommandUsecase struct {
@@ -26,7 +26,7 @@ func NewAppointmentCommandUsecase(repo entities.AppointmentCommandRepo) entities
 	return &appointmentCommandUsecase{repo: repo}
 }
 
-func (u *AppointmentQueryUsecase) GetAppointmentDetail(patientID uuid.UUID, diseaseID uuid.UUID) (*entities.AppointmentEntity, error) {
+func (u *appointmentQueryUsecase) GetAppointmentDetail(patientID uuid.UUID, diseaseID uuid.UUID) (*entities.AppointmentEntity, error) {
 	hasDisease, err := u.readRepo.CheckPatientHasDisease(patientID, diseaseID)
 	if err != nil {
 		return nil, fmt.Errorf("error verifying patient medical records: %w", err)
@@ -64,26 +64,27 @@ func (u *AppointmentQueryUsecase) GetAppointmentDetail(patientID uuid.UUID, dise
 	return res, nil
 }
 
-func (u *AppointmentQueryUsecase) ListPatientAppointments(patientID uuid.UUID) (*entities.PatientAppointment, error) {
+
+
+func (u *appointmentQueryUsecase) ListPatientAppointments(patientID uuid.UUID) (*entities.PatientAppointment, error) {
+	
 	if patientID == uuid.Nil {
 		return nil, fmt.Errorf("user ID cannot be nil")
 	}
 
-	appointDB, err := u.readRepo.ListPatientAppointments(patientID)
+	patient, err := u.readRepo.GetPatientBasicInfo(patientID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load patient data: %w", err)
 	}
 
-	if len(appointDB) == 0 {
-		return nil, fmt.Errorf("patient has no appointments")
+	appointments, err := u.readRepo.ListPatientAppointments(patientID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load appointments: %w", err)
 	}
 
-	patient := appointDB[0].Patient
-	if patient.ID == uuid.Nil {
-		return nil, fmt.Errorf("patient data not loaded")
+	if appointments == nil {
+		appointments = make([]entities.AppointmentEntity, 0)
 	}
-
-	fullName := patient.Title + patient.FirstName + " " + patient.LastName
 
 	var ageYears, ageMonths, ageDays int
 	if !patient.DOB.IsZero() {
@@ -104,36 +105,15 @@ func (u *AppointmentQueryUsecase) ListPatientAppointments(patientID uuid.UUID) (
 		ageYears, ageMonths, ageDays = years, months, days
 	}
 
-	appointmentEntities := make([]entities.AppointmentEntity, len(appointDB))
-	for i, app := range appointDB {
-		appointmentEntities[i] = entities.AppointmentEntity{
-			ID:          app.ID,
-			No:          app.No,
-			Doctor:      app.Doctor,
-			Status:      app.Status,
-			Purpose:     app.Purpose,
-			Place:       app.Place,
-			Date:        app.Date.Format("2006-01-02"),
-			StartTime:   app.StartTime,
-			EndTime:     app.EndTime,
-			Symptom:     app.Symptom,
-			Note:        app.Note,
-			Delay:       app.Delay,
-			DiseaseID:   app.DiseaseID,
-			DiseaseName: app.Disease.Name,
-		}
-	}
-
 	return &entities.PatientAppointment{
 		PatientID:    patient.ID,
-		FullName:     fullName,
+		FullName:     patient.Title + patient.FirstName + " " + patient.LastName,
 		HnNumber:     patient.HnID,
 		AgeYears:     ageYears,
 		AgeMonths:    ageMonths,
 		AgeDays:      ageDays,
-		Appointments: appointmentEntities,
+		Appointments: appointments, 
 	}, nil
-
 }
 
 func (u *appointmentCommandUsecase) SubmitDelayRequest(userID uuid.UUID, patientID uuid.UUID, payload *entities.AppointmentDelayReq) error {
@@ -166,7 +146,7 @@ func (u *appointmentCommandUsecase) SubmitDelayRequest(userID uuid.UUID, patient
 	return u.repo.SaveDelayRequest(domainReq)
 }
 
-func (u *AppointmentQueryUsecase) GetScheduleByDisease(patientID uuid.UUID, diseaseID uuid.UUID) (*entities.DiseaseScheduleEntity, error) {
+func (u *appointmentQueryUsecase) GetScheduleByDisease(patientID uuid.UUID, diseaseID uuid.UUID) (*entities.DiseaseScheduleEntity, error) {
 	if diseaseID == uuid.Nil {
 		return nil, fmt.Errorf("disease ID is required")
 	}
@@ -179,7 +159,7 @@ func (u *AppointmentQueryUsecase) GetScheduleByDisease(patientID uuid.UUID, dise
 		return nil, fmt.Errorf("patient did not registered with this disease")
 	}
 
-	schedule, err := u.readRepo.GetScheduleByDisease(diseaseID)
+	schedule, err := u.readRepo.GetScheduleByDisease(patientID, diseaseID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get calendar schedule: %w", err)
 	}
@@ -187,7 +167,7 @@ func (u *AppointmentQueryUsecase) GetScheduleByDisease(patientID uuid.UUID, dise
 	return schedule, nil
 }
 
-func (u *AppointmentQueryUsecase) GetDiseaseHistory(patientID uuid.UUID, diseaseID uuid.UUID, page int) (*entities.DiseaseHistoryResponse, error) {
+func (u *appointmentQueryUsecase) GetDiseaseHistory(patientID uuid.UUID, diseaseID uuid.UUID, page int) (*entities.DiseaseHistoryResponse, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -213,7 +193,7 @@ func (u *AppointmentQueryUsecase) GetDiseaseHistory(patientID uuid.UUID, disease
 	}, nil
 }
 
-func (u *AppointmentQueryUsecase) GetHistoryDetail(appointID uuid.UUID, patientID uuid.UUID) (*entities.HistoryDetailEntity, error) {
+func (u *appointmentQueryUsecase) GetHistoryDetail(appointID uuid.UUID, patientID uuid.UUID) (*entities.HistoryDetailEntity, error) {
 	if appointID == uuid.Nil {
 		return nil, fmt.Errorf("appointment ID is required")
 	}

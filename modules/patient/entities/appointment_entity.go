@@ -24,6 +24,7 @@ type AppointmentEntity struct {
 	DiseaseName     string			`json:"disease_name,omitempty"`
 	CreatedAt		string			`json:"created_at,omitempty"`
 	CreatedBy		string			`json:"created_by,omitempty"`
+	DelayDate   	string    		`json:"delay_date,omitempty"`
 }
 
 type DelayRequestEntity struct {
@@ -39,6 +40,16 @@ type DelayRequestEntity struct {
 	CreatedBy   uuid.UUID
 }
 
+type PatientAppointment struct {
+	PatientID 		uuid.UUID 				`json:"patient_id"`
+	FullName  		string    				`json:"fullname"`
+	HnNumber  		string    				`json:"hn_number"`
+	AgeYears  		int       				`json:"age_years"`
+	AgeMonths 		int       				`json:"age_months"`
+	AgeDays   		int       				`json:"age_days"`
+	Appointments 	[]AppointmentEntity 	`json:"appoint"`
+}
+
 type AppointmentDelayReq struct {
 	AppointID  uuid.UUID `json:"appoint_id"`
 	DiseaseID  uuid.UUID `json:"disease_id"`
@@ -52,6 +63,7 @@ type DiseaseScheduleEntity struct {
 	DiseaseID     uuid.UUID `json:"disease_id"`
 	DiseaseName   string    `json:"disease_name"`
 	AvailableDays []string  `json:"available_days"` 
+	CurrentDate   string    `json:"current_date,omitempty"`
 }
 
 type HistoryAppointEntity struct {
@@ -95,12 +107,14 @@ type HistoryDetailEntity struct {
 type AppointmentQueryRepo interface {
 	CheckPatientHasDisease(patientID uuid.UUID, diseaseID uuid.UUID) (bool, error)
     GetAppointmentDetail(patientID uuid.UUID, diseaseID uuid.UUID) (*databases.Appoint, *databases.Admin, error)
-	GetScheduleByDisease(diseaseID uuid.UUID) (*DiseaseScheduleEntity, error)
-    ListPatientAppointments(patientID uuid.UUID) ([]databases.Appoint, error)
+	GetScheduleByDisease(patientID uuid.UUID, diseaseID uuid.UUID) (*DiseaseScheduleEntity, error)
+	ListPatientAppointments(patientID uuid.UUID) ([]AppointmentEntity, error)
+    	
 
 	CountDiseaseHistory(patientID uuid.UUID, diseaseID uuid.UUID) (int64, error)
 	GetDiseaseHistory(patientID uuid.UUID, diseaseID uuid.UUID, limit int, offset int) ([]HistoryAppointEntity, error)
 	GetHistoryDetail(appointID uuid.UUID, patientID uuid.UUID) (*HistoryDetailEntity, error)
+	GetPatientBasicInfo(patientID uuid.UUID) (*PatientBasicInfo, error)
 }
 
 

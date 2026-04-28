@@ -2,6 +2,7 @@ package entities
 
 import (
 	"errors"
+	"time"
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/pkg/databases" 
 )
@@ -12,6 +13,15 @@ var (
 	ErrInternalError = errors.New("internal system error")
 )
 
+type PatientBasicInfo struct {
+	ID        uuid.UUID
+	Title     string
+	FirstName string
+	LastName  string
+	HnID      string
+	DOB       time.Time
+}
+
 type PatientBasicInfoRes struct {
 	PatientID uuid.UUID `json:"patient_id"`
 	FullName  string    `json:"fullname"`
@@ -19,16 +29,6 @@ type PatientBasicInfoRes struct {
 	AgeYears  int       `json:"age_years"`
 	AgeMonths int       `json:"age_months"`
 	AgeDays   int       `json:"age_days"`
-}
-
-type PatientAppointment struct {
-	PatientID 		uuid.UUID 				`json:"patient_id"`
-	FullName  		string    				`json:"fullname"`
-	HnNumber  		string    				`json:"hn_number"`
-	AgeYears  		int       				`json:"age_years"`
-	AgeMonths 		int       				`json:"age_months"`
-	AgeDays   		int       				`json:"age_days"`
-	Appointments 	[]AppointmentEntity 	`json:"appoint"`
 }
 
 type PatientInfoRes struct {
@@ -96,7 +96,7 @@ type DiseaseItem struct {
 }
 
 type GetPatientRepo interface {
-	GetPatientBasicInfo(patientID uuid.UUID) (*databases.Patient, error)
+	GetPatientBasicInfo(patientID uuid.UUID) (*PatientBasicInfo, error)
 	GetPatientFullInfo(userID uuid.UUID) (*databases.Patient, error)
 
 	GetPatientDiseases(patientID uuid.UUID) ([]DiseaseItem, error)

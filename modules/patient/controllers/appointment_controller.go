@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 
 	"github.com/chothanin01/PhoSS-Care-server/modules/patient/entities"
 	"github.com/gofiber/fiber/v2"
@@ -23,22 +24,29 @@ func NewAppointmentController(r fiber.Router, Queryuc entities.AppointmentQueryU
 	r.Get("/history/:disease_id", controller.GetDiseaseHistory)
 	r.Get("/history/detail/:appoint_id", controller.GetHistoryDetail)
 	r.Get("/schedule/:disease_id", controller.GetDiseaseSchedule)
-	r.Get("/:disease_id", controller.GetAppointmentDetail)
 	r.Post("/delay", controller.CreateDelayRequest)
 	r.Patch("/:appoint_id/canceldelay", controller.CancelDelayRequest)
+	r.Get("/:disease_id", controller.GetAppointmentDetail)
 	}
 
 func (c *AppointmentController) GetAppointmentDetail(ctx *fiber.Ctx) error {
 
-	claims := ctx.Locals("user").(jwt.MapClaims)
-	patientIDStr := claims["role_id"].(string)
+	claims, ok := ctx.Locals("user").(jwt.MapClaims)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "unauthorized"})
+	}
+
+	patientIDStr, ok := claims["role_id"].(string)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "invalid token claims"})
+	}
+
 	patientID, err := uuid.Parse(patientIDStr)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid user id"})
 	}
 
-	diseaseIDStr := ctx.Params("disease_id")
-	diseaseID, err := uuid.Parse(diseaseIDStr)
+	diseaseID, err := uuid.Parse(ctx.Params("disease_id"))
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid disease id"})
 	}
@@ -200,10 +208,13 @@ func (c *AppointmentController) GetHistoryDetail(ctx *fiber.Ctx) error {
 	if !ok {
 		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "unauthorized"})
 	}
-	patientID, _ := uuid.Parse(claims["role_id"].(string))
+	
+	patientID, err := uuid.Parse(claims["role_id"].(string))
+	if err != nil {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "invalid token payload"})
+	}
 
-	appointIDStr := ctx.Params("appoint_id")
-	appointID, err := uuid.Parse(appointIDStr)
+	appointID, err := uuid.Parse(ctx.Params("appoint_id"))
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
@@ -213,7 +224,7 @@ func (c *AppointmentController) GetHistoryDetail(ctx *fiber.Ctx) error {
 
 	data, err := c.QueryUC.GetHistoryDetail(appointID, patientID)
 	if err != nil {
-		if err.Error() == "failed to fetch appointment details: appointment not found or access denied" {
+		if errors.Is(err, entities.ErrNotFound) {
 			return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{
 				"success": false,
 				"message": "appointment not found",

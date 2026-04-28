@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"errors"
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
 	"github.com/chothanin01/PhoSS-Care-server/modules/patient/entities"
@@ -15,20 +16,31 @@ func NewGetPatientRepository(db *gorm.DB) *GetPatientRepository {
 	return &GetPatientRepository{db: db}
 }
 
-func (r *GetPatientRepository) GetPatientBasicInfo(patientID uuid.UUID) (*databases.Patient, error) {
-	var patient databases.Patient
-	
-	err := r.db.
-		First(&patient, "id = ?", patientID).Error
+func (r *GetPatientRepository) GetPatientBasicInfo(patientID uuid.UUID) (*entities.PatientBasicInfo, error) {
+	var dbPatient databases.Patient 
+
+	err := r.db.Select("id, title, first_name, last_name, hn_id, dob").
+		Where("id = ?", patientID).
+		First(&dbPatient).Error
 
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, entities.ErrNotFound 
+		}
 		return nil, err
 	}
 
-	return &patient, nil
+	cleanPatient := &entities.PatientBasicInfo{
+		ID:        dbPatient.ID,
+		Title:     dbPatient.Title,
+		FirstName: dbPatient.FirstName,
+		LastName:  dbPatient.LastName,
+		HnID:      dbPatient.HnID,
+		DOB:       dbPatient.DOB,
+	}
+
+	return cleanPatient, nil
 }
-
-
 
 func (r *GetPatientRepository) GetPatientFullInfo(userID uuid.UUID) (*databases.Patient, error) {
     var patient databases.Patient

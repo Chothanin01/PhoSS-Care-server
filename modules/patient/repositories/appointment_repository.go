@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
@@ -47,21 +48,81 @@ func (r *appointmentQueryRepo) GetAppointmentDetail(patientID uuid.UUID, disease
 	return &appoint, &admin, nil
 }
 
-func (r *appointmentQueryRepo) ListPatientAppointments(patientID uuid.UUID) ([]databases.Appoint, error) {
-	var appoint []databases.Appoint
+func (r *appointmentQueryRepo) GetPatientBasicInfo(patientID uuid.UUID) (*entities.PatientBasicInfo, error) {
+	var dbPatient databases.Patient 
+
+	err := r.db.Select("id, title, first_name, last_name, hn_id, dob").
+		Where("id = ?", patientID).
+		First(&dbPatient).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, entities.ErrNotFound 
+		}
+		return nil, err
+	}
+	cleanPatient := &entities.PatientBasicInfo{
+		ID:        dbPatient.ID,
+		Title:     dbPatient.Title,
+		FirstName: dbPatient.FirstName,
+		LastName:  dbPatient.LastName,
+		HnID:      dbPatient.HnID,
+		DOB:       dbPatient.DOB,
+	}
+
+	return cleanPatient, nil
+}
+
+
+func (r *appointmentQueryRepo) ListPatientAppointments(patientID uuid.UUID) ([]entities.AppointmentEntity, error) {
+	var dbAppoints []databases.Appoint
 
 	err := r.db.
 		Preload("Disease").
 		Preload("Patient").
-    	Where("patient_id = ? AND status IN ?", patientID, []string{"ongoing", "dalay"}).
-    	Find(&appoint).
+		Where("patient_id = ? AND status IN ?", patientID, []string{"ongoing", "delay"}).
+		Find(&dbAppoints).
 		Error
 
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
-	return appoint, nil
+	var resultList []entities.AppointmentEntity
+
+	for _, appt := range dbAppoints {
+		
+		entity := entities.AppointmentEntity{
+			ID:          appt.ID,
+			No:          appt.No,
+			Doctor:      appt.Doctor,
+			Status:      appt.Status,
+			Purpose:     appt.Purpose,
+			Place:       appt.Place,
+			Date:        appt.Date.Format("2006-01-02"),
+			StartTime:   appt.StartTime,
+			EndTime:     appt.EndTime,
+			Symptom:     appt.Symptom,
+			Note:        appt.Note,
+			DiseaseID:   appt.DiseaseID,
+			DiseaseName: appt.Disease.Name,
+		}
+
+		if appt.Status == "delay" {
+			
+			var req databases.Request
+			err := r.db.Where("appoint_id = ? AND status = 'pending'", appt.ID).First(&req).Error
+			
+			if err != nil {
+			} else {
+				entity.DelayDate = req.Date.Format("2006-01-02")
+			}
+		}
+
+		resultList = append(resultList, entity)
+	}
+
+	return resultList, nil
 }
 
 func (r *appointmentCommandRepo) CheckAppointmentExists(appointID uuid.UUID, patientID uuid.UUID) (bool, error) {
@@ -122,7 +183,7 @@ func (r *appointmentQueryRepo) CheckPatientHasDisease(patientID uuid.UUID, disea
 	return count > 0, nil 
 }
 
-func (r *appointmentQueryRepo) GetScheduleByDisease(diseaseID uuid.UUID) (*entities.DiseaseScheduleEntity, error) {
+func (r *appointmentQueryRepo) GetScheduleByDisease(patientID uuid.UUID, diseaseID uuid.UUID) (*entities.DiseaseScheduleEntity, error) {
 	var dbDisease databases.Disease
 
 	err := r.db.Where("id = ?", diseaseID).First(&dbDisease).Error
@@ -133,10 +194,26 @@ func (r *appointmentQueryRepo) GetScheduleByDisease(diseaseID uuid.UUID) (*entit
 		return nil, err
 	}
 
+	var appointDate *time.Time
+	err = r.db.Model(&databases.Appoint{}).
+		Select("date").
+		Where("patient_id = ? AND disease_id = ? AND status = ?", patientID, diseaseID, "ongoing").
+		First(&appointDate).Error
+
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+
+	currentDateStr := ""
+	if appointDate != nil {
+		currentDateStr = appointDate.Format("2006-01-02")
+	}
+
 	domainSchedule := &entities.DiseaseScheduleEntity{
 		DiseaseID:     dbDisease.ID,
 		DiseaseName:   dbDisease.Name,
 		AvailableDays: dbDisease.AvailableDays, 
+		CurrentDate:   currentDateStr,
 	}
 
 	return domainSchedule, nil

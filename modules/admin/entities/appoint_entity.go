@@ -40,8 +40,10 @@ type AppointmentEntity struct {
 	Date      string
 	StartTime string
 	EndTime   string
-	Symtom    string
+	Symptom   string
 	Note      string
+	ColorStatus string
+	Health    Health
 	PatientID uuid.UUID
 	DiseaseID uuid.UUID
 	CreatedBy uuid.UUID
@@ -49,12 +51,12 @@ type AppointmentEntity struct {
 }
 
 type Health struct {
-	Weight 		float64 	`json:"weight"`
-	Height 		int     	`json:"height"`
-	Pulse  		int     	`json:"pulse"`
-	Sugar  		int     	`json:"sugar"`
-	BMI    		float64 	`json:"bmi"`
-	Pressure 	int     	`json:"pressure"`
+    Weight   float64 `json:"weight"`
+    Height   int     `json:"height"`
+    Pulse    int     `json:"pulse"`
+    Sugar    int     `json:"sugar"`
+    BMI      float64 `json:"bmi"`
+    Pressure int     `json:"pressure"`
 }
 
 type AppointmentRes struct {
@@ -67,6 +69,7 @@ type AppointmentRes struct {
 	Doctor  string    `json:"doctor"`
 	Purpose string    `json:"purpose"`
 	Place   string    `json:"place"`
+	ColorStatus string `json:"color_status"`
 }
 
 type AppointmentUpdateReq struct {
@@ -159,14 +162,14 @@ type AppointmentRepository interface {
 	UpdateVaccinationRecord(appointID uuid.UUID, vaccineID uuid.UUID, dose int, adminID uuid.UUID) (error)
 	CompleteAppoint(appointID uuid.UUID, adminID uuid.UUID) error
 	CreateAppointment(entity *AppointmentEntity, adminID uuid.UUID) (*databases.Appoint, error)
-	CreateHealthRecord(health *Health, patientID uuid.UUID, appointID uuid.UUID, adminID uuid.UUID) error
 
 	DiseaseExists(diseaseID uuid.UUID) (bool, error)
 
 	CreateVaccinationRecord(vaccineID uuid.UUID, appointID uuid.UUID, dose int, doctor string, adminID uuid.UUID) error
 	UpdateVaccineDoctor(recordID uuid.UUID, doctor string, adminID uuid.UUID) error
 	CompleteVaccinationRecord(recordID uuid.UUID, adminID uuid.UUID) error
-
+	
+	UpdateHealth(appointID uuid.UUID, health *Health, adminID uuid.UUID) error
 	UpdateAppointment( appointID uuid.UUID, purpose string, place string, date string, startTime string, endTime string, doctor string, adminID uuid.UUID) (*databases.Appoint, error)
 	UpdateVaccineAppointment(appointID uuid.UUID, place string, date string, start string, end string, doctor string, adminID uuid.UUID) (*databases.Appoint, error)
 	UpdatePatientHealth(patientID uuid.UUID, weight float64, height int, adminID uuid.UUID) error

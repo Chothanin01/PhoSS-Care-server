@@ -164,7 +164,8 @@ func (u *patientGetUsecase) GetPatientListWithFilter(req entities.PatientQueryPa
 	}
 
 	var total int64
-	if req.Search != "" || len(req.Diseases) > 0 || req.Appoint != nil {
+	
+	if req.Search != "" || len(req.Diseases) > 0 || req.Appoint != nil || req.Overdue != nil {
 		total, err = u.readRepo.CountPatientsWithFilter(req)
 	} else {
 		total, err = u.readRepo.CountPatients()
@@ -190,34 +191,29 @@ func (u *patientGetUsecase) GetPatientListWithFilter(req entities.PatientQueryPa
 			HnNumber: p.HnID,
 		}
 
-		hasAnyAppointment := false
 		for _, pd := range p.Diseases {
 			hasOngoing := false
+			hasOverdue := false
+
 			for _, ap := range p.Appointments {
-				if ap.DiseaseID == pd.DiseaseID && ap.Status == "ongoing" {
-					hasOngoing = true
-					hasAnyAppointment = true
-					break
+				if ap.DiseaseID == pd.DiseaseID {
+					switch ap.Status {
+						case "ongoing":
+							hasOngoing = true
+						case "overdue":
+							hasOverdue = true
+					}
 				}
 			}
+
 			pInfo.Diseases = append(pInfo.Diseases, entities.DiseaseWithStatus{
 				DiseaseID:      pd.DiseaseID,
 				Name:           pd.Disease.Name,
 				HasAppointment: hasOngoing,
+				HasOverdue:     hasOverdue,
 			})
 		}
 
-		if req.Appoint != nil {
-			if *req.Appoint {
-				if !hasAnyAppointment {
-					continue
-		}
-		} else {
-			if hasAnyAppointment {
-				continue
-		}
-	}
-}
 		res.Data = append(res.Data, pInfo)
 	}
 
@@ -411,6 +407,7 @@ func (u *patientGetUsecase) GetPatientAppointmentsInfoByID(id uuid.UUID) (*entit
 			Status:  ap.Status,
 			Letter:  ap.Letter,
 			Delay:   ap.Delay,
+			ColorStatus: ap.ColorStatus,
 			Officer: officerFullname,
 		})
 	}

@@ -33,17 +33,21 @@ func (s *Server) MapHandlers() error {
 	adminAuthUC := _authUsecases.NewAuthUsecase(authRepo, passSvc, jwtAdmin, "admin")
 	patientAuthUC := _authUsecases.NewAuthUsecase(authRepo, passSvc, jwtPatient, "patient")
 
-	// Auth endpoints
-	authGroup := v1.Group("/auth")
-	_authControllers.NewAuthController(authGroup.Group("/admin"), adminAuthUC)
-	_authControllers.NewAuthController(authGroup.Group("/patient"), patientAuthUC)
-
-	// Role-based JWT middleware
-	// adminAuth := utils.NewJWTMiddleware(jwtAdmin, "admin")
+	// Role-based JWT middlewares
+	adminAuth := utils.NewJWTMiddleware(jwtAdmin, "admin")
 	patientAuth := utils.NewJWTMiddleware(jwtPatient, "patient")
 
+	// Base Auth Group
+	authGroup := v1.Group("/auth")
+
+	adminAuthGroup := authGroup.Group("/admin")
+	_authControllers.NewAuthController(adminAuthGroup, adminAuth, adminAuthUC, jwtAdmin)
+
+	patientAuthGroup := authGroup.Group("/patient")
+	_authControllers.NewAuthController(patientAuthGroup, patientAuth, patientAuthUC, jwtPatient)
+
 	// ------------------ ADMIN MODULES ------------------
-	adminGroup := v1.Group("/admins")
+	adminGroup := v1.Group("/admins", adminAuth)
 
 	adminRepo := _adminRepositories.NewAdminRepository(s.Db)
 	adminUsecase := _adminUsecases.NewAdminUsecase(adminRepo, passSvc)
@@ -77,11 +81,39 @@ func (s *Server) MapHandlers() error {
 	// ------------------ PATIENT MODULES ------------------
 	patientGroup := v1.Group("patient", patientAuth)
 
-	patientGetRepo := _patientRepositories.NewPatientGetRepository(s.Db)
-	patientGetUC := _patientUsecases.NewPatientGetUsecase(patientGetRepo)
+	patientGetRepo := _patientRepositories.NewGetPatientRepository(s.Db)
+	patientGetUC := _patientUsecases.NewGetPatientUsecase(patientGetRepo)
 	_patientControllers.NewPatientController(patientGroup, patientGetUC)
 
+	patientQueryAppointRepo := _patientRepositories.NewappointmentQueryRepo(s.Db)
+	patientQueryAppointUC := _patientUsecases.NewAppointmentQueryUsecase(patientQueryAppointRepo)
 
+	patientAppointCommandRepo := _patientRepositories.NewAppointmentCommandRepo(s.Db)
+	patientAppointCommandUC := _patientUsecases.NewAppointmentCommandUsecase(patientAppointCommandRepo)
+	
+	_patientControllers.NewAppointmentController(patientGroup.Group("/appointments"), patientQueryAppointUC, patientAppointCommandUC)
+
+	patientRequestCommandRepo := _patientRepositories.NewRequestCommandRepo(s.Db)
+	patientRequestCommandUC := _patientUsecases.NewRequestCommandUsecase(patientRequestCommandRepo)
+
+	patientRequestQueryRepo := _patientRepositories.NewRequestQueryRepo(s.Db)
+	patientRequestQueryUC := _patientUsecases.NewRequestQueryUsecase(patientRequestQueryRepo)
+
+	_patientControllers.NewRequestCommandController(patientGroup.Group("/requests"), patientRequestCommandUC, patientRequestQueryUC)
+
+	patientNotiCommandRepo := _patientRepositories.NewNotificationCommandRepo(s.Db)
+	patientNotiCommandUC := _patientUsecases.NewNotificationCommandUsecase(patientNotiCommandRepo)
+	
+	patientNotiQueryRepo := _patientRepositories.NewNotificationQueryRepo(s.Db)
+	patientNotiQueryUC := _patientUsecases.NewNotificationQueryUsecase(patientNotiQueryRepo)
+
+	_patientControllers.NewNotificationController(patientGroup.Group("/noti"), patientNotiQueryUC, patientNotiCommandUC)
+
+	patientVaccineQueryRepo := _patientRepositories.NewVaccineQueryRepo(s.Db)
+	patientVaccineQueryUC := _patientUsecases.NewVaccineQueryUsecase(patientVaccineQueryRepo)
+
+	_patientControllers.NewVaccineQueryController(patientGroup.Group("/vaccine"), patientVaccineQueryUC)
+	
 	// ------------------ 404 HANDLER ------------------
 	s.App.Use(func(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{

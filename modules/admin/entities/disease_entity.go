@@ -19,6 +19,7 @@ type DiseaseWithStatus struct {
 	DiseaseID uuid.UUID   `json:"disease_id"`
 	Name           string `json:"name"`
 	HasAppointment bool   `json:"has_appointment"`
+	HasOverdue     bool      `json:"has_overdue"`
 }
 
 type DiseaseInfoRes struct {
@@ -47,15 +48,8 @@ type AppointmentInfo struct {
 	Status  	string         `json:"status"`
 	Letter  	bool           `json:"letter"`
 	Delay   	bool           `json:"delay"`
-	Health  	*HealthInfo    `json:"health,omitempty"`
-}
-
-type HealthInfo struct {
-	Height float32 `json:"height"`
-	Weight float32 `json:"weight"`
-	BMI    float64 `json:"bmi"`
-	Pulse  int     `json:"pulse"`
-	Sugar  int     `json:"sugar"`
+	ColorStatus string 		   `json:"color_status"`
+	Health  	*Health    `json:"health,omitempty"`
 }
 
 type VaccineFullDetail struct {

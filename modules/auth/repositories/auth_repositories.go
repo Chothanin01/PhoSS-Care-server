@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/modules/auth/entities"
@@ -61,4 +62,28 @@ func (r *authRepository) GetPatientDiseases(userID uuid.UUID) ([]map[string]inte
 	}
 
 	return result, nil
+}
+
+func (r *authRepository) GetRoleID(userID uuid.UUID, role string) (uuid.UUID, error) {
+	var idStr string
+	var err error
+
+	switch role {
+	case "patient":
+		err = r.db.Table("patient").Select("id").Where("user_id = ?", userID).Scan(&idStr).Error
+	case "admin":
+		err = r.db.Table("admin").Select("id").Where("user_id = ?", userID).Scan(&idStr).Error
+	default:
+		return uuid.Nil, fmt.Errorf("unsupported role: %s", role)
+	}
+
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	if idStr == "" {
+		return uuid.Nil, fmt.Errorf("%s profile not found", role)
+	}
+
+	return uuid.Parse(idStr)
 }

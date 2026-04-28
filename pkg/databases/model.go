@@ -23,6 +23,9 @@ type User struct {
 	Username string `gorm:"size:255;not null;unique" json:"username"`
 	Password string `gorm:"size:255;not null" json:"password"`
 	Role     string `gorm:"size:50;not null" json:"role"`
+
+	Admin    *Admin `gorm:"foreignKey:UserID;references:ID" json:"admin,omitempty"`
+	Patient  *Patient `gorm:"foreignKey:UserID;references:ID" json:"patient,omitempty"`
 }
 
 func (User) TableName() string { return "users" }
@@ -67,27 +70,6 @@ type Patient struct {
 	Relatives    []Relative       `json:"relatives"`
 	Appointments []Appoint        `gorm:"foreignKey:PatientID;references:ID" json:"appointments"`
 	Diseases     []PatientDisease `json:"diseases"`
-	Healths      []Health         `json:"healths"`
-
-	CreatedBy     *uuid.UUID
-	UpdatedBy     *uuid.UUID
-	CreatedByUser *User `gorm:"foreignKey:CreatedBy;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-	UpdatedByUser *User `gorm:"foreignKey:UpdatedBy;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-}
-
-type Health struct {
-	BaseModel
-	Weight    float64   `gorm:"type:decimal(5,2);not null" json:"weight"`
-	Height    int       `gorm:"not null" json:"height"`
-	BMI       float64   `gorm:"type:decimal(5,2);not null" json:"bmi"`
-	Pulse     int       `json:"pulse"`
-	Sugar     int       `json:"sugar"`
-	Pressure  int       `json:"pressure"`
-	PatientID uuid.UUID `json:"patient_id"`
-	AppointID uuid.UUID `json:"appoint_id"`
-
-	Patient Patient `gorm:"foreignKey:PatientID"`
-	Appoint Appoint `gorm:"foreignKey:AppointID"`
 
 	CreatedBy     *uuid.UUID
 	UpdatedBy     *uuid.UUID
@@ -123,9 +105,13 @@ type Appoint struct {
 	Place     string    `json:"place"`
 	Doctor    string    `json:"doctor"`
 	Status    string    `json:"status"`
+	ColorStatus string  `json:"color_status"`
 	Purpose   string    `json:"purpose"`
 	Letter    bool      `json:"letter"`
 	Delay     bool      `json:"delay"`
+
+	Health Health `gorm:"type:jsonb" json:"health"`
+
 	PatientID uuid.UUID `json:"patient_id"`
 	DiseaseID uuid.UUID `json:"disease_id"`
 
@@ -134,7 +120,6 @@ type Appoint struct {
 
 	Vaccinations []VaccinationRecord `json:"vaccinations"`
 	Requests     []Request           `json:"requests"`
-	Healths      []Health            `json:"healths"`
 
 	CreatedBy     *uuid.UUID
 	UpdatedBy     *uuid.UUID
@@ -144,7 +129,8 @@ type Appoint struct {
 
 type Disease struct {
 	BaseModel
-	Name     string           `gorm:"size:255;not null" json:"name"`
+	Name     		string           `gorm:"size:255;not null" json:"name"`
+	AvailableDays 	StringArray		 `gorm:"size:15" json:"available_days"`
 	Patients []PatientDisease `json:"patients"`
 
 	CreatedBy     *uuid.UUID
@@ -210,8 +196,8 @@ type Request struct {
 	EndTime   string `gorm:"size:5" json:"end_time"`
 	Status      string    `gorm:"size:50;not null"`
 	PatientID   uuid.UUID
-	AppointID   uuid.UUID
-	DiseaseID uuid.UUID   
+	AppointID   *uuid.UUID
+	DiseaseID 	*uuid.UUID   
 	
 	Patient Patient `gorm:"foreignKey:PatientID"`
 	Appoint Appoint `gorm:"foreignKey:AppointID"`
@@ -227,12 +213,18 @@ type Request struct {
 
 type Notification struct {
 	BaseModel
-	Name      string    `gorm:"size:255;not null"`
-	Status    string    `gorm:"size:50;not null"`
-	Note      string    `json:"note"`
-	RequestID uuid.UUID `json:"request_id"`
+	Header    string     `gorm:"size:255;not null" json:"header"` 
+	Body      string     `gorm:"type:text;not null" json:"body"`  
+	IsRead    bool       `gorm:"default:false" json:"is_read"`    
+	
+	PatientID uuid.UUID  `json:"patient_id"`                      
+	
+	RequestID *uuid.UUID `json:"request_id,omitempty"` 
+	AppointID *uuid.UUID `json:"appoint_id,omitempty"`
 
+	Patient Patient `gorm:"foreignKey:PatientID"`
 	Request Request `gorm:"foreignKey:RequestID"`
+	Appoint Appoint `gorm:"foreignKey:AppointID"`
 
 	CreatedBy     *uuid.UUID
 	UpdatedBy     *uuid.UUID
@@ -272,6 +264,31 @@ var (
 	_ sql.Scanner   = (*Address)(nil)
 )
 
+type Health struct {
+	Weight   float64 `json:"weight"`
+	Height   int     `json:"height"`
+	BMI      float64 `json:"bmi"`
+	Pulse    int     `json:"pulse"`
+	Sugar    int     `json:"sugar"`
+	Pressure int     `json:"pressure"`
+}
+
+func (h Health) Value() (driver.Value, error) {
+	return json.Marshal(h)
+}
+
+func (h *Health) Scan(value interface{}) error {
+	if value == nil {
+		*h = Health{}
+		return nil
+	}
+	bytes, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("type assertion to []byte failed")
+	}
+	return json.Unmarshal(bytes, h)
+}
+
 func (b *BaseModel) BeforeCreate(tx *gorm.DB) error {
 	loc, _ := time.LoadLocation("Asia/Bangkok")
 	now := time.Now().In(loc)
@@ -286,3 +303,26 @@ func (b *BaseModel) BeforeUpdate(tx *gorm.DB) error {
 	return nil
 }
 
+type StringArray []string
+
+func (a StringArray) Value() (driver.Value, error) {
+	if len(a) == 0 {
+		return "[]", nil
+	}
+	return json.Marshal(a)
+}
+
+func (a *StringArray) Scan(value interface{}) error {
+	if value == nil {
+		*a = StringArray{}
+		return nil
+	}
+	switch v := value.(type) {
+	case []byte:
+		return json.Unmarshal(v, a)
+	case string:
+		return json.Unmarshal([]byte(v), a)
+	default:
+		return fmt.Errorf("unsupported type %T for StringArray", value)
+	}
+}

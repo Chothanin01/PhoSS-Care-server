@@ -41,26 +41,17 @@ func (u *patientGetUsecase) GetPatientDiseasesInfo(id uuid.UUID, diseaseID uuid.
 		}
 	}
 
-	healthMap := make(map[uuid.UUID]entities.HealthInfo)
-	for _, h := range patient.Healths {
-		healthMap[h.AppointID] = entities.HealthInfo{
-			Height: float32(h.Height),
-			Weight: float32(h.Weight),
-			BMI:    h.BMI,
-			Pulse:  h.Pulse,
-			Sugar:  h.Sugar,
-		}
-	}
-
-
 	appointments := []entities.AppointmentInfo{}
 
 	for _, ap := range patient.Appointments {
 		if ap.Status == "completed" {
-
-			var healthPtr *entities.HealthInfo
-			if h, ok := healthMap[ap.ID]; ok {
-				healthPtr = &h
+			healthPtr := &entities.Health{
+				Height:   ap.Health.Height,
+				Weight:   ap.Health.Weight,
+				BMI:      ap.Health.BMI,
+				Pulse:    ap.Health.Pulse,
+				Sugar:    ap.Health.Sugar,
+				Pressure: ap.Health.Pressure,
 			}
 
 			appointments = append(appointments, entities.AppointmentInfo{
@@ -75,7 +66,8 @@ func (u *patientGetUsecase) GetPatientDiseasesInfo(id uuid.UUID, diseaseID uuid.
 				Status:    ap.Status,
 				Letter:    ap.Letter,
 				Delay:     ap.Delay,
-				Health:    healthPtr,
+				Health:    healthPtr, 
+				ColorStatus: ap.ColorStatus,
 			})
 		}
 	}

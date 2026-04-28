@@ -25,6 +25,8 @@ type AppointmentEntity struct {
 	CreatedAt		string			`json:"created_at,omitempty"`
 	CreatedBy		string			`json:"created_by,omitempty"`
 	DelayDate   	string    		`json:"delay_date,omitempty"`
+	Delay_start_time string         `json:"delay_start_time,omitempty"`
+	Delay_end_time string         	`json:"delay_end_time,omitempty"`
 }
 
 type DelayRequestEntity struct {

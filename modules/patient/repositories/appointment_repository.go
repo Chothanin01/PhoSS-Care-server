@@ -116,6 +116,8 @@ func (r *appointmentQueryRepo) ListPatientAppointments(patientID uuid.UUID) ([]e
 			if err != nil {
 			} else {
 				entity.DelayDate = req.Date.Format("2006-01-02")
+				entity.Delay_start_time = req.StartTime
+				entity.Delay_end_time = req.EndTime
 			}
 		}
 

@@ -54,6 +54,7 @@ func (u *appointmentQueryUsecase) GetAppointmentDetail(patientID uuid.UUID, dise
 		Note:      appointDB.Note,
 		Delay:     appointDB.Delay, 
 		DiseaseID: appointDB.DiseaseID,
+		DiseaseName: appointDB.Disease.Name,
 		CreatedAt: appointDB.CreatedAt.Format("2006-01-02"),
 	}
 

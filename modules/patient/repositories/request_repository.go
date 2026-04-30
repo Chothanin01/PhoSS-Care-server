@@ -111,6 +111,17 @@ func (r *requestQueryRepo) CheckHasVaccineHistory(patientID uuid.UUID) (bool, er
 	return count > 0, err
 }
 
+func (r *requestQueryRepo) GetPendingRequests(patientID uuid.UUID) ([]entities.PendingRequestData, error) {
+	var pending []entities.PendingRequestData
+
+	err := r.db.Model(&databases.Request{}).
+		Select("request_type, description, disease_id").
+		Where("patient_id = ? AND status = ?", patientID, "pending").
+		Find(&pending).Error
+
+	return pending, err
+}
+
 func (r *requestQueryRepo) GetLatestCompletedAppoint(patientID uuid.UUID) (*uuid.UUID, *uuid.UUID, error) {
 	var app databases.Appoint
 

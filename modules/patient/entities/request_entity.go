@@ -29,14 +29,23 @@ type CreateDocumentReq struct {
 type AvailableRequestOption struct {
 	Name      string     `json:"name"`                 
 	Type      string     `json:"type"`                 
-	Available bool       `json:"available"`            
+	Available bool       `json:"available"`   
+	Disabled  bool       `json:"disabled"`         
 	DiseaseID *uuid.UUID `json:"disease_id,omitempty"` 
+}
+
+type PendingRequestData struct {
+	RequestType        	string
+	Description 		string
+	DiseaseID   		*uuid.UUID
 }
 
 type RequestQueryRepo interface {
 	CheckHasAnyAppointment(patientID uuid.UUID) (bool, error)
 	CheckHasVaccineHistory(patientID uuid.UUID) (bool, error)
 	GetLatestCompletedAppoint(patientID uuid.UUID) (*uuid.UUID, *uuid.UUID, error)
+
+	GetPendingRequests(patientID uuid.UUID) ([]PendingRequestData, error)
 }
 
 type RequestQueryUsecase interface {

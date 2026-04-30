@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/modules/patient/entities"
-	"github.com/chothanin01/PhoSS-Care-server/pkg/utils"
 )
 
 type appointmentQueryUsecase struct {
@@ -86,22 +85,38 @@ func (u *appointmentQueryUsecase) ListPatientAppointments(patientID uuid.UUID) (
 	}
 
 	var ageYears, ageMonths, ageDays int
+
 	if !patient.DOB.IsZero() {
 		now := time.Now()
-		years := now.Year() - patient.DOB.Year()
-		months := int(now.Month()) - int(patient.DOB.Month())
-		days := now.Day() - patient.DOB.Day()
 
-		if days < 0 {
-			prevMonth := now.AddDate(0, -1, 0)
-			days += utils.DaysInMonth(prevMonth.Year(), prevMonth.Month())
-			months--
+		if patient.DOB.After(now) {
+			ageYears, ageMonths, ageDays = 0, 0, 0
+		} else {
+			years := now.Year() - patient.DOB.Year()
+			months := int(now.Month()) - int(patient.DOB.Month())
+			days := now.Day() - patient.DOB.Day()
+
+			if days < 0 {
+				months--
+
+				daysInPrevMonth := time.Date(now.Year(), now.Month(), 0, 0, 0, 0, 0, now.Location()).Day()
+
+				if patient.DOB.Day() > daysInPrevMonth {
+					days = now.Day()
+				} else {
+					days += daysInPrevMonth
+				}
+			}
+
+			if months < 0 {
+				months += 12
+				years--
+			}
+
+			ageYears = years
+			ageMonths = months
+			ageDays = days
 		}
-		if months < 0 {
-			months += 12
-			years--
-		}
-		ageYears, ageMonths, ageDays = years, months, days
 	}
 
 	return &entities.PatientAppointment{

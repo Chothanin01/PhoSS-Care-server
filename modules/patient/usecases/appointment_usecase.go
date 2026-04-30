@@ -35,7 +35,7 @@ func (u *appointmentQueryUsecase) GetAppointmentDetail(patientID uuid.UUID, dise
 		return nil, fmt.Errorf("patient did not registered with this disease")
 	}
 
-	appointDB, adminDB, err := u.readRepo.GetAppointmentDetail(patientID, diseaseID)
+	appointDB, err := u.readRepo.GetAppointmentDetail(patientID, diseaseID)
 	if err != nil {
 		return nil, err
 	}
@@ -47,25 +47,20 @@ func (u *appointmentQueryUsecase) GetAppointmentDetail(patientID uuid.UUID, dise
 		Status:    appointDB.Status,
 		Purpose:   appointDB.Purpose,
 		Place:     appointDB.Place,
-		Date:      appointDB.Date.Format("2006-01-02"),
+		Date:      appointDB.Date,
 		StartTime: appointDB.StartTime,
 		EndTime:   appointDB.EndTime,
 		Symptom:   appointDB.Symptom,
 		Note:      appointDB.Note,
 		Delay:     appointDB.Delay, 
 		DiseaseID: appointDB.DiseaseID,
-		DiseaseName: appointDB.Disease.Name,
-		CreatedAt: appointDB.CreatedAt.Format("2006-01-02"),
+		DiseaseName: appointDB.DiseaseName,
+		CreatedAt: appointDB.CreatedAt,
+		CreatedBy: appointDB.CreatedBy,
 	}
-
-	if adminDB != nil && adminDB.FirstName != "" {
-        res.CreatedBy = adminDB.Title + adminDB.FirstName + " " + adminDB.LastName
-    }
 
 	return res, nil
 }
-
-
 
 func (u *appointmentQueryUsecase) ListPatientAppointments(patientID uuid.UUID) (*entities.PatientAppointment, error) {
 	

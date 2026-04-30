@@ -3,7 +3,6 @@ package entities
 import (
 	"time"
 
-	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
 	"github.com/google/uuid"
 )
 
@@ -25,8 +24,8 @@ type AppointmentEntity struct {
 	CreatedAt		string			`json:"created_at,omitempty"`
 	CreatedBy		string			`json:"created_by,omitempty"`
 	DelayDate   	string    		`json:"delay_date,omitempty"`
-	Delay_start_time string         `json:"delay_start_time,omitempty"`
-	Delay_end_time string         	`json:"delay_end_time,omitempty"`
+	DelayStartTime 	string         	`json:"delay_start_time,omitempty"`
+	DelayEndTime 	string         	`json:"delay_end_time,omitempty"`
 }
 
 type DelayRequestEntity struct {
@@ -108,7 +107,7 @@ type HistoryDetailEntity struct {
 
 type AppointmentQueryRepo interface {
 	CheckPatientHasDisease(patientID uuid.UUID, diseaseID uuid.UUID) (bool, error)
-    GetAppointmentDetail(patientID uuid.UUID, diseaseID uuid.UUID) (*databases.Appoint, *databases.Admin, error)
+    GetAppointmentDetail(patientID uuid.UUID, diseaseID uuid.UUID) (*AppointmentEntity, error)
 	GetScheduleByDisease(patientID uuid.UUID, diseaseID uuid.UUID) (*DiseaseScheduleEntity, error)
 	ListPatientAppointments(patientID uuid.UUID) ([]AppointmentEntity, error)
     	

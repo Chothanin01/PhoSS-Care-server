@@ -118,14 +118,24 @@ func (u *GetPatientUsecase) GetPatientFullInfo(userID uuid.UUID) (*entities.Pati
 		}
 	}
 
-    var weight, height float32
+    var weight, height, bmi float32
     if len(patient.Appointments) > 0 {
         latest := patient.Appointments[0]
         weight = float32(latest.Health.Weight)
         height = float32(latest.Health.Height)
+		bmi = float32(latest.Health.BMI)
     } else {
 		weight = patient.Weight
         height = patient.Height
+		if height > 0 {
+		heightInMeters := height / 100
+		
+		bmi = weight / (heightInMeters * heightInMeters)
+		
+	} else {
+		bmi = 0 
+	}
+
     }
 
     var relWrapper entities.RelativeWrapper
@@ -196,6 +206,7 @@ func (u *GetPatientUsecase) GetPatientFullInfo(userID uuid.UUID) (*entities.Pati
 			Nationality: patient.Nationality,
 			Ethnicity:   patient.Ethnicity,
 			DOB:         patient.DOB.Format("2006-01-02"),
+			BMI:         bmi,
 		},
 		Relative: relWrapper,
         Officer:  offWrapper,

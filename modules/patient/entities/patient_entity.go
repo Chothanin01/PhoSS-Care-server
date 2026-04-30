@@ -53,7 +53,8 @@ type PatientDetail struct {
 	Height      		float32            `json:"height"`
 	Nationality  		string     		   `json:"nationality"`
 	Ethnicity    		string       	   `json:"ethnicity"`
-	DOB          		string  		   `json:"dob"`    
+	DOB          		string  		   `json:"dob"`  
+	BMI					float32			   `json:"bmi"`
 }
 
 type AddressDetails struct {

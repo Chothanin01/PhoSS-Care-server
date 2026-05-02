@@ -4,10 +4,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/google/uuid"
-	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
 	"github.com/chothanin01/PhoSS-Care-server/modules/patient/entities"
-	"gorm.io/gorm"	
+	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type appointmentQueryRepo struct {
@@ -177,21 +177,24 @@ func (r *appointmentCommandRepo) CheckAppointmentExists(appointID uuid.UUID, pat
 }
 
 func (r *appointmentCommandRepo) GetOngoingAppointmentIDByDisease(patientID uuid.UUID, diseaseID uuid.UUID) (*uuid.UUID, error) {
-	var appointID uuid.UUID
+	
+	var result struct {
+		ID uuid.UUID
+	}
 	
 	err := r.db.Model(&databases.Appoint{}).
 		Select("id").
 		Where("patient_id = ? AND disease_id = ? AND status = ?", patientID, diseaseID, "ongoing").
-		First(&appointID).Error
+		First(&result).Error
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
+			return nil, nil 
 		}
-		return nil, err
+		return nil, err 
 	}
 	
-	return &appointID, nil
+	return &result.ID, nil
 }
 
 func (r *appointmentCommandRepo) SaveDelayRequest(req *entities.DelayRequestEntity) error {

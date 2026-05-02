@@ -141,3 +141,4 @@ func (r *requestQueryRepo) GetLatestCompletedAppoint(patientID uuid.UUID) (*uuid
 
 	return &app.ID, &app.DiseaseID, nil
 }
+

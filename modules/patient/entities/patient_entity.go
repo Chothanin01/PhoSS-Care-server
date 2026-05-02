@@ -96,16 +96,20 @@ type DiseaseItem struct {
 	Name      string    `json:"name"`
 }
 
+type DiseaseFilter struct {
+	Type	string
+}
+
 type GetPatientRepo interface {
 	GetPatientBasicInfo(patientID uuid.UUID) (*PatientBasicInfo, error)
-	GetPatientFullInfo(userID uuid.UUID) (*databases.Patient, error)
+	GetPatientFullInfo(userID uuid.UUID) (*databases.Patient, error) 
 
-	GetPatientDiseases(patientID uuid.UUID) ([]DiseaseItem, error)
+	GetPatientDiseases(patientID uuid.UUID, filter DiseaseFilter) ([]DiseaseItem, error)
 }
 
 type GetPatientUsecase interface {
 	GetPatientBasicInfo(patientID uuid.UUID) (*PatientBasicInfoRes, error)
 	GetPatientFullInfo(userID uuid.UUID) (*PatientInfoRes, error)
 
-	GetPatientDiseases(patientID uuid.UUID) ([]DiseaseItem, error)
+	GetPatientDiseases(patientID uuid.UUID, filter DiseaseFilter) ([]DiseaseItem, error)
 }

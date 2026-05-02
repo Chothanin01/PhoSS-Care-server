@@ -213,13 +213,12 @@ func (u *GetPatientUsecase) GetPatientFullInfo(userID uuid.UUID) (*entities.Pati
     }, nil
 }
 
-func (u *GetPatientUsecase) GetPatientDiseases(patientID uuid.UUID) ([]entities.DiseaseItem, error) {
-	
+func (u *GetPatientUsecase) GetPatientDiseases(patientID uuid.UUID, filter entities.DiseaseFilter) ([]entities.DiseaseItem, error) {
 	if patientID == uuid.Nil {
 		return nil, fmt.Errorf("patient ID is required")
 	}
 
-    diseases, err := u.readRepo.GetPatientDiseases(patientID)
+	diseases, err := u.readRepo.GetPatientDiseases(patientID, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch patient diseases: %w", err)
 	}

@@ -29,7 +29,6 @@ func NewAppointmentCommandRepo(db *gorm.DB) *appointmentCommandRepo {
 func (r *appointmentQueryRepo) GetAppointmentDetail(patientID uuid.UUID, diseaseID uuid.UUID) (*entities.AppointmentEntity, error) {
 	var dbAppoint databases.Appoint
 
-	// 1. Fetch the Core Appointment
 	err := r.db.
 		Preload("Disease").
 		Where("patient_id = ? AND disease_id = ? AND status IN ?", patientID, diseaseID, []string{"ongoing", "delay"}).
@@ -175,6 +174,24 @@ func (r *appointmentCommandRepo) CheckAppointmentExists(appointID uuid.UUID, pat
 		return false, err
 	}
 	return count > 0, nil
+}
+
+func (r *appointmentCommandRepo) GetOngoingAppointmentIDByDisease(patientID uuid.UUID, diseaseID uuid.UUID) (*uuid.UUID, error) {
+	var appointID uuid.UUID
+	
+	err := r.db.Model(&databases.Appoint{}).
+		Select("id").
+		Where("patient_id = ? AND disease_id = ? AND status = ?", patientID, diseaseID, "ongoing").
+		First(&appointID).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	
+	return &appointID, nil
 }
 
 func (r *appointmentCommandRepo) SaveDelayRequest(req *entities.DelayRequestEntity) error {

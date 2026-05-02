@@ -129,14 +129,14 @@ func (u *appointmentQueryUsecase) ListPatientAppointments(patientID uuid.UUID) (
 		Appointments: appointments, 
 	}, nil
 }
-
 func (u *appointmentCommandUsecase) SubmitDelayRequest(userID uuid.UUID, patientID uuid.UUID, payload *entities.AppointmentDelayReq) error {
-	exists, err := u.repo.CheckAppointmentExists(payload.AppointID, patientID)
+	
+	appointID, err := u.repo.GetOngoingAppointmentIDByDisease(patientID, payload.DiseaseID)
 	if err != nil {
-		return fmt.Errorf("error verifying appointment: %w", err)
+		return fmt.Errorf("error fetching ongoing appointment: %w", err)
 	}
-	if !exists {
-		return fmt.Errorf("appointment not found or does not belong to you")
+	if appointID == nil {
+		return fmt.Errorf("no ongoing appointment found for this disease")
 	}
 
 	parsedDate, err := time.Parse("2006-01-02", payload.Date)
@@ -152,7 +152,7 @@ func (u *appointmentCommandUsecase) SubmitDelayRequest(userID uuid.UUID, patient
 		EndTime:     payload.EndTime,
 		Status:      "pending",
 		PatientID:   patientID,
-		AppointID:   &payload.AppointID,
+		AppointID:   appointID,
 		DiseaseID:   &payload.DiseaseID,
 		CreatedBy:   userID,
 	}

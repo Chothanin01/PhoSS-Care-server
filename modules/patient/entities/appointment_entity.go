@@ -41,6 +41,14 @@ type DelayRequestEntity struct {
 	CreatedBy   uuid.UUID
 }
 
+type AppointmentDelayReq struct {
+	DiseaseID  uuid.UUID `json:"disease_id"`
+	Date       string    `json:"date"` 
+	StartTime  string    `json:"start_time"`
+	EndTime    string    `json:"end_time"`
+	Description string   `json:"description"`
+}
+
 type PatientAppointment struct {
 	PatientID 		uuid.UUID 				`json:"patient_id"`
 	FullName  		string    				`json:"fullname"`
@@ -49,15 +57,6 @@ type PatientAppointment struct {
 	AgeMonths 		int       				`json:"age_months"`
 	AgeDays   		int       				`json:"age_days"`
 	Appointments 	[]AppointmentEntity 	`json:"appoint"`
-}
-
-type AppointmentDelayReq struct {
-	AppointID  uuid.UUID `json:"appoint_id"`
-	DiseaseID  uuid.UUID `json:"disease_id"`
-	Date       string    `json:"date"` 
-	StartTime  string    `json:"start_time"`
-	EndTime    string    `json:"end_time"`
-	Description string   `json:"description"`
 }
 
 type DiseaseScheduleEntity struct {
@@ -133,6 +132,7 @@ type AppointmentCommandRepo interface {
 	SaveDelayRequest(req *DelayRequestEntity) error
 
 	CancelDelayRequest(appointID uuid.UUID, patientID uuid.UUID) error
+	GetOngoingAppointmentIDByDisease(patientID uuid.UUID, diseaseID uuid.UUID) (*uuid.UUID, error)
 }
 
 type AppointmentCommandUsecase interface {

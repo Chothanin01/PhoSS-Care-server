@@ -58,7 +58,7 @@ func (u *appointmentQueryUsecase) GetAppointmentDetail(patientID uuid.UUID, dise
 		CreatedBy: appointDB.CreatedBy,
 		DelayDate: appointDB.DelayDate,
 		DelayStartTime: appointDB.DelayStartTime,
-		DelayEndTime: appointDB.EndTime,
+		DelayEndTime: appointDB.DelayEndTime,
 	}
 
 	return res, nil

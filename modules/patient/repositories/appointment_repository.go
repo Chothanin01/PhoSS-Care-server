@@ -69,7 +69,6 @@ func (r *appointmentQueryRepo) GetAppointmentDetail(patientID uuid.UUID, disease
 	}
 
 	if dbAppoint.Status == "delay" {
-		detail.Delay = true
 		
 		var req databases.Request
 		err := r.db.Where("appoint_id = ? AND status = 'pending'", dbAppoint.ID).First(&req).Error

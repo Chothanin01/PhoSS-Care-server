@@ -218,7 +218,10 @@ func (r *appointmentCommandRepo) SaveDelayRequest(req *entities.DelayRequestEnti
 
 		err := tx.Model(&databases.Appoint{}).
 			Where("id = ? AND patient_id = ?", req.AppointID, req.PatientID).
-			Update("status", "delay").Error
+			Updates(map[string]interface{}{
+				"status":     "delay",
+				"updated_at": time.Now(),
+			}).Error
 
 		if err != nil {
 			return err

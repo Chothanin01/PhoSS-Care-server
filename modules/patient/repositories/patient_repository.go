@@ -68,7 +68,7 @@ func (r *GetPatientRepository) GetPatientDiseases(patientID uuid.UUID, filter en
 		
 		query = query.Where("appoint.status = ?", "ongoing")
 
-		query = query.Where("NOT EXISTS (SELECT 1 FROM request WHERE request.appoint_id = appoint.id AND request.status = 'pending')")
+		query = query.Where("NOT EXISTS (SELECT 1 FROM request WHERE request.appoint_id = appoint.id AND request.status = 'pending' AND request.request_type = 'appoint')")
 
 		query = query.Group("disease.id, disease.name")
 	}

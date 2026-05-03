@@ -121,6 +121,12 @@ func (r *RequestUpdateRepository) UpdateRequestStatus(id uuid.UUID, status, desc
 	
 	tx := r.db.Begin()
 
+	var existingReq databases.Request
+	if err := tx.Where("id = ?", id).First(&existingReq).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
 	if err := tx.Model(&databases.Request{}).
 		Where("id = ?", id).
 		Updates(map[string]interface{}{
@@ -135,7 +141,7 @@ func (r *RequestUpdateRepository) UpdateRequestStatus(id uuid.UUID, status, desc
 	dbNoti := databases.Notification{
 		Header:    noti.Header,
 		Body:      noti.Body,
-		PatientID: noti.PatientID,
+		PatientID: existingReq.PatientID, 
 		RequestID: noti.RequestID,
 		AppointID: noti.AppointID,
 		CreatedBy: &noti.CreatedBy,
@@ -152,6 +158,12 @@ func (r *RequestUpdateRepository) UpdateRequestStatus(id uuid.UUID, status, desc
 func (r *RequestUpdateRepository) UpdateAppointForAccepted(requestID uuid.UUID, appointID uuid.UUID, date time.Time, startTime string, endTime string, adminID uuid.UUID, noti entities.NotificationEntity) error {
 	
 	tx := r.db.Begin()
+
+	var existingAppoint databases.Appoint
+	if err := tx.Where("id = ?", appointID).First(&existingAppoint).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
 
 	if err := tx.Model(&databases.Appoint{}).
 		Where("id = ?", appointID).
@@ -180,7 +192,7 @@ func (r *RequestUpdateRepository) UpdateAppointForAccepted(requestID uuid.UUID, 
 	dbNoti := databases.Notification{
 		Header:    noti.Header,
 		Body:      noti.Body,
-		PatientID: noti.PatientID,
+		PatientID: existingAppoint.PatientID, 
 		RequestID: noti.RequestID,
 		AppointID: noti.AppointID,
 		CreatedBy: &noti.CreatedBy,

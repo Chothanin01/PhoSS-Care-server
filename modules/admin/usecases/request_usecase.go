@@ -103,7 +103,7 @@ func (u *requestUpdateUsecase) UpdateRequestStatus(req *entities.RequestStatusUp
 	if err != nil {
 		return nil, fmt.Errorf("request not found: %w", err)
 	}
-
+	fmt.Println(request, request.Status)
 	if request.Status != "pending" {
 		return nil, fmt.Errorf("cannot update request with status '%s'", request.Status)
 	}

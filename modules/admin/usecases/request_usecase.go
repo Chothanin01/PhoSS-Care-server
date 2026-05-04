@@ -100,10 +100,11 @@ func (u *requestGetUsecase) GetRequestInfoByID(id uuid.UUID) (*entities.RequestI
 func (u *requestUpdateUsecase) UpdateRequestStatus(req *entities.RequestStatusUpdateReq, adminID uuid.UUID) (*entities.RequestStatusUpdateRes, error) {
 	
 	request, err := u.repo.FindRequestByID(req.RequestID)
+
 	if err != nil {
 		return nil, fmt.Errorf("request not found: %w", err)
 	}
-	fmt.Println(request, request.Status)
+
 	if request.Status != "pending" {
 		return nil, fmt.Errorf("cannot update request with status '%s'", request.Status)
 	}
@@ -125,7 +126,6 @@ func (u *requestUpdateUsecase) UpdateRequestStatus(req *entities.RequestStatusUp
 			}
 			
 			noti.Body = "ระบบได้ยืนยันการเลื่อนนัดของคุณแล้ว"
-
 			err := u.repo.UpdateAppointForAccepted(
 				req.RequestID,
 				request.AppointID,

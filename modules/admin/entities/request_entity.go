@@ -8,19 +8,19 @@ import (
 )
 
 type RequestInfo struct {
-	ID           uuid.UUID  `json:"id"`
-	RequestType  string     `json:"req_type"`
-	PatientName  string     `json:"patient_name"`
-	DiseaseID    uuid.UUID `json:"disease_id"`
-	DiseaseName  string    `json:"disease_name"`
-	HnNumber     string     `json:"hn_number"`
-	Status       string     `json:"status"`
-	Description  string     `json:"description"`
-	Date		 time.Time  `json:"date"`
-	StartTime 	 string  	`json:"start_time"`
-	EndTime   	 string 	`json:"end_time"`
-	AppointID	 uuid.UUID  `json:"appoint_id"`
-	PatientID    uuid.UUID  `json:"patient_id"`
+	ID          uuid.UUID `json:"id"           gorm:"column:id"`
+	RequestType string    `json:"req_type"     gorm:"column:request_type"` 
+	PatientName string    `json:"patient_name" gorm:"column:patient_name"`
+	DiseaseID   uuid.UUID `json:"disease_id"   gorm:"column:disease_id"`
+	DiseaseName string    `json:"disease_name" gorm:"column:disease_name"`
+	HnNumber    string    `json:"hn_number"    gorm:"column:hn_number"`
+	Status      string    `json:"status"       gorm:"column:status"`
+	Description string    `json:"description"  gorm:"column:description"`
+	Date        time.Time `json:"date"         gorm:"column:date"`
+	StartTime   string    `json:"start_time"   gorm:"column:start_time"`
+	EndTime     string    `json:"end_time"     gorm:"column:end_time"`
+	AppointID   uuid.UUID `json:"appoint_id"   gorm:"column:appoint_id"`
+	PatientID   uuid.UUID `json:"patient_id"   gorm:"column:patient_id"`
 }
 
 type RequestQueryParams struct {

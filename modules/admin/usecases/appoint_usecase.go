@@ -79,7 +79,12 @@ func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateRe
 
         nextDoctor := req.NextDoctorTitle + req.NextDoctorFirstName + " " + req.NextDoctorLastName
 
-		colorStatus := utils.CalculateColorStatus(float64(req.Health.Sugar), float64(req.Health.Pressure))
+		colorStatus := "none"
+
+		if oldAppoint.Disease.Name == "โรคเบากวาน" || oldAppoint.Disease.Name == "โรคความดันโลหิตสูง" {
+			colorStatus = utils.CalculateColorStatus(float64(req.Health.Sugar), float64(req.Health.Pressure))
+		}
+
 
         newAppoint := &entities.AppointmentEntity{
             Doctor:    nextDoctor,

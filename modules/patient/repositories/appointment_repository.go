@@ -317,7 +317,7 @@ func (r *appointmentQueryRepo) GetDiseaseHistory(patientID uuid.UUID, diseaseID 
 
 		color := app.ColorStatus
 		if color == "" {
-			color = "green" 
+			color = "none" 
 		}
 
 		domainAppoints[i] = entities.HistoryAppointEntity{

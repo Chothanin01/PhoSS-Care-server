@@ -58,6 +58,15 @@ func (c *AuthController) RefreshToken(ctx *fiber.Ctx) error {
 		})
 	}
 
+	ctx.Cookie(&fiber.Cookie{
+    Name:     "accessToken",
+    Value:    newToken,
+    Expires:  time.Now().Add(time.Hour * 24),
+    HTTPOnly: true, 
+    Secure:   true,
+    SameSite: "Lax",
+	})
+
 	return ctx.JSON(fiber.Map{
 		"token": newToken,
 	})

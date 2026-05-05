@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/chothanin01/PhoSS-Care-server/modules/patient/entities"
-	"github.com/chothanin01/PhoSS-Care-server/pkg/utils"
 	"github.com/google/uuid"
 )
 
@@ -30,23 +29,35 @@ func (u *GetPatientUsecase) GetPatientBasicInfo(patientID uuid.UUID) (*entities.
 
 	if !patient.DOB.IsZero() {
 		now := time.Now()
-		years := now.Year() - patient.DOB.Year()
-		months := int(now.Month()) - int(patient.DOB.Month())
-		days := now.Day() - patient.DOB.Day()
 
-		if days < 0 {
-			prevMonth := now.AddDate(0, -1, 0)
-			days += utils.DaysInMonth(prevMonth.Year(), prevMonth.Month())
-			months--
-		}
-		if months < 0 {
-			months += 12
-			years--
-		}
+		if patient.DOB.After(now) {
+			ageYears, ageMonths, ageDays = 0, 0, 0
+		} else {
+			years := now.Year() - patient.DOB.Year()
+			months := int(now.Month()) - int(patient.DOB.Month())
+			days := now.Day() - patient.DOB.Day()
 
-		ageYears = years
-		ageMonths = months
-		ageDays = days
+			if days < 0 {
+				months--
+
+				daysInPrevMonth := time.Date(now.Year(), now.Month(), 0, 0, 0, 0, 0, now.Location()).Day()
+
+				if patient.DOB.Day() > daysInPrevMonth {
+					days = now.Day()
+				} else {
+					days += daysInPrevMonth
+				}
+			}
+
+			if months < 0 {
+				months += 12
+				years--
+			}
+
+			ageYears = years
+			ageMonths = months
+			ageDays = days
+		}
 	}
 
 	res := &entities.PatientBasicInfoRes{
@@ -72,28 +83,59 @@ func (u *GetPatientUsecase) GetPatientFullInfo(userID uuid.UUID) (*entities.Pati
         addr.HouseNumber, addr.VillageNumber, addr.Alley, addr.Road,
         addr.SubDistrict, addr.District, addr.Province, addr.ZipCode)
     
-	now := time.Now()
-    dob := patient.DOB
-    years := now.Year() - dob.Year()
-    months := int(now.Month()) - int(dob.Month())
-    days := now.Day() - dob.Day()
+	var ageYears, ageMonths, ageDays int
 
-    if days < 0 {
-        months--
-    }
-    if months < 0 {
-        years--
-        months += 12
-    }
+	if !patient.DOB.IsZero() {
+		now := time.Now()
 
-    var weight, height float32
+		if patient.DOB.After(now) {
+			ageYears, ageMonths, ageDays = 0, 0, 0
+		} else {
+			years := now.Year() - patient.DOB.Year()
+			months := int(now.Month()) - int(patient.DOB.Month())
+			days := now.Day() - patient.DOB.Day()
+
+			if days < 0 {
+				months--
+
+				daysInPrevMonth := time.Date(now.Year(), now.Month(), 0, 0, 0, 0, 0, now.Location()).Day()
+
+				if patient.DOB.Day() > daysInPrevMonth {
+					days = now.Day()
+				} else {
+					days += daysInPrevMonth
+				}
+			}
+
+			if months < 0 {
+				months += 12
+				years--
+			}
+
+			ageYears = years
+			ageMonths = months
+			ageDays = days
+		}
+	}
+
+    var weight, height, bmi float32
     if len(patient.Appointments) > 0 {
         latest := patient.Appointments[0]
         weight = float32(latest.Health.Weight)
         height = float32(latest.Health.Height)
+		bmi = float32(latest.Health.BMI)
     } else {
 		weight = patient.Weight
         height = patient.Height
+		if height > 0 {
+		heightInMeters := height / 100
+		
+		bmi = weight / (heightInMeters * heightInMeters)
+		
+	} else {
+		bmi = 0 
+	}
+
     }
 
     var relWrapper entities.RelativeWrapper
@@ -102,6 +144,8 @@ func (u *GetPatientUsecase) GetPatientFullInfo(userID uuid.UUID) (*entities.Pati
     for _, r := range patient.Relatives {
         
         fullname := fmt.Sprintf("%s%s %s", r.Title, r.FirstName, r.LastName)
+
+		relAddr := r.Address
         
         switch r.Role {
         case "kin":
@@ -110,8 +154,8 @@ func (u *GetPatientUsecase) GetPatientFullInfo(userID uuid.UUID) (*entities.Pati
                 PhoneNumber: r.PhoneNumber,
                 Role:        r.Role,
                 Address:     fmt.Sprintf("%s หมู่ %s ซอย %s ถนน %s ตำบล %s อำเภอ %s จังหวัด %s %s",
-								addr.HouseNumber, addr.VillageNumber, addr.Alley, addr.Road,
-								addr.SubDistrict, addr.District, addr.Province, addr.ZipCode), 
+								relAddr.HouseNumber, relAddr.VillageNumber, relAddr.Alley, relAddr.Road,
+								relAddr.SubDistrict, relAddr.District, relAddr.Province, relAddr.ZipCode), 
             }
         case "caretaker":
             relWrapper.Caretaker = &entities.RelativeDetail{
@@ -119,8 +163,8 @@ func (u *GetPatientUsecase) GetPatientFullInfo(userID uuid.UUID) (*entities.Pati
                 PhoneNumber: r.PhoneNumber,
                 Role:        r.Role,
                 Address:     fmt.Sprintf("%s หมู่ %s ซอย %s ถนน %s ตำบล %s อำเภอ %s จังหวัด %s %s",
-								addr.HouseNumber, addr.VillageNumber, addr.Alley, addr.Road,
-								addr.SubDistrict, addr.District, addr.Province, addr.ZipCode),
+								relAddr.HouseNumber, relAddr.VillageNumber, relAddr.Alley, relAddr.Road,
+								relAddr.SubDistrict, relAddr.District, relAddr.Province, relAddr.ZipCode),
             }
         case "medicine":
             relWrapper.Medicine = &entities.RelativeDetail{
@@ -128,8 +172,8 @@ func (u *GetPatientUsecase) GetPatientFullInfo(userID uuid.UUID) (*entities.Pati
                 PhoneNumber: r.PhoneNumber,
                 Role:        r.Role,
                 Address:     fmt.Sprintf("%s หมู่ %s ซอย %s ถนน %s ตำบล %s อำเภอ %s จังหวัด %s %s",
-								addr.HouseNumber, addr.VillageNumber, addr.Alley, addr.Road,
-								addr.SubDistrict, addr.District, addr.Province, addr.ZipCode),
+								relAddr.HouseNumber, relAddr.VillageNumber, relAddr.Alley, relAddr.Road,
+								relAddr.SubDistrict, relAddr.District, relAddr.Province, relAddr.ZipCode),
             }
         case "house":
             offWrapper.House = &entities.OfficerDetail{
@@ -151,9 +195,9 @@ func (u *GetPatientUsecase) GetPatientFullInfo(userID uuid.UUID) (*entities.Pati
 			IDCard:      patient.IDCard,
 			HnNumber:    patient.HnID,
 			Rights:      patient.Rights,
-			AgeYears:    years,
-			AgeMonths:   months,
-			AgeDays:     days,
+			AgeYears:    ageYears,
+			AgeMonths:   ageMonths,
+			AgeDays:     ageDays,
 			Allergy:     patient.Allergy,
 			PhoneNumber: patient.PhoneNumber,
 			Address:     formattedAddress,
@@ -162,19 +206,19 @@ func (u *GetPatientUsecase) GetPatientFullInfo(userID uuid.UUID) (*entities.Pati
 			Nationality: patient.Nationality,
 			Ethnicity:   patient.Ethnicity,
 			DOB:         patient.DOB.Format("2006-01-02"),
+			BMI:         bmi,
 		},
 		Relative: relWrapper,
         Officer:  offWrapper,
     }, nil
 }
 
-func (u *GetPatientUsecase) GetPatientDiseases(patientID uuid.UUID) ([]entities.DiseaseItem, error) {
-	
+func (u *GetPatientUsecase) GetPatientDiseases(patientID uuid.UUID, filter entities.DiseaseFilter) ([]entities.DiseaseItem, error) {
 	if patientID == uuid.Nil {
 		return nil, fmt.Errorf("patient ID is required")
 	}
 
-    diseases, err := u.readRepo.GetPatientDiseases(patientID)
+	diseases, err := u.readRepo.GetPatientDiseases(patientID, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch patient diseases: %w", err)
 	}

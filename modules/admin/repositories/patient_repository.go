@@ -312,7 +312,6 @@ func (r *PatientGetRepository) GetPatientDiseasesInfoByID(patientID, diseaseID u
 				Where("disease_id = ?", diseaseID).
 				Order("no DESC")
 		}).
-		Preload("Healths").
 		First(&patient, "id = ?", patientID).Error
 
 	if err != nil {

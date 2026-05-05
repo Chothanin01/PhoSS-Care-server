@@ -55,15 +55,25 @@ func (r *GetPatientRepository) GetPatientFullInfo(userID uuid.UUID) (*databases.
     return &patient, err
 }
 
-func (r *GetPatientRepository) GetPatientDiseases(patientID uuid.UUID) ([]entities.DiseaseItem, error) {
+func (r *GetPatientRepository) GetPatientDiseases(patientID uuid.UUID, filter entities.DiseaseFilter) ([]entities.DiseaseItem, error) {
 	var items []entities.DiseaseItem
 
-	err := r.db.Table("patient_disease").
+	query := r.db.Table("patient_disease").
 		Select("disease.id as disease_id, disease.name").
 		Joins("JOIN disease ON disease.id = patient_disease.disease_id").
-		Where("patient_disease.patient_id = ?", patientID).
-		Scan(&items).Error
+		Where("patient_disease.patient_id = ?", patientID)
 
+	if filter.Type == "appoint" {
+		query = query.Joins("JOIN appoint ON appoint.disease_id = disease.id AND appoint.patient_id = patient_disease.patient_id")
+		
+		query = query.Where("appoint.status = ?", "ongoing")
+
+		query = query.Where("NOT EXISTS (SELECT 1 FROM request WHERE request.appoint_id = appoint.id AND request.status = 'pending' AND request.request_type = 'appoint')")
+
+		query = query.Group("disease.id, disease.name")
+	}
+
+	err := query.Scan(&items).Error
 	if err != nil {
 		return nil, err
 	}

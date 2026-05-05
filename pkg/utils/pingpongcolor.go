@@ -6,33 +6,29 @@ func CalculateColorStatus(sugar float64, pressure float64) string {
 		return "none"
 	}
 
-	sugarLevel := 1
+	sugarLevel := 3 
 	if sugar > 0 {
-		if sugar < 100 {
-			sugarLevel = 1 
-		} else if sugar <= 125 {
-			sugarLevel = 3 
+		if sugar <= 125 {
+			sugarLevel = 3
 		} else if sugar <= 154 {
-			sugarLevel = 4 
+			sugarLevel = 4
 		} else if sugar <= 182 {
-			sugarLevel = 5 
+			sugarLevel = 5
 		} else {
-			sugarLevel = 6 
+			sugarLevel = 6
 		}
 	}
 
-	pressureLevel := 1
+	pressureLevel := 3 
 	if pressure > 0 {
-		if pressure < 120 {
-			pressureLevel = 1 
-		} else if pressure <= 139 {
-			pressureLevel = 3 
+		if pressure <= 139 {
+			pressureLevel = 3
 		} else if pressure <= 159 {
-			pressureLevel = 4 
+			pressureLevel = 4
 		} else if pressure <= 179 {
-			pressureLevel = 5 
+			pressureLevel = 5
 		} else {
-			pressureLevel = 6 
+			pressureLevel = 6
 		}
 	}
 
@@ -42,8 +38,6 @@ func CalculateColorStatus(sugar float64, pressure float64) string {
 	}
 
 	switch maxLevel {
-	case 1:
-		return "white"
 	case 3:
 		return "dark_green"
 	case 4:

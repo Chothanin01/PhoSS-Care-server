@@ -25,25 +25,32 @@ func NewNotificationCommandRepo(db *gorm.DB) entities.NotificationCommandRepo {
 }
 
 func (r *notificationQueryRepo) GetPatientNotifications(patientID uuid.UUID) ([]entities.NotificationItem, error) {
-	var dbNotis []databases.Notification
+	var results []struct {
+		databases.Notification
+		DiseaseID *uuid.UUID `gorm:"column:disease_id"` 
+	}
 
-	err := r.db.Where("patient_id = ?", patientID).
-		Order("created_at DESC").
-		Find(&dbNotis).Error
+	err := r.db.Model(&databases.Notification{}).
+		Select("notification.*, appoint.disease_id").
+		Joins("LEFT JOIN appoint ON appoint.id = notification.appoint_id").
+		Where("notification.patient_id = ?", patientID).
+		Order("notification.created_at DESC").
+		Scan(&results).Error
 
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]entities.NotificationItem, len(dbNotis))
-	for i, noti := range dbNotis {
+	items := make([]entities.NotificationItem, len(results))
+	for i, res := range results {
 		items[i] = entities.NotificationItem{
-			ID:        noti.ID,
-			Header:    noti.Header,
-			Body:      noti.Body,
-			IsRead:    noti.IsRead,
-			AppointID: noti.AppointID, 
-			CreatedAt: noti.CreatedAt.Format("2006-01-02 15:04:05"),
+			ID:        res.ID,
+			Header:    res.Header,
+			Body:      res.Body,
+			IsRead:    res.IsRead,
+			AppointID: res.AppointID,
+			DiseaseID: res.DiseaseID,
+			CreatedAt: res.CreatedAt.Format("2006-01-02 15:04:05"),
 		}
 	}
 

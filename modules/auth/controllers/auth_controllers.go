@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"time"
+
 	"github.com/chothanin01/PhoSS-Care-server/modules/auth/entities"
 	"github.com/chothanin01/PhoSS-Care-server/pkg/utils"
 	"github.com/gofiber/fiber/v2"
@@ -19,6 +21,7 @@ func NewAuthController(r fiber.Router, middleware fiber.Handler, usecase entitie
 	}
 	
 	r.Post("/login", controller.Login)
+	r.Get("/logout", middleware, controller.Logout)
 
 	r.Get("/refresh", middleware, controller.RefreshToken)
 }
@@ -55,7 +58,32 @@ func (c *AuthController) RefreshToken(ctx *fiber.Ctx) error {
 		})
 	}
 
+	ctx.Cookie(&fiber.Cookie{
+    Name:     "accessToken",
+    Value:    newToken,
+    Expires:  time.Now().Add(time.Hour * 24),
+    HTTPOnly: true, 
+    Secure:   true,
+    SameSite: "Lax",
+	})
+
 	return ctx.JSON(fiber.Map{
 		"token": newToken,
+	})
+}
+
+func (c *AuthController) Logout(ctx *fiber.Ctx) error {
+
+	ctx.Cookie(&fiber.Cookie{
+		Name:     "token", 
+		Value:    "",
+		Expires:  time.Now().Add(-1 * time.Hour), 
+		HTTPOnly: true,
+		Secure:   true, 
+	})
+
+	return ctx.JSON(fiber.Map{
+		"success": true,
+		"message": "Successfully logged out",
 	})
 }

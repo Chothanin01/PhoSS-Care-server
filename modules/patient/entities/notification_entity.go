@@ -31,6 +31,7 @@ type NotificationItem struct {
 	Body      string     `json:"body"`
 	IsRead    bool       `json:"is_read"`
 	AppointID *uuid.UUID `json:"appoint_id,omitempty"`
+	DiseaseID *uuid.UUID `json:"disease_id,omitempty"`
 	CreatedAt string     `json:"created_at"`
 }
 

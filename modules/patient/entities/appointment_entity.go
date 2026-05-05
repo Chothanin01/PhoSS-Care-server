@@ -3,7 +3,6 @@ package entities
 import (
 	"time"
 
-	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
 	"github.com/google/uuid"
 )
 
@@ -25,6 +24,8 @@ type AppointmentEntity struct {
 	CreatedAt		string			`json:"created_at,omitempty"`
 	CreatedBy		string			`json:"created_by,omitempty"`
 	DelayDate   	string    		`json:"delay_date,omitempty"`
+	DelayStartTime 	string         	`json:"delay_start_time,omitempty"`
+	DelayEndTime 	string         	`json:"delay_end_time,omitempty"`
 }
 
 type DelayRequestEntity struct {
@@ -40,6 +41,14 @@ type DelayRequestEntity struct {
 	CreatedBy   uuid.UUID
 }
 
+type AppointmentDelayReq struct {
+	DiseaseID  uuid.UUID `json:"disease_id"`
+	Date       string    `json:"date"` 
+	StartTime  string    `json:"start_time"`
+	EndTime    string    `json:"end_time"`
+	Description string   `json:"description"`
+}
+
 type PatientAppointment struct {
 	PatientID 		uuid.UUID 				`json:"patient_id"`
 	FullName  		string    				`json:"fullname"`
@@ -48,15 +57,6 @@ type PatientAppointment struct {
 	AgeMonths 		int       				`json:"age_months"`
 	AgeDays   		int       				`json:"age_days"`
 	Appointments 	[]AppointmentEntity 	`json:"appoint"`
-}
-
-type AppointmentDelayReq struct {
-	AppointID  uuid.UUID `json:"appoint_id"`
-	DiseaseID  uuid.UUID `json:"disease_id"`
-	Date       string    `json:"date"` 
-	StartTime  string    `json:"start_time"`
-	EndTime    string    `json:"end_time"`
-	Description string   `json:"description"`
 }
 
 type DiseaseScheduleEntity struct {
@@ -106,7 +106,7 @@ type HistoryDetailEntity struct {
 
 type AppointmentQueryRepo interface {
 	CheckPatientHasDisease(patientID uuid.UUID, diseaseID uuid.UUID) (bool, error)
-    GetAppointmentDetail(patientID uuid.UUID, diseaseID uuid.UUID) (*databases.Appoint, *databases.Admin, error)
+    GetAppointmentDetail(patientID uuid.UUID, diseaseID uuid.UUID) (*AppointmentEntity, error)
 	GetScheduleByDisease(patientID uuid.UUID, diseaseID uuid.UUID) (*DiseaseScheduleEntity, error)
 	ListPatientAppointments(patientID uuid.UUID) ([]AppointmentEntity, error)
     	
@@ -132,6 +132,7 @@ type AppointmentCommandRepo interface {
 	SaveDelayRequest(req *DelayRequestEntity) error
 
 	CancelDelayRequest(appointID uuid.UUID, patientID uuid.UUID) error
+	GetOngoingAppointmentIDByDisease(patientID uuid.UUID, diseaseID uuid.UUID) (*uuid.UUID, error)
 }
 
 type AppointmentCommandUsecase interface {

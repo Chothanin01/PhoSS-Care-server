@@ -4,10 +4,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/google/uuid"
-	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
 	"github.com/chothanin01/PhoSS-Care-server/modules/patient/entities"
-	"gorm.io/gorm"	
+	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type appointmentQueryRepo struct {
@@ -26,26 +26,62 @@ func NewAppointmentCommandRepo(db *gorm.DB) *appointmentCommandRepo {
 	return &appointmentCommandRepo{db: db}
 }
 
-func (r *appointmentQueryRepo) GetAppointmentDetail(patientID uuid.UUID, diseaseID uuid.UUID) (*databases.Appoint, *databases.Admin, error) {
-	var appoint databases.Appoint
-	var admin databases.Admin
+func (r *appointmentQueryRepo) GetAppointmentDetail(patientID uuid.UUID, diseaseID uuid.UUID) (*entities.AppointmentEntity, error) {
+	var dbAppoint databases.Appoint
 
 	err := r.db.
 		Preload("Disease").
-        Where("patient_id = ? AND disease_id = ? AND status IN ?", patientID, diseaseID, []string{"ongoing", "delay"}).
-        First(&appoint).Error
-    if err != nil {
-        return nil, nil, err
-    }
-	
-	if appoint.CreatedBy != nil {
-        err = r.db.Where("user_id = ?", *appoint.CreatedBy).First(&admin).Error
-        if err != nil {
-            return &appoint, nil, nil 
-        }
-    }
+		Where("patient_id = ? AND disease_id = ? AND status IN ?", patientID, diseaseID, []string{"ongoing", "delay"}).
+		First(&dbAppoint).Error
+		
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, entities.ErrNotFound
+		}
+		return nil, err
+	}
 
-	return &appoint, &admin, nil
+	detail := &entities.AppointmentEntity{
+		ID:          dbAppoint.ID,
+		No:          dbAppoint.No,
+		Doctor:      dbAppoint.Doctor,
+		Status:      dbAppoint.Status,
+		Purpose:     dbAppoint.Purpose,
+		Place:       dbAppoint.Place,
+		Date:        dbAppoint.Date.Format("2006-01-02"), 
+		StartTime:   dbAppoint.StartTime,
+		EndTime:     dbAppoint.EndTime,
+		Symptom:     dbAppoint.Symptom,
+		Note:        dbAppoint.Note,
+		DiseaseID:   dbAppoint.DiseaseID,
+		DiseaseName: dbAppoint.Disease.Name,
+		CreatedAt:   dbAppoint.CreatedAt.Format(time.RFC3339),
+	}
+
+	if dbAppoint.CreatedBy != nil {
+		var dbAdmin databases.Admin
+		err = r.db.Select("title, first_name, last_name").Where("user_id = ?", *dbAppoint.CreatedBy).First(&dbAdmin).Error
+		if err == nil {
+			detail.CreatedBy = dbAdmin.Title + dbAdmin.FirstName + " " + dbAdmin.LastName
+		} else {
+			detail.CreatedBy = "Unknown Admin" 
+		}
+	}
+
+	if dbAppoint.Status == "delay" {
+		
+		var req databases.Request
+		err := r.db.Where("appoint_id = ? AND status = 'pending'", dbAppoint.ID).First(&req).Error
+		
+		if err == nil {
+			detail.DelayDate = req.Date.Format("2006-01-02") 
+			detail.DelayStartTime = req.StartTime
+			detail.DelayEndTime = req.EndTime
+		} 
+
+	}
+
+	return detail, nil
 }
 
 func (r *appointmentQueryRepo) GetPatientBasicInfo(patientID uuid.UUID) (*entities.PatientBasicInfo, error) {
@@ -116,6 +152,8 @@ func (r *appointmentQueryRepo) ListPatientAppointments(patientID uuid.UUID) ([]e
 			if err != nil {
 			} else {
 				entity.DelayDate = req.Date.Format("2006-01-02")
+				entity.DelayStartTime = req.StartTime
+				entity.DelayEndTime = req.EndTime
 			}
 		}
 
@@ -135,6 +173,27 @@ func (r *appointmentCommandRepo) CheckAppointmentExists(appointID uuid.UUID, pat
 		return false, err
 	}
 	return count > 0, nil
+}
+
+func (r *appointmentCommandRepo) GetOngoingAppointmentIDByDisease(patientID uuid.UUID, diseaseID uuid.UUID) (*uuid.UUID, error) {
+	
+	var result struct {
+		ID uuid.UUID
+	}
+	
+	err := r.db.Model(&databases.Appoint{}).
+		Select("id").
+		Where("patient_id = ? AND disease_id = ? AND status = ?", patientID, diseaseID, "ongoing").
+		First(&result).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil 
+		}
+		return nil, err 
+	}
+	
+	return &result.ID, nil
 }
 
 func (r *appointmentCommandRepo) SaveDelayRequest(req *entities.DelayRequestEntity) error {
@@ -159,7 +218,10 @@ func (r *appointmentCommandRepo) SaveDelayRequest(req *entities.DelayRequestEnti
 
 		err := tx.Model(&databases.Appoint{}).
 			Where("id = ? AND patient_id = ?", req.AppointID, req.PatientID).
-			Update("status", "delay").Error
+			Updates(map[string]interface{}{
+				"status":     "delay",
+				"updated_at": time.Now(),
+			}).Error
 
 		if err != nil {
 			return err
@@ -255,7 +317,7 @@ func (r *appointmentQueryRepo) GetDiseaseHistory(patientID uuid.UUID, diseaseID 
 
 		color := app.ColorStatus
 		if color == "" {
-			color = "green" 
+			color = "none" 
 		}
 
 		domainAppoints[i] = entities.HistoryAppointEntity{

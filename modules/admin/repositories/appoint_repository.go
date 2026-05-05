@@ -24,6 +24,7 @@ func (r *AppointmentRepository) FindOngoing(patientID, diseaseID uuid.UUID) (*da
 	err := r.db.
 		Where("patient_id = ? AND disease_id = ? AND status = ?", patientID, diseaseID, "ongoing").
 		Order("created_at DESC").
+		Preload("Disease").
 		First(&appoint).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {

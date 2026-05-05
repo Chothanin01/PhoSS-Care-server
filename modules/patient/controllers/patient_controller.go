@@ -104,15 +104,33 @@ func (c *PatientController) GetPatientDiseases(ctx *fiber.Ctx) error {
 	
 	claims, ok := ctx.Locals("user").(jwt.MapClaims)
 	if !ok {
-		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"success": false, "message": "unauthorized"})
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"success": false, 
+			"message": "unauthorized",
+		})
 	}
 	
-	patientID, err := uuid.Parse(claims["role_id"].(string))
-	if err != nil {
-		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"success": false, "message": "invalid token payload"})
+	patientIDStr, ok := claims["role_id"].(string)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"success": false, 
+			"message": "invalid token payload",
+		})
 	}
 
-	diseases, err := c.GetUsecase.GetPatientDiseases(patientID)
+	patientID, err := uuid.Parse(patientIDStr)
+	if err != nil {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"success": false, 
+			"message": "invalid token payload",
+		})
+	}
+
+	filter := entities.DiseaseFilter{
+		Type: ctx.Query("type"),
+	}
+
+	diseases, err := c.GetUsecase.GetPatientDiseases(patientID, filter)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,

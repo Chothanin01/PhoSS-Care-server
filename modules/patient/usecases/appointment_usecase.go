@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/modules/patient/entities"
-	"github.com/chothanin01/PhoSS-Care-server/pkg/utils"
 )
 
 type appointmentQueryUsecase struct {
@@ -35,7 +34,7 @@ func (u *appointmentQueryUsecase) GetAppointmentDetail(patientID uuid.UUID, dise
 		return nil, fmt.Errorf("patient did not registered with this disease")
 	}
 
-	appointDB, adminDB, err := u.readRepo.GetAppointmentDetail(patientID, diseaseID)
+	appointDB, err := u.readRepo.GetAppointmentDetail(patientID, diseaseID)
 	if err != nil {
 		return nil, err
 	}
@@ -47,24 +46,23 @@ func (u *appointmentQueryUsecase) GetAppointmentDetail(patientID uuid.UUID, dise
 		Status:    appointDB.Status,
 		Purpose:   appointDB.Purpose,
 		Place:     appointDB.Place,
-		Date:      appointDB.Date.Format("2006-01-02"),
+		Date:      appointDB.Date,
 		StartTime: appointDB.StartTime,
 		EndTime:   appointDB.EndTime,
 		Symptom:   appointDB.Symptom,
 		Note:      appointDB.Note,
 		Delay:     appointDB.Delay, 
 		DiseaseID: appointDB.DiseaseID,
-		CreatedAt: appointDB.CreatedAt.Format("2006-01-02"),
+		DiseaseName: appointDB.DiseaseName,
+		CreatedAt: appointDB.CreatedAt,
+		CreatedBy: appointDB.CreatedBy,
+		DelayDate: appointDB.DelayDate,
+		DelayStartTime: appointDB.DelayStartTime,
+		DelayEndTime: appointDB.DelayEndTime,
 	}
-
-	if adminDB != nil && adminDB.FirstName != "" {
-        res.CreatedBy = adminDB.Title + adminDB.FirstName + " " + adminDB.LastName
-    }
 
 	return res, nil
 }
-
-
 
 func (u *appointmentQueryUsecase) ListPatientAppointments(patientID uuid.UUID) (*entities.PatientAppointment, error) {
 	
@@ -87,22 +85,38 @@ func (u *appointmentQueryUsecase) ListPatientAppointments(patientID uuid.UUID) (
 	}
 
 	var ageYears, ageMonths, ageDays int
+
 	if !patient.DOB.IsZero() {
 		now := time.Now()
-		years := now.Year() - patient.DOB.Year()
-		months := int(now.Month()) - int(patient.DOB.Month())
-		days := now.Day() - patient.DOB.Day()
 
-		if days < 0 {
-			prevMonth := now.AddDate(0, -1, 0)
-			days += utils.DaysInMonth(prevMonth.Year(), prevMonth.Month())
-			months--
+		if patient.DOB.After(now) {
+			ageYears, ageMonths, ageDays = 0, 0, 0
+		} else {
+			years := now.Year() - patient.DOB.Year()
+			months := int(now.Month()) - int(patient.DOB.Month())
+			days := now.Day() - patient.DOB.Day()
+
+			if days < 0 {
+				months--
+
+				daysInPrevMonth := time.Date(now.Year(), now.Month(), 0, 0, 0, 0, 0, now.Location()).Day()
+
+				if patient.DOB.Day() > daysInPrevMonth {
+					days = now.Day()
+				} else {
+					days += daysInPrevMonth
+				}
+			}
+
+			if months < 0 {
+				months += 12
+				years--
+			}
+
+			ageYears = years
+			ageMonths = months
+			ageDays = days
 		}
-		if months < 0 {
-			months += 12
-			years--
-		}
-		ageYears, ageMonths, ageDays = years, months, days
 	}
 
 	return &entities.PatientAppointment{
@@ -115,14 +129,14 @@ func (u *appointmentQueryUsecase) ListPatientAppointments(patientID uuid.UUID) (
 		Appointments: appointments, 
 	}, nil
 }
-
 func (u *appointmentCommandUsecase) SubmitDelayRequest(userID uuid.UUID, patientID uuid.UUID, payload *entities.AppointmentDelayReq) error {
-	exists, err := u.repo.CheckAppointmentExists(payload.AppointID, patientID)
+	
+	appointID, err := u.repo.GetOngoingAppointmentIDByDisease(patientID, payload.DiseaseID)
 	if err != nil {
-		return fmt.Errorf("error verifying appointment: %w", err)
+		return fmt.Errorf("error fetching ongoing appointment: %w", err)
 	}
-	if !exists {
-		return fmt.Errorf("appointment not found or does not belong to you")
+	if appointID == nil {
+		return fmt.Errorf("no ongoing appointment found for this disease")
 	}
 
 	parsedDate, err := time.Parse("2006-01-02", payload.Date)
@@ -138,7 +152,7 @@ func (u *appointmentCommandUsecase) SubmitDelayRequest(userID uuid.UUID, patient
 		EndTime:     payload.EndTime,
 		Status:      "pending",
 		PatientID:   patientID,
-		AppointID:   &payload.AppointID,
+		AppointID:   appointID,
 		DiseaseID:   &payload.DiseaseID,
 		CreatedBy:   userID,
 	}

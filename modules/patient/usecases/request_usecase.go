@@ -101,37 +101,74 @@ func (u *requestCommandUsecase) SubmitDocumentRequest(userID uuid.UUID, patientI
 }
 
 func (u *requestQueryUsecase) GetAvailableDocumentOptions(patientID uuid.UUID) ([]entities.AvailableRequestOption, error) {
+
+	hasAppoint, _ := u.repo.CheckHasAnyAppointment(patientID)
+	hasVaccine, _ := u.repo.CheckHasVaccineHistory(patientID)
+	_, latestDiseaseID, _ := u.repo.GetLatestCompletedAppoint(patientID)
+
+	pendingReqs, _ := u.repo.GetPendingRequests(patientID)
+
+	isDocPending := func(docName string) bool {
+		for _, req := range pendingReqs {
+			if req.RequestType == "document" {
+
+				requestedDocs := strings.Split(req.Description, ",")
+				for _, requestedDoc := range requestedDocs {
+						
+					if strings.TrimSpace(requestedDoc) == docName {
+						return true
+					}
+				}
+			}
+		}
+		return false
+	}
+	
+
+	isMedicalPending := func(targetDiseaseID *uuid.UUID) bool {
+		if targetDiseaseID == nil {
+			return false
+		}
+		for _, req := range pendingReqs {
+			if req.RequestType == "medical" && req.DiseaseID != nil {
+				if *req.DiseaseID == *targetDiseaseID {
+					return true
+				}
+			}
+		}
+		return false
+	}
+
 	var options []entities.AvailableRequestOption
 
 	options = append(options, entities.AvailableRequestOption{
 		Name:      "ข้อมูลผู้ป่วย",
 		Type:      "document",
 		Available: true,
+		Disabled:  isDocPending("ข้อมูลผู้ป่วย"),
 	})
-
-	hasAppoint, _ := u.repo.CheckHasAnyAppointment(patientID)
-	hasVaccine, _ := u.repo.CheckHasVaccineHistory(patientID)
-	_, latestDiseaseID, _ := u.repo.GetLatestCompletedAppoint(patientID)
 
 	options = append(options, entities.AvailableRequestOption{
 		Name:      "ประวัติการรักษา",
 		Type:      "document",
 		Available: hasAppoint,
+		Disabled:  isDocPending("ประวัติการรักษา"),
 	})
 
 	options = append(options, entities.AvailableRequestOption{
 		Name:      "ประวัติการฉีดวัคซีน",
 		Type:      "document",
 		Available: hasVaccine,
+		Disabled:  isDocPending("ประวัติการฉีดวัคซีน"),
 	})
 
 	isCertAvailable := latestDiseaseID != nil
-
 	options = append(options, entities.AvailableRequestOption{
 		Name:      "ใบรับรองแพทย์",
 		Type:      "medical",
 		Available: isCertAvailable,
-		DiseaseID: latestDiseaseID, 
+		Disabled:  isMedicalPending(latestDiseaseID),
+		DiseaseID: latestDiseaseID,
 	})
 
 	return options, nil

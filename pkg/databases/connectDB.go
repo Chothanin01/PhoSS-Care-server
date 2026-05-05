@@ -33,6 +33,10 @@ func SetupDatabaseConnection(cfg *configs.Config) (*gorm.DB, error) {
 
 	fmt.Println("Database connection established successfully.")
 	
+	if err := MigrateAll(db); err != nil {
+		log.Fatalf("Failed to migrate database: %v", err)
+	}
+
 	passwordSvc := utils.NewPasswordService()
 	if err := SeedSuperAdmin(db, passwordSvc); err != nil {
 		log.Fatalf("Failed to seed superadmin: %v", err)
@@ -42,9 +46,7 @@ func SetupDatabaseConnection(cfg *configs.Config) (*gorm.DB, error) {
 		log.Fatalf("Failed to seed diseases: %v", err)
 	} 
 
-	if err := MigrateAll(db); err != nil {
-		log.Fatalf("Failed to migrate database: %v", err)
-	}
+	
 
 	return db, nil
 }

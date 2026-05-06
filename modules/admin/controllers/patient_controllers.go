@@ -91,10 +91,18 @@ func (c *PatientController) GetPatients(ctx *fiber.Ctx) error {
 		appoint = &val
 	}
 
+	overdueStr := ctx.Query("overdue", "")
+	var overdue *bool
+	if overdueStr != "" {
+		val := overdueStr == "true"
+		overdue = &val
+	}
+
 	req := entities.PatientQueryParams{
 		Search:   search,
 		Diseases: diseases,
 		Appoint:  appoint,
+		Overdue: overdue,
 		Page:     page,
 		Limit:    limit,
 	}

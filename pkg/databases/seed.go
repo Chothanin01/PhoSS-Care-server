@@ -94,3 +94,48 @@ func SeedDiseases(db *gorm.DB) error {
 
 	return nil
 }
+
+func SeedVaccines(db *gorm.DB) error {
+	var superadmin User
+	superadminUsername := os.Getenv("SUPERADMIN_USERNAME")
+
+	if superadminUsername == "" {
+		return fmt.Errorf("missing SUPERADMIN_USERNAME env; cannot assign createby/updateby for vaccines")
+	}
+
+	if err := db.Where("username = ?", superadminUsername).First(&superadmin).Error; err != nil {
+		return fmt.Errorf("failed to find superadmin (username=%s): %w", superadminUsername, err)
+	}
+
+	defaultVaccines := []Vaccine{
+		{Name: "BCG (วัคซีนป้องกันวัณโรค)", Age: "แรกเกิด", Type: "Live Attenuated", Effect: "ป้องกันวัณโรค", Note: "ฉีดก่อนออกจากโรงพยาบาล"},
+		{Name: "HB (วัคซีนป้องกันโรคตับอักเสบบี)", Age: "แรกเกิด, 1 เดือน", Type: "Inactivated", Effect: "ป้องกันโรคตับอักเสบบี", Note: "เข็มแรกควรให้ภายใน 24 ชั่วโมงหลังคลอด"},
+		{Name: "DTP-HB-Hib (วัคซีนรวม 5 โรค)", Age: "2, 4, 6 เดือน", Type: "Combination", Effect: "ป้องกันโรคคอตีบ บาดทะยัก ไอกรน ตับอักเสบบี และฮิบ", Note: ""},
+		{Name: "IPV (วัคซีนป้องกันโรคโปลิโอชนิดฉีด)", Age: "2, 4 เดือน", Type: "Inactivated", Effect: "ป้องกันโรคโปลิโอ", Note: ""},
+		{Name: "Rota (วัคซีนโรต้า)", Age: "2, 4, 6 เดือน", Type: "Live Attenuated (Oral)", Effect: "ป้องกันโรคอุจจาระร่วงจากไวรัสโรต้า", Note: "ชนิดหยอด ครั้งแรกต้องให้ก่อนอายุ 15 สัปดาห์"},
+		{Name: "OPV (วัคซีนป้องกันโรคโปลิโอชนิดรับประทาน)", Age: "6 เดือน, 1 ปี 6 เดือน, 4 ปี", Type: "Live Attenuated (Oral)", Effect: "ป้องกันโรคโปลิโอ", Note: ""},
+		{Name: "MMR (วัคซีนรวมป้องกันโรคหัด-คางทูม-หัดเยอรมัน)", Age: "9 เดือน, 1 ปี 6 เดือน", Type: "Live Attenuated", Effect: "ป้องกันโรคหัด คางทูม และหัดเยอรมัน", Note: ""},
+		{Name: "LAJE (วัคซีนป้องกันโรคไข้สมองอักเสบเจอี)", Age: "1 ปี, 2 ปี 6 เดือน", Type: "Live Attenuated", Effect: "ป้องกันโรคไข้สมองอักเสบเจอี", Note: "ชนิดเชื้อเป็นอ่อนฤทธิ์"},
+		{Name: "DTP (วัคซีนรวมป้องกันโรคคอตีบ-บาดทะยัก-ไอกรน)", Age: "1 ปี 6 เดือน, 4 ปี", Type: "Combination", Effect: "ป้องกันโรคคอตีบ บาดทะยัก และไอกรน", Note: "เข็มกระตุ้น"},
+		{Name: "HPV (วัคซีนป้องกันมะเร็งปากมดลูก)", Age: "11 ปี (ป.5)", Type: "Inactivated", Effect: "ป้องกันมะเร็งปากมดลูกจากเชื้อเอชพีวี", Note: "ฉีด 2 เข็ม ห่างกันอย่างน้อย 6 เดือน (สำหรับเด็กหญิง)"},
+		{Name: "dT (วัคซีนรวมป้องกันโรคคอตีบ-บาดทะยัก)", Age: "12 ปี (ป.6)", Type: "Toxoid", Effect: "ป้องกันโรคคอตีบและบาดทะยัก", Note: "เข็มกระตุ้น"},
+	}
+
+	for _, v := range defaultVaccines {
+		var count int64
+		if err := db.Model(&Vaccine{}).Where("name = ?", v.Name).Count(&count).Error; err != nil {
+			return fmt.Errorf("failed to check vaccine %s: %w", v.Name, err)
+		}
+
+		if count == 0 {
+			v.CreatedBy = &superadmin.ID
+			v.UpdatedBy = &superadmin.ID
+			if err := db.Create(&v).Error; err != nil {
+				return fmt.Errorf("failed to seed vaccine %s: %w", v.Name, err)
+			}
+			fmt.Printf("Seeded vaccine: %s (by superadmin: %s)\n", v.Name, superadmin.Username)
+		}
+	}
+
+	return nil
+}

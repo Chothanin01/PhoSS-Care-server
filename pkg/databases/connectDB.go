@@ -45,8 +45,11 @@ func SetupDatabaseConnection(cfg *configs.Config) (*gorm.DB, error) {
 	if err := SeedDiseases(db); err != nil {
 		log.Fatalf("Failed to seed diseases: %v", err)
 	} 
-
 	
+	if err := SeedVaccines(db); err != nil {
+		log.Fatalf("Failed to seed vaccines: %v", err)
+	} 
+
 
 	return db, nil
 }

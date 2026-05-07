@@ -187,7 +187,7 @@ func (u *patientGetUsecase) GetPatientListWithFilter(req entities.PatientQueryPa
 		pInfo := entities.PatientHomeInfo{
 			ID:       p.ID,
 			FullName: p.Title + "" + p.FirstName + " " + p.LastName,
-			IDCard:   p.IDCard,
+			IDCard:   utils.MaskIDCard(p.IDCard),
 			HnNumber: p.HnID,
 		}
 

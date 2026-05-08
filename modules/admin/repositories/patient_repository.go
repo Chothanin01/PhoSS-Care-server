@@ -310,8 +310,10 @@ func (r *PatientGetRepository) GetPatientDiseasesInfoByID(patientID, diseaseID u
 		Preload("Appointments", func(db *gorm.DB) *gorm.DB {
 			return db.
 				Where("disease_id = ?", diseaseID).
+				Preload("Doctor").
 				Order("no DESC")
 		}).
+		Preload("Appointments.Doctor").
 		First(&patient, "id = ?", patientID).Error
 
 	if err != nil {
@@ -328,9 +330,10 @@ func (r *PatientGetRepository) GetPatientAppointmentsInfoByID(patientID uuid.UUI
 		Preload("Diseases").
 		Preload("Diseases.Disease").
 		Preload("Appointments", func(db *gorm.DB) *gorm.DB {
-			return db.Where("status IN ?", []string{"ongoing", "delay"}).Order("no DESC")
+			return db.Where("status IN ?", []string{"ongoing", "delay","overdue"}).Order("no DESC")
 		}).
 		Preload("Appointments.Disease").
+		Preload("Appointments.Doctor").
 		Preload("Appointments.CreatedByUser").
 		First(&patient, "id = ?", patientID).Error
 	if err != nil {
@@ -447,17 +450,6 @@ func (r *PatientRepository) UpdatePatientInfo(id uuid.UUID, req *entities.Patien
 		dob = parsedDOB
 	}
 
-	if req.IDCard != "" && req.IDCard != patient.IDCard {
-		var exists bool
-		r.db.Model(&databases.User{}).
-			Where("username = ? AND id <> ?", req.IDCard, patient.UserID).
-			Select("count(*) > 0").
-			Find(&exists)
-		if exists {
-			return nil, fmt.Errorf("ID card already used by another user")
-		}
-	}
-
 	patient.Title = req.Title
 	patient.FirstName = req.FirstName
 	patient.LastName = req.LastName
@@ -467,7 +459,6 @@ func (r *PatientRepository) UpdatePatientInfo(id uuid.UUID, req *entities.Patien
 	}
 	patient.Weight = req.Weight
 	patient.Height = req.Height
-	patient.IDCard = req.IDCard
 	patient.Rights = req.Rights
 	patient.Nationality = req.Nationality
 	patient.Ethnicity = req.Ethnicity

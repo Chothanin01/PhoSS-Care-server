@@ -77,7 +77,7 @@ func (u *requestGetUsecase) GetRequestInfoByID(id uuid.UUID) (*entities.RequestI
 		res.Date = req.Date.Format("2006-01-02")
 		res.StartTime = req.StartTime
 		res.EndTime = req.EndTime
-		res.Doctor = req.Appoint.Doctor
+		res.Doctor = req.Appoint.Doctor.Title + req.Appoint.Doctor.FirstName + " " + req.Appoint.Doctor.LastName 
 		res.AppointDate = req.Appoint.Date.Format("2006-01-02")
 		res.AppointStartTime = req.Appoint.StartTime
 		res.AppointEndTime = req.Appoint.EndTime
@@ -87,7 +87,7 @@ func (u *requestGetUsecase) GetRequestInfoByID(id uuid.UUID) (*entities.RequestI
 	case "medical":
 		res.CreatedDate = req.CreatedAt.Format("2006-01-02")
 		res.Description = req.Description
-		res.Doctor = req.Appoint.Doctor
+		res.Doctor = req.Appoint.Doctor.Title + req.Appoint.Doctor.FirstName + " " + req.Appoint.Doctor.LastName 
 
 	case "document":
 		res.CreatedDate = req.CreatedAt.Format("2006-01-02")

@@ -44,7 +44,7 @@ func (r *appointmentQueryRepo) GetAppointmentDetail(patientID uuid.UUID, disease
 	detail := &entities.AppointmentEntity{
 		ID:          dbAppoint.ID,
 		No:          dbAppoint.No,
-		Doctor:      dbAppoint.Doctor,
+		Doctor:      dbAppoint.Doctor.Title + dbAppoint.Doctor.FirstName + " " + dbAppoint.Doctor.LastName,
 		Status:      dbAppoint.Status,
 		Purpose:     dbAppoint.Purpose,
 		Place:       dbAppoint.Place,
@@ -131,7 +131,7 @@ func (r *appointmentQueryRepo) ListPatientAppointments(patientID uuid.UUID) ([]e
 		entity := entities.AppointmentEntity{
 			ID:          appt.ID,
 			No:          appt.No,
-			Doctor:      appt.Doctor,
+			Doctor:      appt.Doctor.Title + appt.Doctor.FirstName + " " + appt.Doctor.LastName,
 			Status:      appt.Status,
 			Purpose:     appt.Purpose,
 			Place:       appt.Place,
@@ -308,8 +308,8 @@ func (r *appointmentQueryRepo) GetDiseaseHistory(patientID uuid.UUID, diseaseID 
 
 	for i, app := range dbAppoints {
 		doctorName := "Unknown"
-		if app.Doctor != "" {
-			doctorName = app.Doctor
+		if app.Doctor.FirstName != "" {
+			doctorName = app.Doctor.Title + app.Doctor.FirstName + " " + app.Doctor.LastName
 		} else if app.CreatedByUser != nil && app.CreatedByUser.Admin != nil && app.CreatedByUser.Admin.FirstName != "" {
 			admin := app.CreatedByUser.Admin
 			doctorName = admin.Title + admin.FirstName + " " + admin.LastName
@@ -375,8 +375,8 @@ func (r *appointmentQueryRepo) GetHistoryDetail(appointID uuid.UUID, patientID u
 	}
 
 	doctorName := "Unknown Doctor"
-	if app.Doctor != "" {
-		doctorName = app.Doctor
+	if app.Doctor.FirstName != "" {
+		doctorName = app.Doctor.Title + app.Doctor.FirstName + " " + app.Doctor.LastName
 	} else if app.CreatedByUser != nil && app.CreatedByUser.Admin != nil && app.CreatedByUser.Admin.FirstName != "" {
 		admin := app.CreatedByUser.Admin
 		doctorName = admin.Title + admin.FirstName + " " + admin.LastName

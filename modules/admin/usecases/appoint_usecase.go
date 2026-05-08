@@ -9,135 +9,128 @@ import (
 )
 
 type appointmentUsecase struct {
-	tx entities.AppointmentTransaction
+	tx   entities.AppointmentTransaction
 	repo entities.AppointmentRepository
 }
 
-func NewAppointmentUsecase(tx entities.AppointmentTransaction,repo entities.AppointmentRepository,) entities.AppointmentUsecase {
+func NewAppointmentUsecase(tx entities.AppointmentTransaction, repo entities.AppointmentRepository) entities.AppointmentUsecase {
 	return &appointmentUsecase{
 		tx:   tx,
 		repo: repo,
 	}
 }
 
-
 func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateReq, adminID uuid.UUID) (*entities.AppointmentRes, error) {
-    var result *entities.AppointmentRes
+	var result *entities.AppointmentRes
 
-    if req.PatientID == uuid.Nil || req.DiseaseID == uuid.Nil || req.DoctorTitle == "" || req.DoctorFirstName == "" ||
-        req.DoctorLastName == "" || req.NextDoctorTitle == "" || req.NextDoctorFirstName == "" || req.NextDoctorLastName == "" ||
-        req.Purpose == "" || req.Place == "" || req.Date == "" || req.StartTime == "" || req.EndTime == "" {
-        return nil, fmt.Errorf("missing required fields")
-    }
+	if req.PatientID == uuid.Nil || req.DiseaseID == uuid.Nil || req.DoctorID == uuid.Nil || req.NextDoctorID == uuid.Nil ||
+		req.Purpose == "" || req.Place == "" || req.Date == "" || req.StartTime == "" || req.EndTime == "" {
+		return nil, fmt.Errorf("missing required fields")
+	}
 
-    err := u.tx.Do(func(r entities.RepositorySet) error {
-        appointRepo := r.AppointmentRepo
+	err := u.tx.Do(func(r entities.RepositorySet) error {
+		appointRepo := r.AppointmentRepo
 
-        oldAppoint, err := appointRepo.FindOngoing(req.PatientID, req.DiseaseID)
-        if err != nil {
-            return err
-        }
+		oldAppoint, err := appointRepo.FindOngoing(req.PatientID, req.DiseaseID)
+		if err != nil {
+			return err
+		}
 
-        doctor := req.DoctorTitle + req.DoctorFirstName + " " + req.DoctorLastName
+		isVaccine, err := appointRepo.IsVaccineDisease(req.DiseaseID)
+		if err != nil {
+			return err
+		}
 
-        isVaccine, err := appointRepo.IsVaccineDisease(req.DiseaseID)
-        if err != nil {
-            return err
-        }
+		if isVaccine {
+			return fmt.Errorf("vaccine appointments must be created using vaccine appointment endpoint")
+		}
 
-        if isVaccine {
-            return fmt.Errorf("vaccine appointments must be created using vaccine appointment endpoint")
-        }
+		if oldAppoint == nil {
+			oldEntity := &entities.AppointmentEntity{
+				DoctorID:  req.DoctorID,
+				Status:    "completed",
+				Symptom:   req.Symptom,
+				Note:      req.Note,
+				PatientID: req.PatientID,
+				DiseaseID: req.DiseaseID,
+				CreatedBy: adminID,
+				UpdatedBy: adminID,
+			}
 
-        if oldAppoint == nil {
-            oldEntity := &entities.AppointmentEntity{
-                Doctor:    doctor,
-                Status:    "completed",
-                Symptom:   req.Symptom,
-                Note:      req.Note,
-                PatientID: req.PatientID,
-                DiseaseID: req.DiseaseID,
-                CreatedBy: adminID,
-                UpdatedBy: adminID,
-            }
+			_, err := appointRepo.CreateAppointment(oldEntity, adminID)
+			if err != nil {
+				return err
+			}
+		} else {
+			err := appointRepo.UpdateSymptomNote(req.DoctorID, oldAppoint.ID, req.Symptom, req.Note, adminID)
+			if err != nil {
+				return err
+			}
 
-            _, err := appointRepo.CreateAppointment(oldEntity, adminID)
-            if err != nil {
-                return err
-            }
-        } else {
-            err := appointRepo.UpdateSymptomNote(doctor, oldAppoint.ID, req.Symptom, req.Note, adminID)
-            if err != nil {
-                return err
-            }
-
-            err = appointRepo.CompleteAppoint(oldAppoint.ID, adminID)
-            if err != nil {
-                return err
-            }
-        }
-
-        nextDoctor := req.NextDoctorTitle + req.NextDoctorFirstName + " " + req.NextDoctorLastName
+			err = appointRepo.CompleteAppoint(oldAppoint.ID, adminID)
+			if err != nil {
+				return err
+			}
+		}
 
 		colorStatus := "none"
 
-		if oldAppoint.Disease.Name == "โรคเบากวาน" || oldAppoint.Disease.Name == "โรคความดันโลหิตสูง" {
+		if oldAppoint != nil && (oldAppoint.Disease.Name == "โรคเบาหวาน" || oldAppoint.Disease.Name == "โรคความดันโลหิตสูง") {
 			colorStatus = utils.CalculateColorStatus(float64(req.Health.Sugar), float64(req.Health.Pressure))
 		}
 
-
-        newAppoint := &entities.AppointmentEntity{
-            Doctor:    nextDoctor,
-            Status:    "ongoing",
-            Purpose:   req.Purpose,
-            Place:     req.Place,
-            StartTime: req.StartTime,
-            EndTime:   req.EndTime,
-            Date:      req.Date,
-            PatientID: req.PatientID,
-            DiseaseID: req.DiseaseID,
+		newAppoint := &entities.AppointmentEntity{
+			DoctorID:    req.NextDoctorID,
+			Status:      "ongoing",
+			Purpose:     req.Purpose,
+			Note: 		 req.Prepare,		
+			Place:       req.Place,
+			StartTime:   req.StartTime,
+			EndTime:     req.EndTime,
+			Date:        req.Date,
+			PatientID:   req.PatientID,
+			DiseaseID:   req.DiseaseID,
 			ColorStatus: colorStatus,
-            CreatedBy: adminID,
-            UpdatedBy: adminID,
-            Health: entities.Health{
-                Weight:   req.Health.Weight,
-                Height:   req.Health.Height,
-                BMI:      req.Health.BMI,
-                Pulse:    req.Health.Pulse,
-                Pressure: req.Health.Pressure,
-                Sugar:    req.Health.Sugar,
-            },
-        }
+			CreatedBy:   adminID,
+			UpdatedBy:   adminID,
+			Health: entities.Health{
+				Weight:   req.Health.Weight,
+				Height:   req.Health.Height,
+				BMI:      req.Health.BMI,
+				Pulse:    req.Health.Pulse,
+				Pressure: req.Health.Pressure,
+				Sugar:    req.Health.Sugar,
+			},
+		}
 
-        savedAppoint, err := appointRepo.CreateAppointment(newAppoint, adminID)
-        if err != nil {
-            return err
-        }
+		savedAppoint, err := appointRepo.CreateAppointment(newAppoint, adminID)
+		if err != nil {
+			return err
+		}
 
-        result = &entities.AppointmentRes{
-            ID:        savedAppoint.ID,
-            Status:    savedAppoint.Status,
-            No:        savedAppoint.No,
-            Date:      savedAppoint.Date,
-            StartTime: savedAppoint.StartTime,
-            EndTime:   savedAppoint.EndTime,
-            Doctor:    savedAppoint.Doctor,
-            Purpose:   savedAppoint.Purpose,
-            Place:     savedAppoint.Place,
-        }
+		result = &entities.AppointmentRes{
+			ID:        savedAppoint.ID,
+			Status:    savedAppoint.Status,
+			No:        savedAppoint.No,
+			Date:      savedAppoint.Date,
+			StartTime: savedAppoint.StartTime,
+			EndTime:   savedAppoint.EndTime,
+			DoctorID:  savedAppoint.DoctorID,
+			Purpose:   savedAppoint.Purpose,
+			Place:     savedAppoint.Place,
+		}
 
-        return nil
-    })
+		return nil
+	})
 
-    if err != nil {
-        return nil, err
-    }
+	if err != nil {
+		return nil, err
+	}
 
-    return result, nil
+	return result, nil
 }
 
 func (u *appointmentUsecase) FindOngoingVaccination(patientID uuid.UUID) (*entities.VaccineFullDetail, error) {
-
 	record, err := u.repo.FindOngoingVaccination(patientID)
 	if err != nil {
 		return nil, err
@@ -157,18 +150,15 @@ func (u *appointmentUsecase) FindOngoingVaccination(patientID uuid.UUID) (*entit
 }
 
 func (u *appointmentUsecase) CreateVaccineAppointment(req *entities.VaccineAppointmentCreateReq, adminID uuid.UUID) (*entities.VaccineAppointmentRes, error) {
-
 	var result *entities.VaccineAppointmentRes
 
-	if req.PatientID == uuid.Nil || req.VaccineID == uuid.Nil || req.DoseNumber == 0 || 
-	req.VaccineDoctorTitle == "" || req.VaccineDoctorFirstName == "" || req.VaccineDoctorLastName == "" ||
-	req.DoctorTitle == "" || req.DoctorFirstName == "" || req.DoctorLastName == "" || req.Place == "" ||
-	req.NextDate == "" || req.StartTime == "" || req.EndTime == "" {
+	if req.PatientID == uuid.Nil || req.VaccineID == uuid.Nil || req.DoseNumber == 0 ||
+		req.VaccineDoctorID == uuid.Nil || req.DoctorID == uuid.Nil || req.Place == "" ||
+		req.NextDate == "" || req.StartTime == "" || req.EndTime == "" {
 		return nil, fmt.Errorf("missing required fields for vaccine appointment")
 	}
 
 	err := u.tx.Do(func(r entities.RepositorySet) error {
-
 		repo := r.AppointmentRepo
 
 		hasDisease, err := repo.FindPatientVaccine(req.PatientID)
@@ -177,7 +167,7 @@ func (u *appointmentUsecase) CreateVaccineAppointment(req *entities.VaccineAppoi
 		}
 
 		if !hasDisease {
-			return fmt.Errorf("Patient does not have vaccine disease record.")
+			return fmt.Errorf("patient does not have vaccine disease record")
 		}
 
 		vaccineExists, err := repo.CheckVaccineExists(req.VaccineID)
@@ -189,30 +179,16 @@ func (u *appointmentUsecase) CreateVaccineAppointment(req *entities.VaccineAppoi
 			return fmt.Errorf("vaccine id does not exist")
 		}
 
-		if req.OldVaccineID != uuid.Nil {
-
-			oldExists, err := repo.CheckVaccineExists(req.OldVaccineID)
-			if err != nil {
-				return err
-			}
-
-			if !oldExists {
-				return fmt.Errorf("old vaccine id does not exist")
-			}
-		}
 		vaccineDiseaseID, err := repo.FindVaccineDiseaseID()
 		if err != nil {
 			return err
 		}
 
 		lastRecord, err := repo.FindOngoingVaccination(req.PatientID)
-		vaccineDoctor := req.VaccineDoctorTitle + req.VaccineDoctorFirstName + " " + req.VaccineDoctorLastName
-		doctor := req.DoctorTitle + req.DoctorFirstName + " " + req.DoctorLastName
-		
-		
-		if err == nil {
 
-			err = repo.UpdateVaccineDoctor(lastRecord.ID, vaccineDoctor, adminID)
+		if err == nil && lastRecord != nil {
+			
+			err = repo.UpdateVaccineDoctor(lastRecord.ID, req.VaccineDoctorID, adminID)
 			if err != nil {
 				return err
 			}
@@ -221,15 +197,13 @@ func (u *appointmentUsecase) CreateVaccineAppointment(req *entities.VaccineAppoi
 			if err != nil {
 				return err
 			}
-
 		} else {
-
 			oldAppoint := &entities.AppointmentEntity{
-				Purpose: "ฉีดวัคซีน",
+				Purpose:   "ฉีดวัคซีน",
 				Status:    "completed",
 				DiseaseID: vaccineDiseaseID,
 				PatientID: req.PatientID,
-				Date: 	   req.Date,
+				Date:      req.Date,
 				CreatedBy: adminID,
 				UpdatedBy: adminID,
 			}
@@ -243,20 +217,19 @@ func (u *appointmentUsecase) CreateVaccineAppointment(req *entities.VaccineAppoi
 				req.OldVaccineID,
 				old.ID,
 				req.DoseNumber,
-				vaccineDoctor,
+				req.VaccineDoctorID,
 				adminID,
 			)
-
 			if err != nil {
 				return err
 			}
 		}
 
 		newAppoint := &entities.AppointmentEntity{
-			Doctor:    doctor,
+			DoctorID:  req.DoctorID,
 			Status:    "ongoing",
 			Place:     req.Place,
-			Date:      req.Date,
+			Date:      req.NextDate,
 			StartTime: req.StartTime,
 			EndTime:   req.EndTime,
 			Purpose:   "ฉีดวัคซีน",
@@ -277,22 +250,19 @@ func (u *appointmentUsecase) CreateVaccineAppointment(req *entities.VaccineAppoi
 		}
 
 		nextDose := maxDose + 1
-		if maxDose == 0 {
-			nextDose = 1
-		}
 
+		// FIX: Use req.DoctorID (UUID)
 		err = repo.CreateVaccinationRecord(
 			req.VaccineID,
 			saved.ID,
 			nextDose,
-			doctor,
+			req.DoctorID,
 			adminID,
 		)
-
 		if err != nil {
 			return err
 		}
-		
+
 		result = &entities.VaccineAppointmentRes{
 			AppointID: saved.ID,
 			No:        saved.No,
@@ -300,7 +270,7 @@ func (u *appointmentUsecase) CreateVaccineAppointment(req *entities.VaccineAppoi
 			Date:      saved.Date.String(),
 			StartTime: saved.StartTime,
 			EndTime:   saved.EndTime,
-			Doctor:    saved.Doctor,
+			DoctorID:  saved.DoctorID,
 		}
 
 		return nil
@@ -314,17 +284,14 @@ func (u *appointmentUsecase) CreateVaccineAppointment(req *entities.VaccineAppoi
 }
 
 func (u *appointmentUsecase) UpdateAppointment(req *entities.AppointmentUpdateReq, adminID uuid.UUID) (*entities.AppointmentRes, error) {
-
-	if req.AppointID == uuid.Nil || req.Purpose == "" || req.Place == "" || req.Date == "" || 
-	req.StartTime == "" || req.EndTime == "" || req.DoctorTitle == "" || 
-	req.DoctorFirstName == "" || req.DoctorLastName == "" {
+	if req.AppointID == uuid.Nil || req.Purpose == "" || req.Place == "" || req.Date == "" ||
+		req.StartTime == "" || req.EndTime == "" || req.DoctorID == uuid.Nil {
 		return nil, fmt.Errorf("missing required fields")
 	}
 
 	var result *entities.AppointmentRes
 
 	err := u.tx.Do(func(r entities.RepositorySet) error {
-
 		repo := r.AppointmentRepo
 
 		appoint, err := repo.FindByID(req.AppointID)
@@ -345,8 +312,6 @@ func (u *appointmentUsecase) UpdateAppointment(req *entities.AppointmentUpdateRe
 			return fmt.Errorf("vaccine appointment cannot be updated in this module")
 		}
 
-		doctor := req.DoctorTitle + req.DoctorFirstName + " " + req.DoctorLastName
-
 		updated, err := repo.UpdateAppointment(
 			req.AppointID,
 			req.Purpose,
@@ -354,7 +319,7 @@ func (u *appointmentUsecase) UpdateAppointment(req *entities.AppointmentUpdateRe
 			req.Date,
 			req.StartTime,
 			req.EndTime,
-			doctor,
+			req.DoctorID,
 			adminID,
 		)
 
@@ -363,7 +328,7 @@ func (u *appointmentUsecase) UpdateAppointment(req *entities.AppointmentUpdateRe
 		}
 
 		result = &entities.AppointmentRes{
-			ID: 	   updated.ID,
+			ID:        updated.ID,
 			No:        updated.No,
 			Status:    updated.Status,
 			Purpose:   updated.Purpose,
@@ -371,7 +336,7 @@ func (u *appointmentUsecase) UpdateAppointment(req *entities.AppointmentUpdateRe
 			Date:      updated.Date,
 			StartTime: updated.StartTime,
 			EndTime:   updated.EndTime,
-			Doctor:    updated.Doctor,
+			DoctorID:  updated.DoctorID,
 		}
 
 		return nil
@@ -385,16 +350,14 @@ func (u *appointmentUsecase) UpdateAppointment(req *entities.AppointmentUpdateRe
 }
 
 func (u *appointmentUsecase) UpdateVaccineAppointment(req *entities.VaccineAppointmentUpdateReq, adminID uuid.UUID) (*entities.VaccineAppointmentRes, error) {
-
-	if req.AppointID == uuid.Nil || req.PatientID == uuid.Nil ||req.VaccineID == uuid.Nil || req.Place == "" || req.Date == "" || 
-	req.StartTime == "" || req.EndTime == "" || req.DoctorTitle == "" || req.DoctorFirstName == "" ||req.DoctorLastName == "" {
+	if req.AppointID == uuid.Nil || req.PatientID == uuid.Nil || req.VaccineID == uuid.Nil || req.Place == "" || req.Date == "" ||
+		req.StartTime == "" || req.EndTime == "" || req.DoctorID == uuid.Nil {
 		return nil, fmt.Errorf("missing required fields")
 	}
 
 	var result *entities.VaccineAppointmentRes
 
 	err := u.tx.Do(func(r entities.RepositorySet) error {
-
 		repo := r.AppointmentRepo
 
 		appoint, err := repo.FindByID(req.AppointID)
@@ -416,7 +379,7 @@ func (u *appointmentUsecase) UpdateVaccineAppointment(req *entities.VaccineAppoi
 		}
 
 		if !hasDisease {
-			return fmt.Errorf("Patient does not have vaccine disease record.")
+			return fmt.Errorf("patient does not have vaccine disease record")
 		}
 
 		exists, err := repo.CheckVaccineExists(req.VaccineID)
@@ -434,9 +397,6 @@ func (u *appointmentUsecase) UpdateVaccineAppointment(req *entities.VaccineAppoi
 		}
 
 		nextDose := maxDose + 1
-		if maxDose == 0 {
-			nextDose = 1
-		}
 
 		err = repo.UpdateVaccinationRecord(
 			req.AppointID,
@@ -448,15 +408,13 @@ func (u *appointmentUsecase) UpdateVaccineAppointment(req *entities.VaccineAppoi
 			return err
 		}
 
-		doctor := req.DoctorTitle + req.DoctorFirstName + " " + req.DoctorLastName
-
 		updated, err := repo.UpdateVaccineAppointment(
 			req.AppointID,
 			req.Place,
 			req.Date,
 			req.StartTime,
 			req.EndTime,
-			doctor,
+			req.DoctorID,
 			adminID,
 		)
 		if err != nil {
@@ -470,7 +428,7 @@ func (u *appointmentUsecase) UpdateVaccineAppointment(req *entities.VaccineAppoi
 			Date:      updated.Date.Format("2006-01-02"),
 			StartTime: updated.StartTime,
 			EndTime:   updated.EndTime,
-			Doctor:    updated.Doctor,
+			DoctorID:  updated.DoctorID,
 		}
 
 		return nil

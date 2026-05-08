@@ -9,7 +9,6 @@ import (
 type AppointmentEntity struct {
 	ID 		  		uuid.UUID		`json:"appoint_id"`
 	No				int				`json:"no"`
-	Doctor    		string			`json:"doctor"`
 	Status    		string			`json:"status"`
 	Purpose   		string			`json:"purpose"`
 	Place     		string			`json:"place"`
@@ -21,6 +20,8 @@ type AppointmentEntity struct {
 	Delay	  		bool			`json:"delay"`
 	DiseaseID		uuid.UUID 		`json:"disease_id"`
 	DiseaseName     string			`json:"disease_name,omitempty"`
+	Doctor      	string    		`json:"doctor,omitempty"`
+	DoctorID    	uuid.UUID 		`json:"doctor_id,omitempty"`
 	CreatedAt		string			`json:"created_at,omitempty"`
 	CreatedBy		string			`json:"created_by,omitempty"`
 	DelayDate   	string    		`json:"delay_date,omitempty"`
@@ -72,7 +73,7 @@ type HistoryAppointEntity struct {
 	Date        string    `json:"date"`
 	Note        string    `json:"note"`
 	ColorStatus string    `json:"color_status"` 
-	DoctorName  string    `json:"doctor"`
+	DoctorName  string    `json:"doctor"` 
 }
 
 type DiseaseHistoryResponse struct {

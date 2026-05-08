@@ -92,6 +92,7 @@ func (r *RequestGetRepository) GetRequestInfoByID(id uuid.UUID) (*databases.Requ
 		Preload("Patient").
 		Preload("Disease").
 		Preload("Appoint.Disease").
+		Preload("Appoint.Doctor").
 		First(&req, "id = ?", id).Error
 
 	if err != nil {

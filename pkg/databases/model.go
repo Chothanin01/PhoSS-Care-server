@@ -103,7 +103,6 @@ type Appoint struct {
 	Symptom   string    `json:"symptom"`
 	Note      string    `json:"note"`
 	Place     string    `json:"place"`
-	Doctor    string    `json:"doctor"`
 	Status    string    `json:"status"`
 	ColorStatus string  `json:"color_status"`
 	Purpose   string    `json:"purpose"`
@@ -114,9 +113,11 @@ type Appoint struct {
 
 	PatientID uuid.UUID `json:"patient_id"`
 	DiseaseID uuid.UUID `json:"disease_id"`
+	DoctorID  uuid.UUID	`json:"doctor_id"`
 
 	Patient Patient `gorm:"foreignKey:PatientID"`
 	Disease Disease `gorm:"foreignKey:DiseaseID"`
+	Doctor  Doctor	`gorm:"foreignKey:DoctorID"`
 
 	Vaccinations []VaccinationRecord `json:"vaccinations"`
 	Requests     []Request           `json:"requests"`
@@ -172,14 +173,15 @@ type Vaccine struct {
 
 type VaccinationRecord struct {
 	BaseModel
-	VaccineID  uuid.UUID
-	AppointID  uuid.UUID
+	VaccineID  uuid.UUID		`json:"vaccine_id"`
+	AppointID  uuid.UUID		`json:"appoint_id"`
+	VaccineDoctorID uuid.UUID	`json:"vaccine_doctor_id"`
 	DoseNumber int
-	VaccineDoctor string `gorm:"size:50;not null"`
 	Status     string `gorm:"size:50;not null"`
 
 	Vaccine Vaccine `gorm:"foreignKey:VaccineID"`
 	Appoint Appoint `gorm:"foreignKey:AppointID"`
+	VaccineDoctor  uuid.UUID	`gorm:"foreignKey:VaccineDoctorID"`
 
 	CreatedBy     *uuid.UUID
 	UpdatedBy     *uuid.UUID
@@ -241,6 +243,13 @@ type Address struct {
 	District      string `json:"district"`
 	Province      string `json:"province"`
 	ZipCode       string `json:"zipcode"`
+}
+
+type Doctor struct {
+	BaseModel
+	Title		string		`json:"title"`
+	FirstName	string		`json:"first_name"`
+	LastName	string		`json:"last_name"`
 }
 
 func (a Address) Value() (driver.Value, error) { return json.Marshal(a) }

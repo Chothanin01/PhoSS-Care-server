@@ -89,60 +89,56 @@ func (r *AppointmentRepository) IsVaccineDisease(diseaseID uuid.UUID) (bool, err
 }
 
 func (r *AppointmentRepository) CreateAppointment(e *entities.AppointmentEntity, adminID uuid.UUID) (*databases.Appoint, error) {
-    var lastNo int
-    err := r.db.Model(&databases.Appoint{}).
-        Where("patient_id = ? AND disease_id = ?", e.PatientID, e.DiseaseID).
-        Select("COALESCE(MAX(no), 0)").
-        Scan(&lastNo).Error
-    if err != nil {
-        return nil, fmt.Errorf("query last appointment number: %w", err)
-    }
+	var lastNo int
+	err := r.db.Model(&databases.Appoint{}).
+		Where("patient_id = ? AND disease_id = ?", e.PatientID, e.DiseaseID).
+		Select("COALESCE(MAX(no), 0)").
+		Scan(&lastNo).Error
+	if err != nil {
+		return nil, fmt.Errorf("query last appointment number: %w", err)
+	}
 
-    var parseDate time.Time
-    if e.Date != "" {
-        d, err := time.Parse("2006-01-02", e.Date)
-        if err != nil {
-            return nil, fmt.Errorf("parse date: %w", err)
-        }
-        parseDate = d
-    }
+	var parseDate time.Time
+	if e.Date != "" {
+		d, err := time.Parse("2006-01-02", e.Date)
+		if err != nil {
+			return nil, fmt.Errorf("parse date: %w", err)
+		}
+		parseDate = d
+	}
 
-    dbHealth := databases.Health{
-        Weight:   e.Health.Weight,
-        Height:   e.Health.Height,
-        BMI:      e.Health.BMI,
-        Pulse:    e.Health.Pulse,
-        Sugar:    e.Health.Sugar,
-        Pressure: e.Health.Pressure,
-    }
+	appoint := databases.Appoint{
+		No:        lastNo + 1,
+		DoctorID:  e.DoctorID,
+		Status:    e.Status,
+		Purpose:   e.Purpose,
+		Place:     e.Place,
+		StartTime: e.StartTime,
+		EndTime:   e.EndTime,
+		Date:      parseDate,
+		PatientID: e.PatientID,
+		DiseaseID: e.DiseaseID,
+		Symptom:   e.Symptom,
+		Note:      e.Note,
+		Health: databases.Health{
+			Weight:   e.Health.Weight,
+			Height:   e.Health.Height,
+			BMI:      e.Health.BMI,
+			Pulse:    e.Health.Pulse,
+			Sugar:    e.Health.Sugar,
+			Pressure: e.Health.Pressure,
+		},
+		CreatedBy: &adminID,
+		UpdatedBy: &adminID,
+	}
 
-    appoint := databases.Appoint{
-        No:        lastNo + 1,
-        Doctor:    e.Doctor,
-        Status:    e.Status,
-        Purpose:   e.Purpose,
-        Place:     e.Place,
-        StartTime: e.StartTime,
-        EndTime:   e.EndTime,
-        Date:      parseDate,
-        PatientID: e.PatientID,
-        DiseaseID: e.DiseaseID,
-        Symptom:   e.Symptom,
-        Note:      e.Note,
-        Health:    dbHealth,
-        CreatedBy: &adminID,
-        UpdatedBy: &adminID,
-    }
+	if err := r.db.Create(&appoint).Error; err != nil {
+		return nil, fmt.Errorf("create appointment: %w", err)
+	}
 
-    if err := r.db.Create(&appoint).Error; err != nil {
-        return nil, fmt.Errorf("create appointment: %w", err)
-    }
+	r.UpdatePatientHealth(e.PatientID, e.Health.Weight, e.Health.Height, adminID)
 
-    if err := r.UpdatePatientHealth(e.PatientID, e.Health.Weight, e.Health.Height, adminID); err != nil {
-        return nil, err
-    }
-
-    return &appoint, nil
+	return &appoint, nil
 }
 
 func (r *AppointmentRepository) UpdateHealth(appointID uuid.UUID, health *entities.Health, adminID uuid.UUID) error {
@@ -185,18 +181,16 @@ func (r *AppointmentRepository) FindByID(appointID uuid.UUID) (*databases.Appoin
 	return &appoint, nil
 }
 
-func (r *AppointmentRepository) UpdateSymptomNote(doctor string,appointID uuid.UUID, symptom string, note string, adminID uuid.UUID) error {
-	return r.db.
-		Model(&databases.Appoint{}).
+func (r *AppointmentRepository) UpdateSymptomNote(doctorID uuid.UUID, appointID uuid.UUID, symptom string, note string, adminID uuid.UUID) error {
+	return r.db.Model(&databases.Appoint{}).
 		Where("id = ?", appointID).
 		Updates(map[string]interface{}{
-			"symptom":    symptom,
-			"note":       note,
-			"doctor":     doctor,
+			"symptom":   symptom,
+			"note":      note,
+			"doctor_id": doctorID,
 			"updated_by": adminID,
 		}).Error
 }
-
 
 func (r *AppointmentRepository) CompleteVaccinationRecord(recordID uuid.UUID, adminID uuid.UUID) error {
 	return r.db.
@@ -208,17 +202,16 @@ func (r *AppointmentRepository) CompleteVaccinationRecord(recordID uuid.UUID, ad
 		}).Error
 }
 
-func (r *AppointmentRepository) UpdateVaccineDoctor(recordID uuid.UUID, doctor string, adminID uuid.UUID) error {
-	return r.db.
-		Model(&databases.VaccinationRecord{}).
+func (r *AppointmentRepository) UpdateVaccineDoctor(recordID uuid.UUID, doctorID uuid.UUID, adminID uuid.UUID) error {
+	return r.db.Model(&databases.VaccinationRecord{}).
 		Where("id = ?", recordID).
 		Updates(map[string]interface{}{
-			"vaccine_doctor": doctor,
-			"updated_by":     adminID,
+			"vaccine_doctor_id": doctorID,
+			"updated_by":        adminID,
 		}).Error
 }
 
-func (r *AppointmentRepository) CreateVaccinationRecord(vaccineID uuid.UUID, appointID uuid.UUID, dose int, doctor string, adminID uuid.UUID) (error) {
+func (r *AppointmentRepository) CreateVaccinationRecord(vaccineID uuid.UUID, appointID uuid.UUID, dose int, doctor uuid.UUID, adminID uuid.UUID) (error) {
 
 	record := databases.VaccinationRecord{
 		VaccineID:     vaccineID,
@@ -282,30 +275,31 @@ func (r *AppointmentRepository) FindVaccineDiseaseID() (uuid.UUID, error) {
 	return disease.ID, nil
 }
 
-func (r *AppointmentRepository) UpdateAppointment( appointID uuid.UUID, purpose string, place string, date string, startTime string, endTime string, doctor string, adminID uuid.UUID) (*databases.Appoint, error) {
-
-	var appoint databases.Appoint
+func (r *AppointmentRepository) UpdateAppointment(appointID uuid.UUID, purpose string, place string, date string, startTime string, endTime string, doctorID uuid.UUID, adminID uuid.UUID) (*databases.Appoint, error) {
+	
+	var parsedDate time.Time
+	if date != "" {
+		parsedDate, _ = time.Parse("2006-01-02", date)
+	}
 
 	err := r.db.Model(&databases.Appoint{}).
 		Where("id = ?", appointID).
 		Updates(map[string]interface{}{
-			"purpose":     purpose,
-			"place":       place,
-			"date":        date,
-			"start_time":  startTime,
-			"end_time":    endTime,
-			"doctor":      doctor,
-			"updated_by":  adminID,
+			"purpose":    purpose,
+			"place":      place,
+			"date":       parsedDate,
+			"start_time": startTime,
+			"end_time":   endTime,
+			"doctor_id":  doctorID,
+			"updated_by": adminID,
 		}).Error
 
 	if err != nil {
 		return nil, err
 	}
 
-	if err := r.db.First(&appoint, "id = ?", appointID).Error; err != nil {
-		return nil, err
-	}
-
+	var appoint databases.Appoint
+	r.db.First(&appoint, "id = ?", appointID)
 	return &appoint, nil
 }
 
@@ -334,10 +328,8 @@ func (r *AppointmentRepository) UpdateVaccinationRecord(appointID uuid.UUID, vac
 		}).Error
 }
 
-func (r *AppointmentRepository) UpdateVaccineAppointment(appointID uuid.UUID, place string, date string, start string, end string, doctor string, adminID uuid.UUID) (*databases.Appoint, error) {
-
-	var appoint databases.Appoint
-
+func (r *AppointmentRepository) UpdateVaccineAppointment(appointID uuid.UUID, place string, date string, start string, end string, doctorID uuid.UUID, adminID uuid.UUID) (*databases.Appoint, error) {
+	
 	err := r.db.Model(&databases.Appoint{}).
 		Where("id = ?", appointID).
 		Updates(map[string]interface{}{
@@ -345,7 +337,7 @@ func (r *AppointmentRepository) UpdateVaccineAppointment(appointID uuid.UUID, pl
 			"date":       date,
 			"start_time": start,
 			"end_time":   end,
-			"doctor":     doctor,
+			"doctor_id":  doctorID,
 			"updated_by": adminID,
 		}).Error
 
@@ -353,9 +345,7 @@ func (r *AppointmentRepository) UpdateVaccineAppointment(appointID uuid.UUID, pl
 		return nil, err
 	}
 
-	if err := r.db.First(&appoint, "id = ?", appointID).Error; err != nil {
-		return nil, err
-	}
-
+	var appoint databases.Appoint
+	r.db.First(&appoint, "id = ?", appointID)
 	return &appoint, nil
 }

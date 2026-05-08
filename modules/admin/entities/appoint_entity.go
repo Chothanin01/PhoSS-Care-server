@@ -7,144 +7,126 @@ import (
 	"github.com/google/uuid"
 )
 
+// --- Requests ---
+
 type AppointmentCreateReq struct {
-    PatientID uuid.UUID `json:"patient_id"`
-    DiseaseID uuid.UUID `json:"disease_id"`
+	PatientID uuid.UUID `json:"patient_id"`
+	DiseaseID uuid.UUID `json:"disease_id"`
 
-    DoctorTitle     string `json:"doctor_title"`
-    DoctorFirstName string `json:"doctor_firstname"`
-    DoctorLastName  string `json:"doctor_lastname"`
+	DoctorID     uuid.UUID `json:"doctor_id"`
+	NextDoctorID uuid.UUID `json:"next_doctor_id"`
 
-    NextDoctorTitle     string `json:"next_doctor_title"`
-    NextDoctorFirstName string `json:"next_doctor_firstname"`
-    NextDoctorLastName  string `json:"next_doctor_lastname"`
-
-    Purpose string `json:"purpose"`
-    Place   string `json:"place"`
-    Date    string `json:"date"`
-    StartTime string `json:"start_time"`
-	EndTime   string `json:"end_time"`
-
-    Symptom string `json:"symptom"`
-    Note    string `json:"note"`
-
-    Health Health `json:"health"`
-}
-
-type AppointmentEntity struct {
-	ID 		  uuid.UUID
-	Doctor    string
-	Status    string
-	Purpose   string
-	Place     string
-	Date      string
-	StartTime string
-	EndTime   string
-	Symptom   string
-	Note      string
-	ColorStatus string
-	Health    Health
-	PatientID uuid.UUID
-	DiseaseID uuid.UUID
-	CreatedBy uuid.UUID
-	UpdatedBy uuid.UUID
-}
-
-type Health struct {
-    Weight   float64 `json:"weight"`
-    Height   int     `json:"height"`
-    Pulse    int     `json:"pulse"`
-    Sugar    int     `json:"sugar"`
-    BMI      float64 `json:"bmi"`
-    Pressure int     `json:"pressure"`
-}
-
-type AppointmentRes struct {
-	ID      uuid.UUID `json:"id"`
-	Status  string    `json:"status"`
-	No      int       `json:"no"`
-	Date    time.Time `json:"date"`
-	StartTime string `json:"start_time"`
-	EndTime   string `json:"end_time"`
-	Doctor  string    `json:"doctor"`
-	Purpose string    `json:"purpose"`
-	Place   string    `json:"place"`
-	ColorStatus string `json:"color_status"`
+	Purpose   string 	`json:"purpose"`
+	Prepare   string   	`json:"prepare"`
+	Place     string   	`json:"place"`
+	Date      string   	`json:"date"`
+	StartTime string   	`json:"start_time"`
+	EndTime   string   	`json:"end_time"`
+	Symptom   string   	`json:"symptom"`
+	Note      string   	`json:"note"`
+	Health    Health   	`json:"health"`
 }
 
 type AppointmentUpdateReq struct {
 	AppointID uuid.UUID `json:"appoint_id"`
+	DoctorID  uuid.UUID `json:"doctor_id"` // Added for UUID-based update
 
-	Purpose string `json:"purpose"`
-	Place   string `json:"place"`
-
+	Purpose   string `json:"purpose"`
+	Place     string `json:"place"`
 	Date      string `json:"date"`
 	StartTime string `json:"start_time"`
 	EndTime   string `json:"end_time"`
-
-	DoctorTitle     string `json:"doctor_title"`
-	DoctorFirstName string `json:"doctor_firstname"`
-	DoctorLastName  string `json:"doctor_lastname"`
 }
 
 type VaccineAppointmentCreateReq struct {
-	PatientID uuid.UUID `json:"patient_id"`
-
+	PatientID    uuid.UUID `json:"patient_id"`
 	OldVaccineID uuid.UUID `json:"old_vaccine_id"`
 	VaccineID    uuid.UUID `json:"vaccine_id"`
+	DoseNumber   int       `json:"dose_number"`
 
-	DoseNumber int `json:"dose_number"`
+	// Changed to IDs
+	VaccineDoctorID uuid.UUID `json:"vaccine_doctor_id"`
+	DoctorID        uuid.UUID `json:"doctor_id"`
 
-	VaccineDoctorTitle     string `json:"vaccine_doctor_title"`
-	VaccineDoctorFirstName string `json:"vaccine_doctor_firstname"`
-	VaccineDoctorLastName  string `json:"vaccine_doctor_lastname"`
-
-	DoctorTitle     string `json:"doctor_title"`
-	DoctorFirstName string `json:"doctor_firstname"`
-	DoctorLastName  string `json:"doctor_lastname"`
-	Place  string `json:"place"`
-
-	Date string `json:"date"`
-	NextDate string `json:"next_date"`
-	
+	Place     string `json:"place"`
+	Date      string `json:"date"`      // Date for old/current
+	NextDate  string `json:"next_date"` // Date for next appointment
 	StartTime string `json:"start_time"`
 	EndTime   string `json:"end_time"`
-}
-
-type VaccineAppointmentRes struct {
-	AppointID uuid.UUID `json:"appoint_id"`
-	No        int       `json:"no"`
-	Name      string    `json:"name"`
-	Status    string    `json:"status"`
-	Date      string    `json:"date"`
-	StartTime string 	`json:"start_time"`
-	EndTime   string 	`json:"end_time"`
-	Doctor    string    `json:"doctor"`
 }
 
 type VaccineAppointmentUpdateReq struct {
 	AppointID uuid.UUID `json:"appoint_id"`
 	VaccineID uuid.UUID `json:"vaccine_id"`
 	PatientID uuid.UUID `json:"patient_id"`
+	DoctorID  uuid.UUID `json:"doctor_id"` // Changed to ID
 
-	Place string `json:"place"`
-	Date  string `json:"date"`
-
+	Place     string `json:"place"`
+	Date      string `json:"date"`
 	StartTime string `json:"start_time"`
 	EndTime   string `json:"end_time"`
-
-	DoctorTitle     string `json:"doctor_title"`
-	DoctorFirstName string `json:"doctor_firstname"`
-	DoctorLastName  string `json:"doctor_lastname"`
 }
+
+// --- Domain Entities ---
+
+type AppointmentEntity struct {
+	ID          uuid.UUID
+	Status      string
+	Purpose     string
+	Place       string
+	Date        string
+	StartTime   string
+	EndTime     string
+	Symptom     string
+	Note        string
+	ColorStatus string
+	Health      Health
+	PatientID   uuid.UUID
+	DiseaseID   uuid.UUID
+	DoctorID    uuid.UUID
+	CreatedBy   uuid.UUID
+	UpdatedBy   uuid.UUID
+}
+
+type Health struct {
+	Weight   float64 `json:"weight"`
+	Height   int     `json:"height"`
+	Pulse    int     `json:"pulse"`
+	Sugar    int     `json:"sugar"`
+	BMI      float64 `json:"bmi"`
+	Pressure int     `json:"pressure"`
+}
+
+type AppointmentRes struct {
+	ID          uuid.UUID `json:"id"`
+	Status      string    `json:"status"`
+	No          int       `json:"no"`
+	Date        time.Time `json:"date"`
+	StartTime   string    `json:"start_time"`
+	EndTime     string    `json:"end_time"`
+	DoctorID    uuid.UUID `json:"doctor_id"` // Changed to ID
+	Purpose     string    `json:"purpose"`
+	Place       string    `json:"place"`
+	ColorStatus string    `json:"color_status"`
+}
+
+type VaccineAppointmentRes struct {
+	AppointID uuid.UUID `json:"appoint_id"`
+	No        int       `json:"no"`
+	Status    string    `json:"status"`
+	Date      string    `json:"date"`
+	StartTime string    `json:"start_time"`
+	EndTime   string    `json:"end_time"`
+	DoctorID  uuid.UUID `json:"doctor_id"` // Changed to ID
+}
+
 
 type AppointmentUsecase interface {
 	CreateAppointment(req *AppointmentCreateReq, adminID uuid.UUID) (*AppointmentRes, error)
-	FindOngoingVaccination(patientID uuid.UUID) (*VaccineFullDetail, error) 
+	FindOngoingVaccination(patientID uuid.UUID) (*VaccineFullDetail, error)
 	CreateVaccineAppointment(req *VaccineAppointmentCreateReq, adminID uuid.UUID) (*VaccineAppointmentRes, error)
 	UpdateAppointment(req *AppointmentUpdateReq, adminID uuid.UUID) (*AppointmentRes, error)
-	UpdateVaccineAppointment(req *VaccineAppointmentUpdateReq, adminID uuid.UUID) (*VaccineAppointmentRes, error) 
-
+	UpdateVaccineAppointment(req *VaccineAppointmentUpdateReq, adminID uuid.UUID) (*VaccineAppointmentRes, error)
 }
 
 type AppointmentRepository interface {
@@ -153,28 +135,28 @@ type AppointmentRepository interface {
 	FindOngoingVaccination(patientID uuid.UUID) (*databases.VaccinationRecord, error)
 	FindPatientVaccine(patientID uuid.UUID) (bool, error)
 	CheckVaccineExists(vaccineID uuid.UUID) (bool, error)
-	FindVaccineDiseaseID() (uuid.UUID, error) 
+	FindVaccineDiseaseID() (uuid.UUID, error)
 	IsVaccineDisease(diseaseID uuid.UUID) (bool, error)
 	FindMaxDose(patientID, vaccineID uuid.UUID) (int, error)
-	
 
-	UpdateSymptomNote(doctor string, appointID uuid.UUID, symptom string, note string, adminID uuid.UUID) error
-	UpdateVaccinationRecord(appointID uuid.UUID, vaccineID uuid.UUID, dose int, adminID uuid.UUID) (error)
+	UpdateSymptomNote(doctorID uuid.UUID, appointID uuid.UUID, symptom string, note string, adminID uuid.UUID) error
+	UpdateVaccinationRecord(appointID uuid.UUID, vaccineID uuid.UUID, dose int, adminID uuid.UUID) error
 	CompleteAppoint(appointID uuid.UUID, adminID uuid.UUID) error
 	CreateAppointment(entity *AppointmentEntity, adminID uuid.UUID) (*databases.Appoint, error)
-
 	DiseaseExists(diseaseID uuid.UUID) (bool, error)
 
-	CreateVaccinationRecord(vaccineID uuid.UUID, appointID uuid.UUID, dose int, doctor string, adminID uuid.UUID) error
-	UpdateVaccineDoctor(recordID uuid.UUID, doctor string, adminID uuid.UUID) error
+	CreateVaccinationRecord(vaccineID uuid.UUID, appointID uuid.UUID, dose int, doctorID uuid.UUID, adminID uuid.UUID) error
+	UpdateVaccineDoctor(recordID uuid.UUID, doctorID uuid.UUID, adminID uuid.UUID) error
 	CompleteVaccinationRecord(recordID uuid.UUID, adminID uuid.UUID) error
-	
+
 	UpdateHealth(appointID uuid.UUID, health *Health, adminID uuid.UUID) error
-	UpdateAppointment( appointID uuid.UUID, purpose string, place string, date string, startTime string, endTime string, doctor string, adminID uuid.UUID) (*databases.Appoint, error)
-	UpdateVaccineAppointment(appointID uuid.UUID, place string, date string, start string, end string, doctor string, adminID uuid.UUID) (*databases.Appoint, error)
+	UpdateAppointment(appointID uuid.UUID, purpose string, place string, date string, startTime string, endTime string, doctorID uuid.UUID, adminID uuid.UUID) (*databases.Appoint, error)
+	UpdateVaccineAppointment(appointID uuid.UUID, place string, date string, start string, end string, doctorID uuid.UUID, adminID uuid.UUID) (*databases.Appoint, error)
 	UpdatePatientHealth(patientID uuid.UUID, weight float64, height int, adminID uuid.UUID) error
 }
 
 type AppointmentTransaction interface {
-	Do(fn func(RepositorySet) error) error
+
+    Do(fn func(RepositorySet) error) error
+
 }

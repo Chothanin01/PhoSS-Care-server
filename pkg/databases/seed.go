@@ -133,9 +133,37 @@ func SeedVaccines(db *gorm.DB) error {
 			if err := db.Create(&v).Error; err != nil {
 				return fmt.Errorf("failed to seed vaccine %s: %w", v.Name, err)
 			}
-			fmt.Printf("Seeded vaccine: %s (by superadmin: %s)\n", v.Name, superadmin.Username)
 		}
 	}
 
 	return nil
+}
+
+func SeedDoctors(db *gorm.DB) error {
+
+    defaultDoctors := []Doctor{
+        {Title: "นพ.", FirstName: "สมชาย", LastName: "ใจดี"},
+        {Title: "พญ.", FirstName: "สมหญิง", LastName: "รักเรียน"},
+        {Title: "นพ.", FirstName: "อาคม", LastName: "ขยันทำดี"},
+        {Title: "พญ.", FirstName: "วิไล", LastName: "พรสวัสดิ์"},
+    }
+
+    for _, doc := range defaultDoctors {
+        var count int64
+        err := db.Model(&Doctor{}).
+            Where("first_name = ? AND last_name = ?", doc.FirstName, doc.LastName).
+            Count(&count).Error
+        
+        if err != nil {
+            return fmt.Errorf("failed to check doctor %s: %w", doc.FirstName, err)
+        }
+
+        if count == 0 {
+            if err := db.Create(&doc).Error; err != nil {
+                return fmt.Errorf("failed to seed doctor %s %s: %w", doc.FirstName, doc.LastName, err)
+            }
+        }
+    }
+
+    return nil
 }

@@ -62,7 +62,7 @@ func (u *patientGetUsecase) GetPatientDiseasesInfo(id uuid.UUID, diseaseID uuid.
 				Symptom:   ap.Symptom,
 				Note:      ap.Note,
 				Place:     ap.Place,
-				Doctor:    ap.Doctor,
+				Doctor:    ap.Doctor.Title + ap.Doctor.FirstName + " " + ap.Doctor.LastName,
 				Status:    ap.Status,
 				Letter:    ap.Letter,
 				Delay:     ap.Delay,

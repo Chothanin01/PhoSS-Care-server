@@ -225,7 +225,6 @@ type PatientUpdateReq struct {
 	DOB          string  `json:"dob"`
 	Weight       float32 `json:"weight"`
 	Height       float32 `json:"height"`
-	IDCard       string  `json:"idcard"`
 	Rights       string  `json:"rights"`
 	Nationality  string  `json:"nationality"`
 	Ethnicity    string  `json:"ethnicity"`

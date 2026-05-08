@@ -403,7 +403,7 @@ func (u *patientGetUsecase) GetPatientAppointmentsInfoByID(id uuid.UUID) (*entit
 			Note:    ap.Note,
 			Place:   ap.Place,
 			Purpose: ap.Purpose,
-			Doctor:  ap.Doctor,
+			Doctor:  ap.Doctor.Title + ap.Doctor.FirstName + " " + ap.Doctor.LastName,
 			Status:  ap.Status,
 			Letter:  ap.Letter,
 			Delay:   ap.Delay,
@@ -501,9 +501,8 @@ func (u *patientGetUsecase) GetPatientDiseases(patientID uuid.UUID, dtype string
 func (u *newPatientUsecase) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq, adminID uuid.UUID) (*entities.PatientUpdateRes, error) {
 	if req.FirstName == "" || req.LastName == "" ||
 		req.Sex == "" || req.Title == "" || req.DOB == "" ||
-		req.IDCard == "" || req.Rights == "" ||
-		req.Nationality == "" || req.Ethnicity == "" ||
-		req.PhoneNumber == "" ||
+		req.Rights == "" || req.Nationality == "" || 
+		req.Ethnicity == "" || req.PhoneNumber == "" ||
 		req.Address.HouseNumber == "" || req.Address.SubDistrict == "" ||
 		req.Address.District == "" || req.Address.Province == "" || req.Address.ZipCode == "" {
 		return nil, fmt.Errorf("missing required patient information")

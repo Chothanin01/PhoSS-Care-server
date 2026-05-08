@@ -21,6 +21,7 @@ type RequestInfo struct {
 	EndTime     string    `json:"end_time"     gorm:"column:end_time"`
 	AppointID   uuid.UUID `json:"appoint_id"   gorm:"column:appoint_id"`
 	PatientID   uuid.UUID `json:"patient_id"   gorm:"column:patient_id"`
+	CreatedAt	string	  `json:"created_at"   gorm:"column:created_at"`
 }
 
 type RequestQueryParams struct {
@@ -56,6 +57,7 @@ type RequestInfoRes struct {
 	AppointStartTime      	string     `json:"appoint_start_time,omitempty"`
 	AppointEndTime   		string     `json:"appoint_end_time,omitempty"`
 	DiseaseName  	 		string     `json:"disease_name"`
+	CreatedAt				string	   `json:"created_at,omitempty"`
 }
 
 type RequestStatusUpdateReq struct {

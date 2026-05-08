@@ -42,7 +42,8 @@ func (r *RequestGetRepository) GetRequestsWithFilter(params entities.RequestQuer
 			r.date AS date,
 			r.start_time AS start_time,
 			r.end_time AS end_time,
-			r.appoint_id AS appoint_id
+			r.appoint_id AS appoint_id,
+			r.created_at AS created_at
 		`).
 		Joins("JOIN patient p ON p.id = r.patient_id").
 		Joins("LEFT JOIN disease d ON d.id = r.disease_id").
@@ -117,6 +118,7 @@ func (r *RequestUpdateRepository) FindRequestByID(id uuid.UUID) (*entities.Reque
 		Date:        req.Date,      
 		StartTime:   req.StartTime,
 		EndTime:     req.EndTime,
+		CreatedAt:   req.CreatedAt.Format("2006-01-02"),
 
 	}
 	

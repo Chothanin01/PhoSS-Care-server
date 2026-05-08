@@ -29,7 +29,7 @@ type AppointmentCreateReq struct {
 
 type AppointmentUpdateReq struct {
 	AppointID uuid.UUID `json:"appoint_id"`
-	DoctorID  uuid.UUID `json:"doctor_id"` // Added for UUID-based update
+	DoctorID  uuid.UUID `json:"doctor_id"`
 
 	Purpose   string `json:"purpose"`
 	Place     string `json:"place"`
@@ -44,13 +44,12 @@ type VaccineAppointmentCreateReq struct {
 	VaccineID    uuid.UUID `json:"vaccine_id"`
 	DoseNumber   int       `json:"dose_number"`
 
-	// Changed to IDs
 	VaccineDoctorID uuid.UUID `json:"vaccine_doctor_id"`
 	DoctorID        uuid.UUID `json:"doctor_id"`
 
 	Place     string `json:"place"`
-	Date      string `json:"date"`      // Date for old/current
-	NextDate  string `json:"next_date"` // Date for next appointment
+	Date      string `json:"date"`      
+	NextDate  string `json:"next_date"` 
 	StartTime string `json:"start_time"`
 	EndTime   string `json:"end_time"`
 }
@@ -59,7 +58,7 @@ type VaccineAppointmentUpdateReq struct {
 	AppointID uuid.UUID `json:"appoint_id"`
 	VaccineID uuid.UUID `json:"vaccine_id"`
 	PatientID uuid.UUID `json:"patient_id"`
-	DoctorID  uuid.UUID `json:"doctor_id"` // Changed to ID
+	DoctorID  uuid.UUID `json:"doctor_id"`
 
 	Place     string `json:"place"`
 	Date      string `json:"date"`
@@ -104,7 +103,7 @@ type AppointmentRes struct {
 	Date        time.Time `json:"date"`
 	StartTime   string    `json:"start_time"`
 	EndTime     string    `json:"end_time"`
-	DoctorID    uuid.UUID `json:"doctor_id"` // Changed to ID
+	DoctorID    uuid.UUID `json:"doctor_id"` 
 	Purpose     string    `json:"purpose"`
 	Place       string    `json:"place"`
 	ColorStatus string    `json:"color_status"`
@@ -117,7 +116,7 @@ type VaccineAppointmentRes struct {
 	Date      string    `json:"date"`
 	StartTime string    `json:"start_time"`
 	EndTime   string    `json:"end_time"`
-	DoctorID  uuid.UUID `json:"doctor_id"` // Changed to ID
+	DoctorID  uuid.UUID `json:"doctor_id"`
 }
 
 

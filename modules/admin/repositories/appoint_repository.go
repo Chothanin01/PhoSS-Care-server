@@ -53,10 +53,11 @@ func (r *AppointmentRepository) FindOngoingVaccination(patientID uuid.UUID) (*da
 
 func (r *AppointmentRepository) CompleteAppoint(appointID, adminID uuid.UUID) error {
     return r.db.Model(&databases.Appoint{}).
-        Where("id = ? AND status = ?", appointID, "ongoing").
+        Where("id = ?", appointID).
         Updates(map[string]interface{}{
             "status":     "completed",
             "updated_by": adminID,
+			"updated_at": time.Now(),
         }).Error
 }
 
@@ -86,6 +87,19 @@ func (r *AppointmentRepository) IsVaccineDisease(diseaseID uuid.UUID) (bool, err
 	}
 
 	return false, nil
+}
+
+func (r *AppointmentRepository) FindDisease(diseaseID uuid.UUID) (*entities.Disease, error) {
+    var disease databases.Disease
+
+    if err := r.db.Where("id = ?", diseaseID).First(&disease).Error; err != nil {
+        return nil, err
+    }
+    
+    return &entities.Disease{
+        DiseaseID:   disease.ID,
+        Name: disease.Name,
+    }, nil
 }
 
 func (r *AppointmentRepository) CreateAppointment(e *entities.AppointmentEntity, adminID uuid.UUID) (*databases.Appoint, error) {

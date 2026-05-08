@@ -19,6 +19,7 @@ type AppointmentCreateReq struct {
 	Purpose   string 	`json:"purpose"`
 	Prepare   string   	`json:"prepare"`
 	Place     string   	`json:"place"`
+	OldDate	  string    `json:"old_date"`
 	Date      string   	`json:"date"`
 	StartTime string   	`json:"start_time"`
 	EndTime   string   	`json:"end_time"`
@@ -160,6 +161,7 @@ type AppointmentRepository interface {
 	UpdatePatientHealth(patientID uuid.UUID, weight float64, height int, adminID uuid.UUID) error
 
 	FindAllDoctor() ([]databases.Doctor, error)
+	FindDisease(diseaseID uuid.UUID) (*Disease, error)
 }
 
 type AppointmentTransaction interface {

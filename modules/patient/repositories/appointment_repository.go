@@ -31,6 +31,7 @@ func (r *appointmentQueryRepo) GetAppointmentDetail(patientID uuid.UUID, disease
 
 	err := r.db.
 		Preload("Disease").
+		Preload("Dotor").
 		Where("patient_id = ? AND disease_id = ? AND status IN ?", patientID, diseaseID, []string{"ongoing", "delay"}).
 		First(&dbAppoint).Error
 		
@@ -116,6 +117,7 @@ func (r *appointmentQueryRepo) ListPatientAppointments(patientID uuid.UUID) ([]e
 	err := r.db.
 		Preload("Disease").
 		Preload("Patient").
+		Preload("Doctor").
 		Where("patient_id = ? AND status IN ?", patientID, []string{"ongoing", "delay"}).
 		Find(&dbAppoints).
 		Error

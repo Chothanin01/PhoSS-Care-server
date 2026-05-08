@@ -45,14 +45,29 @@ func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateRe
 			return fmt.Errorf("vaccine appointments must be created using vaccine appointment endpoint")
 		}
 
+		disease, err := u.repo.FindDisease(req.DiseaseID)
+		if err != nil {
+			return err
+		}
+
+		colorStatus := "none"
+
+        if disease.Name == "โรคเบาหวาน" || disease.Name == "โรคความดันโลหิตสูง" {
+            colorStatus = utils.CalculateColorStatus(float64(req.Health.Sugar), float64(req.Health.Pressure))
+        }
+
 		if oldAppoint == nil {
+
 			oldEntity := &entities.AppointmentEntity{
 				DoctorID:  req.DoctorID,
 				Status:    "completed",
 				Symptom:   req.Symptom,
 				Note:      req.Note,
+				Date:      req.OldDate,
 				PatientID: req.PatientID,
 				DiseaseID: req.DiseaseID,
+				Health:    req.Health,
+				ColorStatus: colorStatus,
 				CreatedBy: adminID,
 				UpdatedBy: adminID,
 			}
@@ -71,12 +86,6 @@ func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateRe
 			if err != nil {
 				return err
 			}
-		}
-
-		colorStatus := "none"
-
-		if oldAppoint != nil && (oldAppoint.Disease.Name == "โรคเบาหวาน" || oldAppoint.Disease.Name == "โรคความดันโลหิตสูง") {
-			colorStatus = utils.CalculateColorStatus(float64(req.Health.Sugar), float64(req.Health.Pressure))
 		}
 
 		newAppoint := &entities.AppointmentEntity{

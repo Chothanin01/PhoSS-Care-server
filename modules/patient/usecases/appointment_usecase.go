@@ -129,6 +129,7 @@ func (u *appointmentQueryUsecase) ListPatientAppointments(patientID uuid.UUID) (
 		Appointments: appointments, 
 	}, nil
 }
+
 func (u *appointmentCommandUsecase) SubmitDelayRequest(userID uuid.UUID, patientID uuid.UUID, payload *entities.AppointmentDelayReq) error {
 	
 	appointID, err := u.repo.GetOngoingAppointmentIDByDisease(patientID, payload.DiseaseID)

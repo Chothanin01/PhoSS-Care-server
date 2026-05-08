@@ -440,3 +440,20 @@ func (u *appointmentUsecase) UpdateVaccineAppointment(req *entities.VaccineAppoi
 
 	return result, nil
 }
+
+func (u *appointmentUsecase) FindAllDoctor() ([]entities.DoctorEntity, error) {
+	doctors, err := u.repo.FindAllDoctor()
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]entities.DoctorEntity, 0)
+	for _, d := range doctors {
+		res = append(res, entities.DoctorEntity{
+			ID:       d.ID,
+			FullName: fmt.Sprintf("%s%s %s", d.Title, d.FirstName, d.LastName),
+		})
+	}
+
+	return res, nil
+}

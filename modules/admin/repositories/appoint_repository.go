@@ -349,3 +349,13 @@ func (r *AppointmentRepository) UpdateVaccineAppointment(appointID uuid.UUID, pl
 	r.db.First(&appoint, "id = ?", appointID)
 	return &appoint, nil
 }
+
+func (r *AppointmentRepository) FindAllDoctor() ([]databases.Doctor, error) {
+	var doctors []databases.Doctor
+
+	err := r.db.Select("id", "title", "first_name", "last_name").
+		Order("first_name ASC").
+		Find(&doctors).Error
+	return doctors, err
+}
+

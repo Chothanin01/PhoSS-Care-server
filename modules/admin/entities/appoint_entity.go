@@ -118,6 +118,10 @@ type VaccineAppointmentRes struct {
 	EndTime   string    `json:"end_time"`
 	DoctorID  uuid.UUID `json:"doctor_id"`
 }
+type DoctorEntity struct {
+	ID        uuid.UUID `json:"id"`
+	FullName  string    `json:"full_name"`
+}
 
 
 type AppointmentUsecase interface {
@@ -126,6 +130,8 @@ type AppointmentUsecase interface {
 	CreateVaccineAppointment(req *VaccineAppointmentCreateReq, adminID uuid.UUID) (*VaccineAppointmentRes, error)
 	UpdateAppointment(req *AppointmentUpdateReq, adminID uuid.UUID) (*AppointmentRes, error)
 	UpdateVaccineAppointment(req *VaccineAppointmentUpdateReq, adminID uuid.UUID) (*VaccineAppointmentRes, error)
+
+	FindAllDoctor() ([]DoctorEntity, error)
 }
 
 type AppointmentRepository interface {
@@ -152,6 +158,8 @@ type AppointmentRepository interface {
 	UpdateAppointment(appointID uuid.UUID, purpose string, place string, date string, startTime string, endTime string, doctorID uuid.UUID, adminID uuid.UUID) (*databases.Appoint, error)
 	UpdateVaccineAppointment(appointID uuid.UUID, place string, date string, start string, end string, doctorID uuid.UUID, adminID uuid.UUID) (*databases.Appoint, error)
 	UpdatePatientHealth(patientID uuid.UUID, weight float64, height int, adminID uuid.UUID) error
+
+	FindAllDoctor() ([]databases.Doctor, error)
 }
 
 type AppointmentTransaction interface {

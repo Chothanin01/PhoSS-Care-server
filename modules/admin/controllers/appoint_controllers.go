@@ -18,6 +18,7 @@ func NewAppointmentController(r fiber.Router, uc entities.AppointmentUsecase) {
 	r.Get("/:id/vaccination", controller.FindOngoingVaccination)
 	r.Post("/vaccine", controller.CreateVaccineAppointment)
 	r.Patch("/vaccine", controller.UpdateVaccineAppointment)
+	r.Get("/doctors", controller.FindAllDoctor)
 }
 
 func (c *AppointmentController) CreateAppointment(ctx *fiber.Ctx) error {
@@ -180,5 +181,17 @@ func (c *AppointmentController) UpdateVaccineAppointment(ctx *fiber.Ctx) error {
 	return ctx.JSON(fiber.Map{
 		"success": true,
 		"data":    res,
+	})
+}
+
+func (c *AppointmentController) FindAllDoctor(ctx *fiber.Ctx) error {
+	doctors, err := c.usecase.FindAllDoctor()
+	if err != nil {
+		return ctx.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"message": "success",
+		"data":    doctors,
 	})
 }

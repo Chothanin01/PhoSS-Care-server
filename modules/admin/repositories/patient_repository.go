@@ -403,19 +403,18 @@ func (r *PatientGetRepository) GetPatientDiseases(patientID uuid.UUID, dtype str
 	switch dtype {
 
 	case "active":
-		// just active diseases
 
 	case "noappoint":
 		query = query.
-			Where("disease.name <> ?", "วัคซีน").
-			Where(`
-				disease.id NOT IN (
-					SELECT disease_id
-					FROM appoint
-					WHERE patient_id = ?
-					AND status IN ('ongoing','delay')
-				)
-			`, patientID)
+            Where("disease.name <> ?", "วัคซีน").
+            Where(`
+                disease.id NOT IN (
+                    SELECT disease_id
+                    FROM appoint
+                    WHERE patient_id = ?
+                    AND status IN ('ongoing','overdue')
+                )
+            `, patientID)
 
 	case "all":
 		query = r.db.
@@ -432,6 +431,20 @@ func (r *PatientGetRepository) GetPatientDiseases(patientID uuid.UUID, dtype str
 	return diseases, err
 }
 
+func (r *PatientGetRepository) GetLastAppointID(patientID, diseaseID uuid.UUID) (*uuid.UUID, error) {
+    var appointID uuid.UUID
+    err := r.db.Table("appoint").
+        Select("id").
+        Where("patient_id = ? AND disease_id = ? AND status = ?", patientID, diseaseID, "completed").
+        Order("created_at DESC").
+        Limit(1).
+        Scan(&appointID).Error
+
+    if err != nil || appointID == uuid.Nil {
+        return nil, err
+    }
+    return &appointID, nil
+}
 
 // ---------------------- UPDATE ----------------------
 

@@ -9,6 +9,7 @@ import (
 type Disease struct {
 	DiseaseID uuid.UUID   `json:"disease_id"`
 	Name      string `json:"name"`
+	AppointID *uuid.UUID `json:"appoint_id,omitempty"`
 }
 
 type GetDiseaseListRes struct {

@@ -286,6 +286,7 @@ type PatientGetRepo interface {
 	GetPatientVaccinesByID(id uuid.UUID) (*databases.Patient , []databases.Vaccine, error)
 	GetPatientBasicInfoByID(id uuid.UUID) (*databases.Patient, error)
 	GetPatientDiseases(patientID uuid.UUID, dtype string) ([]databases.Disease, error)
+	GetLastAppointID(patientID, diseaseID uuid.UUID) (*uuid.UUID, error)
 }
 
 type PatientGetUsecase interface {

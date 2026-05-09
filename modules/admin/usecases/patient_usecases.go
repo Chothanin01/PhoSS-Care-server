@@ -487,9 +487,17 @@ func (u *patientGetUsecase) GetPatientDiseases(patientID uuid.UUID, dtype string
 	var result []entities.Disease
 
 	for _, d := range diseases {
+		var appointID *uuid.UUID
+
+		if dtype == "noappoint" {
+            id, _ := u.readRepo.GetLastAppointID(patientID, d.ID)
+            appointID = id
+        }
+
 		result = append(result, entities.Disease{
 			DiseaseID: d.ID,
 			Name:      d.Name,
+			AppointID: appointID,
 		})
 	}
 

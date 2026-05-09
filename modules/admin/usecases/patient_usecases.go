@@ -478,32 +478,18 @@ func (u *patientGetUsecase) GetPatientBasicInfoByID(id uuid.UUID) (*entities.Pat
 }
 
 func (u *patientGetUsecase) GetPatientDiseases(patientID uuid.UUID, dtype string) ([]entities.Disease, error) {
+    
+    if dtype != "active" && dtype != "noappoint" && dtype != "all" {
+        return nil, fmt.Errorf("invalid disease type requested")
+    }
 
-	diseases, err := u.readRepo.GetPatientDiseases(patientID, dtype)
-	if err != nil {
-		return nil, err
-	}
+    diseases, err := u.readRepo.GetPatientDiseases(patientID, dtype)
+    if err != nil {
+        return nil, err 
+    }
 
-	var result []entities.Disease
-
-	for _, d := range diseases {
-		var appointID *uuid.UUID
-
-		if dtype == "noappoint" {
-            id, _ := u.readRepo.GetLastAppointID(patientID, d.ID)
-            appointID = id
-        }
-
-		result = append(result, entities.Disease{
-			DiseaseID: d.ID,
-			Name:      d.Name,
-			AppointID: appointID,
-		})
-	}
-
-	return result, nil
+    return diseases, nil
 }
-
 // ---------------------- UPDATE ----------------------
 
 func (u *newPatientUsecase) UpdatePatientInfo(id uuid.UUID, req *entities.PatientUpdateReq, adminID uuid.UUID) (*entities.PatientUpdateRes, error) {

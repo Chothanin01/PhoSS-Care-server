@@ -111,8 +111,9 @@ type Appoint struct {
 
 	Health Health `gorm:"type:jsonb" json:"health"`
 
-	PatientID uuid.UUID `json:"patient_id"`
-	DiseaseID uuid.UUID `json:"disease_id"`
+	PatientID uuid.UUID `gorm:"column:patient_id;index:idx_appoint_lookup,priority:1"`
+    DiseaseID uuid.UUID `gorm:"column:disease_id;index:idx_appoint_lookup,priority:2"`
+
 	DoctorID  uuid.UUID	`json:"doctor_id"`
 
 	Patient Patient `gorm:"foreignKey:PatientID"`

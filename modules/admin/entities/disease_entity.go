@@ -10,6 +10,7 @@ type Disease struct {
 	DiseaseID uuid.UUID   `json:"disease_id"`
 	Name      string `json:"name"`
 	AppointID *uuid.UUID `json:"appoint_id,omitempty"`
+	AppointDate *time.Time `json:"appoint_date,omitempty"`
 }
 
 type GetDiseaseListRes struct {

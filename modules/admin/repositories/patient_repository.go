@@ -388,62 +388,59 @@ func (r *PatientGetRepository) GetPatientBasicInfoByID(id uuid.UUID) (*databases
 	return &patient, nil
 }
 
-
-func (r *PatientGetRepository) GetPatientDiseases(patientID uuid.UUID, dtype string) ([]databases.Disease, error) {
-
-	var diseases []databases.Disease
-
-	query := r.db.
-		Model(&databases.Disease{}).
-		Joins("JOIN patient_disease pd ON pd.disease_id = disease.id").
-		Where("pd.patient_id = ?", patientID).
-		Where("pd.deleted_at IS NULL").
-		Where("disease.deleted_at IS NULL")
-
-	switch dtype {
-
-	case "active":
-
-	case "noappoint":
-		query = query.
-            Where("disease.name <> ?", "วัคซีน").
-            Where(`
-                disease.id NOT IN (
-                    SELECT disease_id
-                    FROM appoint
-                    WHERE patient_id = ?
-                    AND status IN ('ongoing','overdue')
-                )
-            `, patientID)
-
-	case "all":
-		query = r.db.
-			Unscoped().
-			Model(&databases.Disease{}).
-			Joins("JOIN patient_disease pd ON pd.disease_id = disease.id").
-			Where("pd.patient_id = ?", patientID)
-
-	default:
-		return nil, fmt.Errorf("invalid disease type")
-	}
-
-	err := query.Find(&diseases).Error
-	return diseases, err
+type diseaseJoinResult struct {
+    DiseaseID uuid.UUID  `gorm:"column:disease_id"`
+    Name      string     `gorm:"column:name"`
+    AppointID *uuid.UUID `gorm:"column:appoint_id"`
+	AppointDate *time.Time `gorm:"column:appoint_date"`
 }
 
-func (r *PatientGetRepository) GetLastAppointID(patientID, diseaseID uuid.UUID) (*uuid.UUID, error) {
-    var appointID uuid.UUID
-    err := r.db.Table("appoint").
-        Select("id").
-        Where("patient_id = ? AND disease_id = ? AND status = ?", patientID, diseaseID, "completed").
-        Order("created_at DESC").
-        Limit(1).
-        Scan(&appointID).Error
+func (r *PatientGetRepository) GetPatientDiseases(patientID uuid.UUID, dtype string) ([]entities.Disease, error) {
+    var rows []diseaseJoinResult
 
-    if err != nil || appointID == uuid.Nil {
+    query := r.db.Table("disease").
+        Select("disease.id AS disease_id, disease.name, latest_appoint.id AS appoint_id, latest_appoint.date AS appoint_date").
+        Joins("JOIN patient_disease pd ON pd.disease_id = disease.id").
+        Joins(`LEFT JOIN LATERAL (
+            SELECT id, date FROM appoint -- <-- Added 'date' here
+            WHERE patient_id = pd.patient_id 
+            AND disease_id = disease.id 
+            AND status NOT IN ('completed', 'cancel') 
+            ORDER BY created_at DESC LIMIT 1
+        ) AS latest_appoint ON true`).
+        Where("pd.patient_id = ?", patientID).
+        Where("pd.deleted_at IS NULL").
+        Where("disease.deleted_at IS NULL")
+
+    switch dtype {
+    case "noappoint":
+        query = query.Where("disease.name <> ?", "วัคซีน")
+    case "active":
+        
+    case "all":
+        query = r.db.Unscoped().Table("disease").
+            Select("disease.id AS disease_id, disease.name, NULL AS appoint_id, NULL AS appoint_date").
+            Joins("JOIN patient_disease pd ON pd.disease_id = disease.id").
+            Where("pd.patient_id = ?", patientID)
+    default:
+        return nil, fmt.Errorf("invalid disease type")
+    }
+
+    if err := query.Scan(&rows).Error; err != nil {
         return nil, err
     }
-    return &appointID, nil
+
+    var result []entities.Disease
+    for _, row := range rows {
+        result = append(result, entities.Disease{
+            DiseaseID:   row.DiseaseID,
+            Name:        row.Name,
+            AppointID:   row.AppointID, 
+            AppointDate: row.AppointDate,
+        })
+    }
+
+    return result, nil
 }
 
 // ---------------------- UPDATE ----------------------

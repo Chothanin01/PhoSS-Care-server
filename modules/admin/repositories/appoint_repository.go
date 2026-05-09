@@ -20,17 +20,21 @@ func NewAppointmentRepository(db *gorm.DB) *AppointmentRepository {
 }
 
 func (r *AppointmentRepository) FindOngoing(patientID, diseaseID uuid.UUID) (*databases.Appoint, error) {
-	var appoint databases.Appoint
-	err := r.db.
-		Where("patient_id = ? AND disease_id = ? AND status = ?", patientID, diseaseID, "ongoing").
-		Order("created_at DESC").
-		Preload("Disease").
-		First(&appoint).Error
-
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, nil
-	}
-	return &appoint, err
+    var appoint databases.Appoint
+    
+    err := r.db.
+        Where("patient_id = ? AND disease_id = ?", patientID, diseaseID).
+        Where("status IN ?", []string{"ongoing", "overdue"}). 
+        First(&appoint).Error
+        
+    if err != nil {
+        if errors.Is(err, gorm.ErrRecordNotFound) {
+            return nil, nil 
+        }
+        return nil, err
+    }
+    
+    return &appoint, nil
 }
 
 func (r *AppointmentRepository) FindOngoingVaccination(patientID uuid.UUID) (*databases.VaccinationRecord, error) {
@@ -39,7 +43,7 @@ func (r *AppointmentRepository) FindOngoingVaccination(patientID uuid.UUID) (*da
 	err := r.db.
 		Joins("JOIN appoint ON appoint.id = vaccination_record.appoint_id").
 		Where("appoint.patient_id = ?", patientID).
-		Where("vaccination_record.status = ?", "ongoing").
+		Where("vaccination_record.status IN ?", []string{"ongoing", "overdue"}).
 		Preload("Vaccine").
 		Order("vaccination_record.dose_number DESC").
 		First(&record).Error

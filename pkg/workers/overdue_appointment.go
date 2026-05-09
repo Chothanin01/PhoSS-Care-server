@@ -14,7 +14,7 @@ func RunOverdueAppointmentWorker(db *gorm.DB) {
 	today := time.Now().Format("2006-01-02")
 
 	result := db.Model(&databases.Appoint{}).
-		Where("DATE(date) = ? AND status IN ?", today, []string{"ongoing"}).
+		Where("DATE(date) < ? AND status IN ?", today, []string{"ongoing"}).
 		Updates(map[string]interface{}{
 			"status": "overdue", 
 		})

@@ -51,6 +51,7 @@ func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateRe
 		}
 
 		colorStatus := "none"
+		fmt.Printf("DB Disease Name: '%s'\n", disease.Name)
 
         if disease.Name == "โรคเบาหวาน" || disease.Name == "โรคความดันโลหิตสูง" {
             colorStatus = utils.CalculateColorStatus(float64(req.Health.Sugar), float64(req.Health.Pressure))

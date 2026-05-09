@@ -12,6 +12,7 @@ import (
 type AppointmentCreateReq struct {
 	PatientID uuid.UUID `json:"patient_id"`
 	DiseaseID uuid.UUID `json:"disease_id"`
+	OldAppointID *uuid.UUID `json:"old_appoint_id"`
 
 	DoctorID     uuid.UUID `json:"doctor_id"`
 	NextDoctorID uuid.UUID `json:"next_doctor_id"`

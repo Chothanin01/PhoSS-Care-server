@@ -432,18 +432,23 @@ func (r *PatientGetRepository) GetPatientDiseases(patientID uuid.UUID, dtype str
 }
 
 func (r *PatientGetRepository) GetLastAppointID(patientID, diseaseID uuid.UUID) (*uuid.UUID, error) {
-    var appointID uuid.UUID
+    var appointIDStr string
     err := r.db.Table("appoint").
         Select("id").
         Where("patient_id = ? AND disease_id = ? AND status = ?", patientID, diseaseID, "completed").
         Order("created_at DESC").
         Limit(1).
-        Scan(&appointID).Error
+        Scan(&appointIDStr).Error
 
-    if err != nil || appointID == uuid.Nil {
+    if err != nil || appointIDStr == "" {
         return nil, err
     }
-    return &appointID, nil
+
+    parsed, err := uuid.Parse(appointIDStr)
+    if err != nil {
+        return nil, err
+    }
+    return &parsed, nil
 }
 
 // ---------------------- UPDATE ----------------------

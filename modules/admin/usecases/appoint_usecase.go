@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
+	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
 	"github.com/chothanin01/PhoSS-Care-server/pkg/utils"
 	"github.com/google/uuid"
 )
@@ -31,9 +32,13 @@ func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateRe
 	err := u.tx.Do(func(r entities.RepositorySet) error {
 		appointRepo := r.AppointmentRepo
 
-		oldAppoint, err := appointRepo.FindOngoing(req.PatientID, req.DiseaseID)
-		if err != nil {
-			return err
+		var oldAppoint *databases.Appoint
+		var err error
+		if req.OldAppointID != nil {
+			oldAppoint, err = appointRepo.FindByID(*req.OldAppointID)
+			if err != nil {
+				return err
+			}
 		}
 
 		isVaccine, err := appointRepo.IsVaccineDisease(req.DiseaseID)
@@ -77,7 +82,26 @@ func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateRe
 				return err
 			}
 		} else {
-			err := appointRepo.UpdateSymptomNote(req.DoctorID, oldAppoint.ID, req.Symptom, req.Note, adminID)
+			err = appointRepo.UpdateSymptomNote(req.DoctorID, oldAppoint.ID, req.Symptom, req.Note, adminID)
+			if err != nil {
+				return err
+			}
+
+			_, err = appointRepo.UpdateAppointment(
+				oldAppoint.ID,
+				oldAppoint.Purpose,
+				oldAppoint.Place,
+				req.OldDate,
+				oldAppoint.StartTime,
+				oldAppoint.EndTime,
+				req.DoctorID,
+				adminID,
+			)
+			if err != nil {
+				return err
+			}
+
+			err = appointRepo.UpdateHealth(oldAppoint.ID, &req.Health, adminID)
 			if err != nil {
 				return err
 			}

@@ -40,7 +40,7 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq, creat
 		p.Address.HouseNumber == "" || p.Address.SubDistrict == "" ||
 		p.Address.District == "" || p.Address.Province == "" ||
 		p.Address.ZipCode == "" || len(p.Diseases) == 0 ||
-		(req.Relative.Kin.FirstName == "" && req.Relative.Kin.LastName == "") {
+		(req.Relative.Kin.FirstName == "" || req.Relative.Kin.LastName == "") {
 		return nil, fmt.Errorf("missing required patient information")
 	}
 
@@ -93,16 +93,37 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq, creat
 			return fmt.Errorf("create patient: %w", err)
 		}
 
-		relatives := []entities.RelativeEntity{
-			makeRelative(req.Relative.Kin, "kin", res.Id, creatorID),
-			makeRelative(req.Relative.Caretaker, "caretaker", res.Id, creatorID),
-			makeRelative(req.Relative.Medicine, "medicine", res.Id, creatorID),
-			makeRelative(req.Officer.House, "house", res.Id, creatorID),
-			makeRelative(req.Officer.Nurse, "nurse", res.Id, creatorID),
+		relatives := []entities.RelativeEntity{}
+
+		if hasRelativeData(req.Relative.Kin) {
+			relatives = append(relatives,
+				makeRelative(req.Relative.Kin, "kin", res.Id, creatorID))
 		}
 
-		if err := r.RelativeRepo.Create(relatives, *creatorID); err != nil {
-			return fmt.Errorf("create relatives: %w", err)
+		if hasRelativeData(req.Relative.Caretaker) {
+			relatives = append(relatives,
+				makeRelative(req.Relative.Caretaker, "caretaker", res.Id, creatorID))
+		}
+
+		if hasRelativeData(req.Relative.Medicine) {
+			relatives = append(relatives,
+				makeRelative(req.Relative.Medicine, "medicine", res.Id, creatorID))
+		}
+
+		if hasRelativeData(req.Officer.House) {
+			relatives = append(relatives,
+				makeRelative(req.Officer.House, "house", res.Id, creatorID))
+		}
+
+		if hasRelativeData(req.Officer.Nurse) {
+			relatives = append(relatives,
+				makeRelative(req.Officer.Nurse, "nurse", res.Id, creatorID))
+		}
+
+		if len(relatives) > 0 {
+			if err := r.RelativeRepo.Create(relatives, *creatorID); err != nil {
+				return fmt.Errorf("create relatives: %w", err)
+			}
 		}
 
 		return nil
@@ -113,6 +134,13 @@ func (u *newPatientUsecase) CreateFull(req *entities.PatientFullCreateReq, creat
 	}
 
 	return res, nil
+}
+
+func hasRelativeData(r entities.RelativeCreate) bool {
+	return r.FirstName != "" ||
+		r.LastName != "" ||
+		r.PhoneNumber != "" ||
+		r.Address.HouseNumber != ""
 }
 
 
@@ -356,9 +384,9 @@ func (u *patientGetUsecase) GetPatientInfoByID(id uuid.UUID) (*entities.PatientI
 			{
 				Patient:  full,
 				Relative: entities.Relative{
-					Kin:       kin,
-					Caretaker: caretaker,
-					Medicine:  medicine,
+					Kin:       &kin,
+					Caretaker: &caretaker,
+					Medicine:  &medicine,
 				},
 				Officer: entities.Officer{
 					House: house,

@@ -40,9 +40,9 @@ type RelativeInfo struct {
 }
 
 type Relative struct {
-	Kin       RelativeInfo `json:"kin"`
-	Caretaker RelativeInfo `json:"caretaker"`
-	Medicine  RelativeInfo `json:"medicine"`
+	Kin       *RelativeInfo `json:"kin"`
+	Caretaker *RelativeInfo `json:"caretaker,omitempty"`
+	Medicine  *RelativeInfo `json:"medicine,omitempty"`
 }
 
 

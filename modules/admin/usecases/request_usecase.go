@@ -146,7 +146,7 @@ func (u *requestUpdateUsecase) UpdateRequestStatus(req *entities.RequestStatusUp
 			
 			noti.Body = "ระบบได้ปฏิเสธการเลื่อนนัดของคุณกรุณาเลื่อนนัดใหม่อีกครั้ง"
 
-			if err := u.repo.UpdateRequestStatus(req.RequestID, "declined", req.Description, adminID, noti); err != nil {
+			if err := u.repo.UpdateRequestStatus(req.RequestID, "canceled", req.Description, adminID, noti); err != nil {
 				return nil, fmt.Errorf("failed to update request: %w", err)
 			}
 

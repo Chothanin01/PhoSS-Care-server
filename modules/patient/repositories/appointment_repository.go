@@ -419,7 +419,7 @@ func (r *appointmentCommandRepo) CancelDelayRequest(appointID uuid.UUID, patient
 		result := tx.Model(&databases.Request{}).
 			Where("appoint_id = ? AND patient_id = ? AND request_type = ? AND status = ?", 
 				appointID, patientID, "appoint", "pending").
-			Update("status", "canceled")
+			Update("status", "canceled").Update("updated_at", time.Now())
 
 		if result.Error != nil {
 			return result.Error
@@ -430,7 +430,7 @@ func (r *appointmentCommandRepo) CancelDelayRequest(appointID uuid.UUID, patient
 
 		err := tx.Model(&databases.Appoint{}).
 			Where("id = ? AND patient_id = ?", appointID, patientID).
-			Update("status", "ongoing").Error
+			Update("status", "ongoing").Update("updated_at", time.Now()).Error
 
 		if err != nil {
 			return err

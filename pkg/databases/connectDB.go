@@ -69,7 +69,7 @@ func MigrateAll(db *gorm.DB) error {
 			return fmt.Errorf("migrate patient/disease failed: %w", err)
 		}
 
-		if err := tx.AutoMigrate(&Appoint{}, &Relative{}); err != nil {
+		if err := tx.AutoMigrate(&Appoint{}, &Relative{}, &Doctor{}); err != nil {
 			return fmt.Errorf("migrate appointment-related failed: %w", err)
 		}
 

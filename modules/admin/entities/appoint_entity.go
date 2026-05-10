@@ -12,6 +12,7 @@ import (
 type AppointmentCreateReq struct {
 	PatientID uuid.UUID `json:"patient_id"`
 	DiseaseID uuid.UUID `json:"disease_id"`
+	OldAppointID *uuid.UUID `json:"old_appoint_id"`
 
 	DoctorID     uuid.UUID `json:"doctor_id"`
 	NextDoctorID uuid.UUID `json:"next_doctor_id"`
@@ -83,6 +84,7 @@ type AppointmentEntity struct {
 	Health      Health
 	PatientID   uuid.UUID
 	DiseaseID   uuid.UUID
+	VaccineDoctorID uuid.UUID
 	DoctorID    uuid.UUID
 	CreatedBy   uuid.UUID
 	UpdatedBy   uuid.UUID
@@ -119,9 +121,18 @@ type VaccineAppointmentRes struct {
 	EndTime   string    `json:"end_time"`
 	DoctorID  uuid.UUID `json:"doctor_id"`
 }
+
 type DoctorEntity struct {
+    ID        uuid.UUID `json:"id"`
+    Title     string    `json:"title"`
+    FirstName string    `json:"first_name"`
+    LastName  string    `json:"last_name"`
+    Role      string    `json:"role"`
+}
+
+type Doctor struct {
 	ID        uuid.UUID `json:"id"`
-	FullName  string    `json:"full_name"`
+    FullName  string    `json:"fullname"`
 }
 
 
@@ -132,7 +143,7 @@ type AppointmentUsecase interface {
 	UpdateAppointment(req *AppointmentUpdateReq, adminID uuid.UUID) (*AppointmentRes, error)
 	UpdateVaccineAppointment(req *VaccineAppointmentUpdateReq, adminID uuid.UUID) (*VaccineAppointmentRes, error)
 
-	FindAllDoctor() ([]DoctorEntity, error)
+	FindAllDoctor(role string) ([]Doctor, error)
 }
 
 type AppointmentRepository interface {
@@ -151,7 +162,7 @@ type AppointmentRepository interface {
 	CreateAppointment(entity *AppointmentEntity, adminID uuid.UUID) (*databases.Appoint, error)
 	DiseaseExists(diseaseID uuid.UUID) (bool, error)
 
-	CreateVaccinationRecord(vaccineID uuid.UUID, appointID uuid.UUID, dose int, doctorID uuid.UUID, adminID uuid.UUID) error
+	CreateVaccinationRecord(vaccineID uuid.UUID, appointID uuid.UUID, status string, dose int, doctorID uuid.UUID, adminID uuid.UUID) error
 	UpdateVaccineDoctor(recordID uuid.UUID, doctorID uuid.UUID, adminID uuid.UUID) error
 	CompleteVaccinationRecord(recordID uuid.UUID, adminID uuid.UUID) error
 
@@ -160,7 +171,7 @@ type AppointmentRepository interface {
 	UpdateVaccineAppointment(appointID uuid.UUID, place string, date string, start string, end string, doctorID uuid.UUID, adminID uuid.UUID) (*databases.Appoint, error)
 	UpdatePatientHealth(patientID uuid.UUID, weight float64, height int, adminID uuid.UUID) error
 
-	FindAllDoctor() ([]databases.Doctor, error)
+	FindAllDoctor(role string) ([]Doctor, error)
 	FindDisease(diseaseID uuid.UUID) (*Disease, error)
 }
 

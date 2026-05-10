@@ -197,6 +197,10 @@ func (u *appointmentUsecase) CreateVaccineAppointment(req *entities.VaccineAppoi
 		lastRecord, err := repo.FindOngoingVaccination(req.PatientID)
 
 		if err == nil && lastRecord != nil {
+			err = repo.CompleteAppoint(lastRecord.AppointID, adminID)
+			if err != nil {
+				return err
+			}
 			
 			err = repo.UpdateVaccineDoctor(lastRecord.ID, req.VaccineDoctorID, adminID)
 			if err != nil {
@@ -213,6 +217,7 @@ func (u *appointmentUsecase) CreateVaccineAppointment(req *entities.VaccineAppoi
 				Status:    "completed",
 				DiseaseID: vaccineDiseaseID,
 				PatientID: req.PatientID,
+				DoctorID:  req.VaccineDoctorID,
 				Date:      req.Date,
 				CreatedBy: adminID,
 				UpdatedBy: adminID,
@@ -226,6 +231,7 @@ func (u *appointmentUsecase) CreateVaccineAppointment(req *entities.VaccineAppoi
 			err = repo.CreateVaccinationRecord(
 				req.OldVaccineID,
 				old.ID,
+				"completed",
 				req.DoseNumber,
 				req.VaccineDoctorID,
 				adminID,
@@ -261,10 +267,10 @@ func (u *appointmentUsecase) CreateVaccineAppointment(req *entities.VaccineAppoi
 
 		nextDose := maxDose + 1
 
-		// FIX: Use req.DoctorID (UUID)
 		err = repo.CreateVaccinationRecord(
 			req.VaccineID,
 			saved.ID,
+			"ongoing",
 			nextDose,
 			req.DoctorID,
 			adminID,
@@ -451,19 +457,12 @@ func (u *appointmentUsecase) UpdateVaccineAppointment(req *entities.VaccineAppoi
 	return result, nil
 }
 
-func (u *appointmentUsecase) FindAllDoctor() ([]entities.DoctorEntity, error) {
-	doctors, err := u.repo.FindAllDoctor()
-	if err != nil {
-		return nil, err
-	}
+func (u *appointmentUsecase) FindAllDoctor(role string) ([]entities.Doctor, error) {
+    
+    doctors, err := u.repo.FindAllDoctor(role)
+    if err != nil {
+        return nil, err
+    }
 
-	res := make([]entities.DoctorEntity, 0)
-	for _, d := range doctors {
-		res = append(res, entities.DoctorEntity{
-			ID:       d.ID,
-			FullName: fmt.Sprintf("%s%s %s", d.Title, d.FirstName, d.LastName),
-		})
-	}
-
-	return res, nil
+    return doctors, nil
 }

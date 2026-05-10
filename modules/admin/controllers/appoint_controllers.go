@@ -185,13 +185,20 @@ func (c *AppointmentController) UpdateVaccineAppointment(ctx *fiber.Ctx) error {
 }
 
 func (c *AppointmentController) FindAllDoctor(ctx *fiber.Ctx) error {
-	doctors, err := c.usecase.FindAllDoctor()
-	if err != nil {
-		return ctx.Status(500).JSON(fiber.Map{"error": err.Error()})
-	}
+    
+    role := ctx.Query("role", "all")
 
-	return ctx.Status(200).JSON(fiber.Map{
-		"message": "success",
-		"data":    doctors,
-	})
+    doctors, err := c.usecase.FindAllDoctor(role)
+    if err != nil {
+        
+        return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+            "message": "failed to fetch doctors",
+            "error":   err.Error(),
+        })
+    }
+
+    return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+        "message": "success",
+        "data":    doctors,
+    })
 }

@@ -173,21 +173,21 @@ type Vaccine struct {
 }
 
 type VaccinationRecord struct {
-	BaseModel
-	VaccineID  uuid.UUID		`json:"vaccine_id"`
-	AppointID  uuid.UUID		`json:"appoint_id"`
-	VaccineDoctorID uuid.UUID	`json:"vaccine_doctor_id"`
-	DoseNumber int
-	Status     string `gorm:"size:50;not null"`
+    BaseModel
+    VaccineID       uuid.UUID `json:"vaccine_id"`
+    AppointID       uuid.UUID `json:"appoint_id"`
+    VaccineDoctorID uuid.UUID `json:"vaccine_doctor_id"`
+    DoseNumber      int       `json:"dose_number"`
+    Status          string    `gorm:"size:50;not null" json:"status"`
 
-	Vaccine Vaccine `gorm:"foreignKey:VaccineID"`
-	Appoint Appoint `gorm:"foreignKey:AppointID"`
-	VaccineDoctor  uuid.UUID	`gorm:"foreignKey:VaccineDoctorID"`
+    Vaccine       Vaccine `gorm:"foreignKey:VaccineID" json:"vaccine,omitempty"`
+    Appoint       Appoint `gorm:"foreignKey:AppointID" json:"appoint,omitempty"`
+    VaccineDoctor Doctor  `gorm:"foreignKey:VaccineDoctorID" json:"vaccine_doctor,omitempty"`
 
-	CreatedBy     *uuid.UUID
-	UpdatedBy     *uuid.UUID
-	CreatedByUser *User `gorm:"foreignKey:CreatedBy;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-	UpdatedByUser *User `gorm:"foreignKey:UpdatedBy;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+    CreatedBy     *uuid.UUID `json:"created_by,omitempty"`
+    UpdatedBy     *uuid.UUID `json:"updated_by,omitempty"`
+    CreatedByUser *User      `gorm:"foreignKey:CreatedBy;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"created_by_user,omitempty"`
+    UpdatedByUser *User      `gorm:"foreignKey:UpdatedBy;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"updated_by_user,omitempty"`
 }
 
 type Request struct {
@@ -251,6 +251,7 @@ type Doctor struct {
 	Title		string		`json:"title"`
 	FirstName	string		`json:"first_name"`
 	LastName	string		`json:"last_name"`
+	Role		string		`json:"role"`
 }
 
 func (a Address) Value() (driver.Value, error) { return json.Marshal(a) }

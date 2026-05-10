@@ -229,14 +229,14 @@ func (r *AppointmentRepository) UpdateVaccineDoctor(recordID uuid.UUID, doctorID
 		}).Error
 }
 
-func (r *AppointmentRepository) CreateVaccinationRecord(vaccineID uuid.UUID, appointID uuid.UUID, dose int, doctor uuid.UUID, adminID uuid.UUID) (error) {
+func (r *AppointmentRepository) CreateVaccinationRecord(vaccineID uuid.UUID, appointID uuid.UUID, status string, dose int, doctor uuid.UUID, adminID uuid.UUID) (error) {
 
 	record := databases.VaccinationRecord{
 		VaccineID:     vaccineID,
 		AppointID:     appointID,
 		DoseNumber:    dose,
-		VaccineDoctor: doctor,
-		Status:        "ongoing",
+		VaccineDoctorID: doctor,
+		Status:        status,
 		CreatedBy:     &adminID,
 		UpdatedBy:     &adminID,
 	}
@@ -368,12 +368,31 @@ func (r *AppointmentRepository) UpdateVaccineAppointment(appointID uuid.UUID, pl
 	return &appoint, nil
 }
 
-func (r *AppointmentRepository) FindAllDoctor() ([]databases.Doctor, error) {
-	var doctors []databases.Doctor
 
-	err := r.db.Select("id", "title", "first_name", "last_name").
-		Order("first_name ASC").
-		Find(&doctors).Error
-	return doctors, err
+func (r *AppointmentRepository) FindAllDoctor(role string) ([]entities.Doctor, error) {
+
+    var rows []entities.DoctorEntity
+
+    query := r.db.Table("doctor").
+        Select("id, title, first_name, last_name, role").
+        Where("deleted_at IS NULL"). 
+        Order("first_name ASC")
+
+    if role != "all" && role != "" {
+        query = query.Where("role = ?", role)
+    }
+
+    if err := query.Find(&rows).Error; err != nil {
+        return nil, err
+    }
+
+    var result []entities.Doctor
+    for _, row := range rows {
+        result = append(result, entities.Doctor{
+            ID:        row.ID,
+			FullName:  row.Title + row.FirstName + " " + row.LastName,
+        })
+    }
+
+    return result, nil
 }
-

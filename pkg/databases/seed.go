@@ -142,10 +142,14 @@ func SeedVaccines(db *gorm.DB) error {
 func SeedDoctors(db *gorm.DB) error {
 
     defaultDoctors := []Doctor{
-        {Title: "นพ.", FirstName: "สมชาย", LastName: "ใจดี"},
-        {Title: "พญ.", FirstName: "สมหญิง", LastName: "รักเรียน"},
-        {Title: "นพ.", FirstName: "อาคม", LastName: "ขยันทำดี"},
-        {Title: "พญ.", FirstName: "วิไล", LastName: "พรสวัสดิ์"},
+        {Title: "นพ.", FirstName: "สมชาย", LastName: "ใจดี", Role: "doctor"},
+        {Title: "พญ.", FirstName: "สมหญิง", LastName: "รักเรียน", Role: "doctor"},
+        {Title: "นพ.", FirstName: "อาคม", LastName: "ขยันทำดี", Role: "doctor"},
+        {Title: "พญ.", FirstName: "วิไล", LastName: "พรสวัสดิ์", Role: "doctor"},
+		{Title: "พย.", FirstName: "ปราณี", LastName: "เมตตา", Role: "nurse"},
+		{Title: "พย.", FirstName: "น้ำฝน", LastName: "ชื่นใจ", Role: "nurse"},
+		{Title: "พย.", FirstName: "ดวงแก้ว", LastName: "ห่วงใย", Role: "nurse"},
+		{Title: "พย.", FirstName: "พิมพ์ชนก", LastName: "รักษ์ดี", Role: "nurse"},
     }
 
     for _, doc := range defaultDoctors {

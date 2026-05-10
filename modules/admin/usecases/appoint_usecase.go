@@ -51,7 +51,6 @@ func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateRe
 		}
 
 		colorStatus := "none"
-		fmt.Printf("DB Disease Name: '%s'\n", disease.Name)
 
         if disease.Name == "โรคเบาหวาน" || disease.Name == "โรคความดันโลหิตสูง" {
             colorStatus = utils.CalculateColorStatus(float64(req.Health.Sugar), float64(req.Health.Pressure))
@@ -78,7 +77,7 @@ func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateRe
 				return err
 			}
 		} else {
-			err := appointRepo.UpdateSymptomNote(req.DoctorID, oldAppoint.ID, req.Symptom, req.Note, adminID)
+			err := appointRepo.UpdateSymptomNote(req.DoctorID, oldAppoint.ID, colorStatus, req.Symptom, req.Note, adminID)
 			if err != nil {
 				return err
 			}
@@ -128,6 +127,7 @@ func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateRe
 			DoctorID:  savedAppoint.DoctorID,
 			Purpose:   savedAppoint.Purpose,
 			Place:     savedAppoint.Place,
+			ColorStatus: colorStatus,
 		}
 
 		return nil

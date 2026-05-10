@@ -47,9 +47,6 @@ func (u *relativeUpdateUsecase) UpdateAllRelatives(patientID uuid.UUID, req *ent
 }
 
 func (u *relativeUpdateUsecase) UpdateAllOfficers(patientID uuid.UUID, req *entities.OfficerAllUpdateReq, adminID uuid.UUID) (*entities.OfficerAllUpdateRes, error) {
-	if req.UpdatedBy == uuid.Nil {
-		return nil, fmt.Errorf("missing updated_by field")
-	}
 
 	if req.House.FirstName == "" || req.House.LastName == "" ||
 		req.Nurse.FirstName == "" || req.Nurse.LastName == "" {

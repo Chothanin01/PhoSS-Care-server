@@ -134,6 +134,7 @@ func (r *AppointmentRepository) CreateAppointment(e *entities.AppointmentEntity,
 		StartTime: e.StartTime,
 		EndTime:   e.EndTime,
 		Date:      parseDate,
+		ColorStatus: e.ColorStatus,
 		PatientID: e.PatientID,
 		DiseaseID: e.DiseaseID,
 		Symptom:   e.Symptom,
@@ -199,7 +200,7 @@ func (r *AppointmentRepository) FindByID(appointID uuid.UUID) (*databases.Appoin
 	return &appoint, nil
 }
 
-func (r *AppointmentRepository) UpdateSymptomNote(doctorID uuid.UUID, appointID uuid.UUID, symptom string, note string, adminID uuid.UUID) error {
+func (r *AppointmentRepository) UpdateSymptomNote(doctorID uuid.UUID, appointID uuid.UUID, color string, symptom string, note string, adminID uuid.UUID) error {
 	return r.db.Model(&databases.Appoint{}).
 		Where("id = ?", appointID).
 		Updates(map[string]interface{}{

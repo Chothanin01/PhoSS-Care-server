@@ -156,7 +156,7 @@ type AppointmentRepository interface {
 	IsVaccineDisease(diseaseID uuid.UUID) (bool, error)
 	FindMaxDose(patientID, vaccineID uuid.UUID) (int, error)
 
-	UpdateSymptomNote(doctorID uuid.UUID, appointID uuid.UUID, symptom string, note string, adminID uuid.UUID) error
+	UpdateSymptomNote(doctorID uuid.UUID, appointID uuid.UUID, color string, symptom string, note string, adminID uuid.UUID) error
 	UpdateVaccinationRecord(appointID uuid.UUID, vaccineID uuid.UUID, dose int, adminID uuid.UUID) error
 	CompleteAppoint(appointID uuid.UUID, adminID uuid.UUID) error
 	CreateAppointment(entity *AppointmentEntity, adminID uuid.UUID) (*databases.Appoint, error)

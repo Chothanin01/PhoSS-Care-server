@@ -139,7 +139,7 @@ func (u *requestUpdateUsecase) UpdateRequestStatus(req *entities.RequestStatusUp
 				return nil, fmt.Errorf("failed to update request: %w", err)
 			}
 
-		case "declined":
+		case "canceled":
 			if req.Description == "" {
 				return nil, fmt.Errorf("description is required when declining")
 			}

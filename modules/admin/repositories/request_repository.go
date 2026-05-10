@@ -145,6 +145,7 @@ func (r *RequestUpdateRepository) UpdateRequestStatus(id uuid.UUID, status, desc
 			"status":      status,
 			"description": description,
 			"updated_by":  adminID,
+			"updated_at": time.Now(),
 		}).Error; err != nil {
 		tx.Rollback()
 		return err
@@ -186,6 +187,7 @@ func (r *RequestUpdateRepository) UpdateAppointForAccepted(requestID uuid.UUID, 
 			"delay":      true,
 			"status":     "ongoing", 
 			"updated_by": adminID,
+			"updated_at": time.Now(),
 		}).Error; err != nil {
 		tx.Rollback()
 		return err
@@ -196,6 +198,7 @@ func (r *RequestUpdateRepository) UpdateAppointForAccepted(requestID uuid.UUID, 
 		Updates(map[string]interface{}{
 			"status":     "accepted",
 			"updated_by": adminID,
+			"updated_at": time.Now(),
 		}).Error; err != nil {
 		tx.Rollback()
 		return err

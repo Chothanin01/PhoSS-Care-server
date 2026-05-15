@@ -296,7 +296,7 @@ func (r *appointmentQueryRepo) GetDiseaseHistory(patientID uuid.UUID, diseaseID 
 
 	err := r.db.
 		Preload("CreatedByUser.Admin").
-		Where("patient_id = ? AND disease_id = ?", patientID, diseaseID).
+		Where("patient_id = ? AND disease_id = ? AND status = ?", patientID, diseaseID, "completed").
 		Order("date DESC").
 		Limit(limit).
 		Offset(offset).

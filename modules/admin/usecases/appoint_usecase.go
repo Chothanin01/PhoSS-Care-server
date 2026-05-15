@@ -99,17 +99,8 @@ func (u *appointmentUsecase) CreateAppointment(req *entities.AppointmentCreateRe
 			Date:        req.Date,
 			PatientID:   req.PatientID,
 			DiseaseID:   req.DiseaseID,
-			ColorStatus: colorStatus,
 			CreatedBy:   adminID,
 			UpdatedBy:   adminID,
-			Health: entities.Health{
-				Weight:   req.Health.Weight,
-				Height:   req.Health.Height,
-				BMI:      req.Health.BMI,
-				Pulse:    req.Health.Pulse,
-				Pressure: req.Health.Pressure,
-				Sugar:    req.Health.Sugar,
-			},
 		}
 
 		savedAppoint, err := appointRepo.CreateAppointment(newAppoint, adminID)

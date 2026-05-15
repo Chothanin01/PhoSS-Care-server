@@ -328,10 +328,12 @@ func (r *PatientGetRepository) GetPatientAppointmentsInfoByID(patientID uuid.UUI
 	var patient databases.Patient
 
 	err := r.db.
-		Preload("Diseases").
+		Preload("Diseases", func(db *gorm.DB) *gorm.DB {
+			return db.Where("patient_disease.deleted_at IS NULL")
+		}).
 		Preload("Diseases.Disease").
 		Preload("Appointments", func(db *gorm.DB) *gorm.DB {
-        return db.Unscoped().
+        return db.
                   Where("status IN ?", []string{"ongoing", "delay", "overdue"}).
                   Order("no DESC")
     }).

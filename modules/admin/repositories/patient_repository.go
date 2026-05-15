@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"errors"
 
 	"github.com/google/uuid"
 	"github.com/chothanin01/PhoSS-Care-server/modules/admin/entities"
@@ -327,13 +328,13 @@ func (r *PatientGetRepository) GetPatientAppointmentsInfoByID(patientID uuid.UUI
 	var patient databases.Patient
 
 	err := r.db.
-		Preload("Diseases", func(db *gorm.DB) *gorm.DB {
-			return db.Where("patient_disease.deleted_at IS NULL")
-		}).
+		Preload("Diseases").
 		Preload("Diseases.Disease").
 		Preload("Appointments", func(db *gorm.DB) *gorm.DB {
-			return db.Where("status IN ?", []string{"ongoing", "delay","overdue"}).Order("no DESC")
-		}).
+        return db.Unscoped().
+                  Where("status IN ?", []string{"ongoing", "delay", "overdue"}).
+                  Order("no DESC")
+    }).
 		Preload("Appointments.Disease").
 		Preload("Appointments.Doctor").
 		Preload("Appointments.CreatedByUser").
@@ -504,7 +505,6 @@ func (r *PatientRepository) UpdatePatientInfo(id uuid.UUID, req *entities.Patien
 	return res, nil
 }
 
-
 func (r *PatientRepository) UpdatePatientDiseases(patientID uuid.UUID, newDiseases []entities.Disease, adminID *uuid.UUID) error {
 	var current []databases.PatientDisease
 	if err := r.db.Where("patient_id = ? AND deleted_at IS NULL", patientID).Find(&current).Error; err != nil {
@@ -525,19 +525,48 @@ func (r *PatientRepository) UpdatePatientDiseases(patientID uuid.UUID, newDiseas
 			if err := r.db.Where("id = ?", d.ID).Delete(&databases.PatientDisease{}).Error; err != nil {
 				return fmt.Errorf("delete old disease: %w", err)
 			}
+
+			if err := r.db.Where("patient_id = ? AND disease_id = ?", patientID, d.DiseaseID).Delete(&databases.Appoint{}).Error; err != nil {
+				return fmt.Errorf("delete related appointments: %w", err)
+			}
 		}
 	}
 
 	for _, d := range newDiseases {
 		if !currentMap[d.DiseaseID] {
-			pd := databases.PatientDisease{
-				PatientID: patientID,
-				DiseaseID: d.DiseaseID,
-				CreatedBy: adminID,
-				UpdatedBy: adminID,
-			}
-			if err := r.db.Create(&pd).Error; err != nil {
-				return fmt.Errorf("add new disease: %w", err)
+			var existing databases.PatientDisease
+
+			err := r.db.Unscoped().Where("patient_id = ? AND disease_id = ?", patientID, d.DiseaseID).First(&existing).Error
+
+			if err == nil {
+				err = r.db.Unscoped().Model(&databases.PatientDisease{}).Where("id = ?", existing.ID).Updates(map[string]interface{}{
+					"deleted_at": nil,
+					"updated_by": adminID,
+				}).Error
+				if err != nil {
+					return fmt.Errorf("restore soft-deleted disease: %w", err)
+				}
+
+				err = r.db.Unscoped().Model(&databases.Appoint{}).Where("patient_id = ? AND disease_id = ?", patientID, d.DiseaseID).Updates(map[string]interface{}{
+					"deleted_at": nil,
+				}).Error
+				if err != nil {
+					return fmt.Errorf("restore related appointments: %w", err)
+				}
+
+			} else if errors.Is(err, gorm.ErrRecordNotFound) {
+				
+				pd := databases.PatientDisease{
+					PatientID: patientID,
+					DiseaseID: d.DiseaseID,
+					CreatedBy: adminID,
+					UpdatedBy: adminID,
+				}
+				if err := r.db.Create(&pd).Error; err != nil {
+					return fmt.Errorf("add new disease: %w", err)
+				}
+			} else {
+				return fmt.Errorf("check existing soft-deleted disease: %w", err)
 			}
 		}
 	}

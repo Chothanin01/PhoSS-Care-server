@@ -28,10 +28,11 @@ func NewServer(cfg *configs.Config, db *gorm.DB) *Server {
 
 func (s *Server) SetupMiddleware() {
 	s.App.Use(cors.New(cors.Config{
-		AllowOrigins: "http://localhost:3000, http://localhost:8080, http://localhost:8081, https://phosscare.vercel.app",
+		// AllowOrigins: "http://localhost:3000, http://localhost:8080, http://192.168.1.34:8081, https://phosscare.vercel.app",
+		AllowOrigins: "*",
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 		AllowMethods: "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-		AllowCredentials: true,
+		AllowCredentials: false,
 	}))
 }
 

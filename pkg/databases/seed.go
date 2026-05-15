@@ -70,7 +70,7 @@ func SeedDiseases(db *gorm.DB) error {
 	}
 
 	defaultDiseases := []Disease{
-		{Name: "โรคความดันโลหิตสูง", AvailableDays: StringArray{"Tuseday"}},
+		{Name: "โรคความดันโลหิตสูง", AvailableDays: StringArray{"Tuesday"}},
 		{Name: "โรคเบาหวาน", AvailableDays: StringArray{"Wednesday"}},
 		{Name: "วัณโรค", AvailableDays: StringArray{"Friday"}},
 		{Name: "วัคซีน", AvailableDays: StringArray{"Monday"}},

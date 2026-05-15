@@ -283,6 +283,14 @@ func (r *PatientGetRepository) CountPatientsWithFilter(req entities.PatientQuery
 		}
 	}
 
+	if req.Overdue != nil {
+		if *req.Overdue {
+			query = query.Where("EXISTS (SELECT 1 FROM appoint a WHERE a.patient_id = patient.id AND a.status = ?)", "overdue")
+		} else {
+			query = query.Where("NOT EXISTS (SELECT 1 FROM appoint a WHERE a.patient_id = patient.id AND a.status = ?)", "overdue")
+		}
+	}
+
 	err := query.Count(&count).Error
 	return count, err
 }

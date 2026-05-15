@@ -61,14 +61,15 @@ func (r *GetPatientRepository) GetPatientDiseases(patientID uuid.UUID, filter en
 	query := r.db.Table("patient_disease").
 		Select("disease.id as disease_id, disease.name").
 		Joins("JOIN disease ON disease.id = patient_disease.disease_id").
-		Where("patient_disease.patient_id = ?", patientID)
+		Where("patient_disease.patient_id = ?", patientID).
+		Where("disease.deleted_at IS NULL")
 
 	if filter.Type == "appoint" {
 		query = query.Joins("JOIN appoint ON appoint.disease_id = disease.id AND appoint.patient_id = patient_disease.patient_id")
 		
 		query = query.Where("appoint.status = ?", "ongoing")
 
-		query = query.Where("NOT EXISTS (SELECT 1 FROM request WHERE request.appoint_id = appoint.id AND request.status = 'pending' AND request.request_type = 'appoint')")
+		query = query.Where("NOT EXISTS (SELECT 1 FROM request WHERE request.appoint_id = appoint.id AND request.status = 'pending' AND request.request_type = 'appoint' AND request.deleted_at IS NULL)")
 
 		query = query.Group("disease.id, disease.name")
 

@@ -118,7 +118,13 @@ func (r *appointmentQueryRepo) ListPatientAppointments(patientID uuid.UUID) ([]e
 		Preload("Disease").
 		Preload("Patient").
 		Preload("Doctor").
-		Where("patient_id = ? AND status IN ?", patientID, []string{"ongoing", "delay"}).
+		Where("patient_id = ? AND status IN ? AND deleted_at is NULL", patientID, []string{"ongoing", "delay"}).
+		Where(`EXISTS (
+			SELECT 1 FROM patient_disease pd 
+			WHERE pd.patient_id = appoint.patient_id 
+			  AND pd.disease_id = appoint.disease_id 
+			  AND pd.deleted_at IS NULL
+		)`).
 		Find(&dbAppoints).
 		Error
 

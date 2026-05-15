@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	
+	"time"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"github.com/chothanin01/PhoSS-Care-server/pkg/databases"
@@ -41,6 +41,8 @@ func (r *notificationQueryRepo) GetPatientNotifications(patientID uuid.UUID) ([]
 		return nil, err
 	}
 
+	loc, _ := time.LoadLocation("Asia/Bangkok")
+
 	items := make([]entities.NotificationItem, len(results))
 	for i, res := range results {
 		items[i] = entities.NotificationItem{
@@ -50,7 +52,7 @@ func (r *notificationQueryRepo) GetPatientNotifications(patientID uuid.UUID) ([]
 			IsRead:    res.IsRead,
 			AppointID: res.AppointID,
 			DiseaseID: res.DiseaseID,
-			CreatedAt: res.CreatedAt.Format("2006-01-02 15:04:05"),
+			CreatedAt: res.CreatedAt.In(loc).Format("2006-01-02 15:04:05"),
 		}
 	}
 

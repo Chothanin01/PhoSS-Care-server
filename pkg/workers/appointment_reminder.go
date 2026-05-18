@@ -52,12 +52,15 @@ func RunAppointmentReminderWorker(db *gorm.DB) {
             continue 
         }
 
-        doctorName := app.Doctor.Title + app.Doctor.FirstName + " " + app.Doctor.LastName 
-        if app.CreatedByUser != nil && app.CreatedByUser.Admin != nil {
-            doctorName = app.CreatedByUser.Admin.Title + app.CreatedByUser.Admin.FirstName 
+        doctorName := "แพทย์ผู้เชี่ยวชาญ"
+
+        if app.DoctorID != uuid.Nil {
+            doctorName = app.Doctor.Title + app.Doctor.FirstName + " " + app.Doctor.LastName
+        } else if app.CreatedByUser != nil && app.CreatedByUser.Admin != nil {
+            doctorName = app.CreatedByUser.Admin.Title + app.CreatedByUser.Admin.FirstName
         }
 
-        bodyText := fmt.Sprintf("คุณมีนัดหมายกับ %s ในอีก 2 วันในเวลา %s", doctorName, app.StartTime)
+        bodyText := fmt.Sprintf("คุณมีนัดหมายกับ%s ในอีก 2 วันในเวลา %s", doctorName, app.StartTime)
 
         notifications = append(notifications, databases.Notification{
             Header:    "คุณมีนัดในอีก 2 วันข้างหน้า",

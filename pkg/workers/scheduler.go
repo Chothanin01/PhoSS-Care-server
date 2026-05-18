@@ -13,7 +13,7 @@ import (
 func StartCronJobs(db *gorm.DB) {
 	c := cron.New()
 
-	_, err := c.AddFunc("@every 10s", func() {
+	_, err := c.AddFunc("0 8 * * *", func() {
 		RunAppointmentReminderWorker(db)
 	})
 	if err != nil {

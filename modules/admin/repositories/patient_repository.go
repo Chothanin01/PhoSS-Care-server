@@ -282,7 +282,7 @@ func (r *PatientGetRepository) CountPatientsWithFilter(req entities.PatientQuery
         query = query.Where(
             "NOT EXISTS (SELECT 1 FROM appoint a WHERE a.patient_id = patient.id AND a.status IN (?, ?))", 
             "ongoing", "overdue",
-        )
+        	)
     	}
 	}
 

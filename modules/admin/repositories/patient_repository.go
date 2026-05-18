@@ -228,12 +228,15 @@ func (r *PatientGetRepository) GetPatientsWithFilter(req entities.PatientQueryPa
 	}
 
 	if req.Appoint != nil {
-		if *req.Appoint {
-			query = query.Joins("JOIN appoint a ON a.patient_id = patient.id AND a.status = ?", "ongoing")
-		} else {
-			query = query.Where("NOT EXISTS (SELECT 1 FROM appoint a WHERE a.patient_id = patient.id AND a.status = ?)", "ongoing")
-		}
-	}
+    if *req.Appoint {
+        query = query.Joins("JOIN appoint a ON a.patient_id = patient.id AND a.status = ?", "ongoing")
+    } else {
+        query = query.Where(
+            "NOT EXISTS (SELECT 1 FROM appoint a WHERE a.patient_id = patient.id AND a.status IN (?, ?))", 
+            "ongoing", "overdue",
+        )
+    }
+}
 
 	if req.Overdue != nil {
 		if *req.Overdue {
@@ -276,14 +279,11 @@ func (r *PatientGetRepository) CountPatientsWithFilter(req entities.PatientQuery
 	}
 
 	if req.Appoint != nil {
-    if *req.Appoint {
-        query = query.Joins("JOIN appoint a ON a.patient_id = patient.id AND a.status = ?", "ongoing")
-    } else {
-        query = query.Where(
-            "NOT EXISTS (SELECT 1 FROM appoint a WHERE a.patient_id = patient.id AND a.status IN (?, ?))", 
-            "ongoing", "overdue",
-        	)
-    	}
+		if *req.Appoint {
+			query = query.Joins("JOIN appoint a ON a.patient_id = patient.id AND a.status = ?", "ongoing")
+		} else {
+			query = query.Where("NOT EXISTS (SELECT 1 FROM appoint a WHERE a.patient_id = patient.id AND a.status = ?)", "ongoing")
+		}
 	}
 
 	if req.Overdue != nil {
